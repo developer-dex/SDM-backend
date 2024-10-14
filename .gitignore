@@ -1,0 +1,12 @@
+
+
+# Dependency directory
+/node_modules
+/.env
+
+
+
+# Compile code store
+/dist
+
+/sync_code.sh
