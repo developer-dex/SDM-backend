@@ -1,0 +1,53 @@
+{
+    "name": "aruku-backend",
+    "version": "1.0.0",
+    "description": "This is the Aruku app.",
+    "main": "app.ts",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "clean": "rimraf dist",
+        "rimraf": "./node_modules/rimraf/bin.js",
+        "dev": "nodemon --config nodemon.json --exec npx ts-node ./src/app.ts",
+        "build": "tsc --build",
+        "prebuild": "npm run clean",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "prod": "npm run build && node ./dist/app.js",
+        "format": "prettier --write .",
+        "git": "git checkout development && git pull origin development && git merge feature/admin && git push origin development && git checkout main && git pull origin main && git merge development && git push origin main"
+    },
+    "author": "DeveloperDex",
+    "license": "MIT",
+    "devDependencies": {
+        "@eslint/js": "^9.12.0",
+        "@types/express": "^4.17.17",
+        "eslint": "^9.12.0",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "globals": "^15.11.0",
+        "install": "^0.13.0",
+        "npm": "^9.8.1",
+        "prettier": "^3.3.3",
+        "typescript": "^5.1.6",
+        "typescript-eslint": "^8.8.1"
+    },
+    "dependencies": {
+        "axios": "^1.6.5",
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.3.1",
+        "express": "^4.18.2",
+        "express-joi-validation": "^5.0.1",
+        "express-validator": "^7.0.1",
+        "firebase-admin": "^12.0.0",
+        "joi": "^17.13.3",
+        "jsonwebtoken": "^9.0.1",
+        "moment": "^2.29.4",
+        "mongoose": "^7.4.3",
+        "mysql2": "^3.11.3",
+        "nodemailer": "^6.9.8",
+        "nodemon": "^3.0.1",
+        "rimraf": "^5.0.5",
+        "swagger-ui-express": "^5.0.0"
+    }
+}
