@@ -9,24 +9,27 @@ import { ResponseService } from "../../helpers/response.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
 
 export class ScheduleDemoController {
-    constructor(
-        private schduleDemoService = new ScheduleDemoService(),
-        private responseService = new ResponseService()
-    ) {}
+    private scheduleDemoService: ScheduleDemoService;
+    private responseService: ResponseService;
 
-    async scheduleDemoRequest(
+    constructor() {
+        this.scheduleDemoService = new ScheduleDemoService();
+        this.responseService = new ResponseService();
+    }
+
+    scheduleDemoRequest = async (
         req: ValidatedRequest<IValidationRequestBodySchema<IScheduleDemoBody>>,
         res: Response,
         next: NextFunction
-    ) {
+    ) => {
         const requestData: IScheduleDemoBody = req.body;
         try {
-            await this.schduleDemoService.crateScheduleDemo(requestData);
+            await this.scheduleDemoService.crateScheduleDemo(requestData);
             return res
                 .status(200)
                 .send(
                     this.responseService.responseWithoutData(
-                        false,
+                        true,
                         StatusCodes.OK,
                         "Request for schedule demo created successfully"
                     )
@@ -34,7 +37,7 @@ export class ScheduleDemoController {
         } catch (error) {
             return next(error);
         }
-    }
+    };
 }
 
 export const scheduleDemoController = new ScheduleDemoController();

@@ -5,12 +5,19 @@ import { ResponseService } from "../../helpers/response.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
 
 export class ContactUsController {
-    constructor(
-        private contactUsService = new ContactUsService(),
-        private responseService = new ResponseService()
-    ) {}
+    private contactUsService: ContactUsService;
+    private responseService: ResponseService;
 
-    async contactUsRequest(req: Request, res: Response, next: NextFunction) {
+    constructor() {
+        this.contactUsService = new ContactUsService();
+        this.responseService = new ResponseService();
+    }
+
+    contactUsRequest = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
         const requestData: IContactUsRequest = req.body;
         try {
             await this.contactUsService.contactUsRequest(requestData);
@@ -18,7 +25,7 @@ export class ContactUsController {
                 .status(200)
                 .send(
                     this.responseService.responseWithoutData(
-                        false,
+                        true,
                         StatusCodes.OK,
                         "Request for contact us created successfully"
                     )
@@ -26,7 +33,7 @@ export class ContactUsController {
         } catch (error) {
             return next(error);
         }
-    }
+    };
 }
 
 export const contactUsController = new ContactUsController();

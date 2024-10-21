@@ -3,15 +3,26 @@ import { scheduleDemoRequest } from "../modules/scheduleDemo/scheduleDemo.valida
 import { createValidator } from "express-joi-validation";
 import { scheduleDemoController } from "../modules/scheduleDemo/scheduleDemo.controller";
 import { contactUsController } from "../modules/contactUs/contactUs.controller";
-import { loginRequestSchema } from "../modules/authentication/auth.validation";
+import {
+    forgetPasswordRequestSchema,
+    loginRequestSchema,
+    resetPasswordRequestSchema,
+    signupRequestSchema,
+} from "../modules/authentication/auth.validation";
 import { contactUsRequest } from "../modules/contactUs/contactUs.validation";
 import { authController } from "../modules/authentication/auth.controller";
+import { subscriptionController } from "../modules/subscription/subscription.controller";
+import { planController } from "../modules/plan/plan.controller";
+import { listingPlanRequest } from "../modules/plan/plan.validation";
+import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
+import { getFrontImageValidation } from "../modules/websitefrontImages/websiteFrontImage.validation";
+import AdminDashboardApi from "./adminDashboard";
 import { AuthMiddleware } from "../middlewares/auth.middleware";
-
-const validator = createValidator({ passError: true });
 
 const authMiddleware = new AuthMiddleware();
 
+const validator = createValidator({ passError: true });
+// AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 const WebsiteApi: Router = Router();
 
 WebsiteApi.post(
@@ -32,6 +43,40 @@ WebsiteApi.post(
     authController.login
 );
 
-WebsiteApi.use(authMiddleware.verifyjwtToken);
+WebsiteApi.post(
+    "/signup",
+    validator.body(signupRequestSchema),
+    authController.signup
+);
+
+WebsiteApi.post(
+    "/forget-password",
+    validator.body(forgetPasswordRequestSchema),
+    authController.forgetPassword
+);
+
+WebsiteApi.post(
+    "/reset-password",
+    validator.body(resetPasswordRequestSchema),
+    authController.resetPassword
+);
+
+// Plan Routes
+WebsiteApi.get(
+    "/plan",
+    validator.query(listingPlanRequest),
+    planController.listing
+);
+
+// Subscription Routes
+WebsiteApi.post("/subscription", subscriptionController.createSubscription);
+WebsiteApi.post("/webhook", subscriptionController.handleSubscriptionWebhook);
+
+// Front Image Routes
+WebsiteApi.get(
+    "/front-image",
+    validator.query(getFrontImageValidation),
+    websiteFrontImageController.getFrontImage
+);
 
 export default WebsiteApi;

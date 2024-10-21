@@ -1,8 +1,7 @@
 import { Databasetype } from "../common/interfaces";
 import mongoose from "mongoose";
 import getEnvVar from "../helpers/util";
-
-const mysql = require("mysql2/promise");
+import mysql from "mysql2/promise";
 
 export default async function connectWebsiteDatabase() {
     const options = {

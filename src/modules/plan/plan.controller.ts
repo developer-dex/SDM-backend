@@ -1,0 +1,90 @@
+import { NextFunction, Request, Response } from "express";
+import { ResponseService } from "../../helpers/response.service";
+import { StatusCodes } from "../../common/responseStatusEnum";
+import { PlanService } from "./plan.service";
+
+export class PlanController {
+    private responseService: ResponseService;
+    private planService: PlanService;
+
+    constructor() {
+        this.responseService = new ResponseService();
+        this.planService = new PlanService();
+    }
+
+    createPlan = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+
+        try {
+            const createdPlan = await this.planService.createPlan(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Request for schedule demo created successfully",
+                        createdPlan
+                    )
+                );
+        } catch (error) {
+            return next(error);
+        }
+    };
+
+    listing = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const isAdminSide = req.query.isAdminSide === "true";
+            console.log("isAdminSide: ", isAdminSide);
+            const plans = await this.planService.listing(isAdminSide);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Plans fetched successfully",
+                        plans
+                    )
+                );
+        } catch (error) {
+            return next(error);
+        }
+    };
+
+    changePlanStatus = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { planId, userId } = req.body;
+            const planData = await this.planService.changePlanStatus(
+                planId,
+                userId
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Plan status changed successfully",
+                        planData
+                    )
+                );
+        } catch (error) {
+            return next(error);
+        }
+    };
+}
+
+export const planController = new PlanController();

@@ -3,7 +3,7 @@ import { AuthMiddleware } from "../middlewares/auth.middleware";
 
 const ClientDashboardApi: Router = Router();
 
-const authMiddleware = new AuthMiddleware();
+// const authMiddleware = new AuthMiddleware();
 
 // ClientDashboardApi.use(authMiddleware.verifyjwtToken);
 

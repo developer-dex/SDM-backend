@@ -2,6 +2,7 @@ import nodeMailer from "nodemailer";
 import getEnvVar from "./util";
 
 export default async function sendMail(email: any, subject: any, text: any) {
+    console.log("email: ", email, "subject: ", subject, "text: ", text);
     const transporter = nodeMailer.createTransport({
         service: "gmail",
         auth: {
@@ -16,6 +17,7 @@ export default async function sendMail(email: any, subject: any, text: any) {
     };
     transporter.sendMail(options, (error, result) => {
         if (error) {
+            console.log("email error", error)
         } else {
             console.log("Mail sent:", result.response);
         }

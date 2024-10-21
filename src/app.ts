@@ -3,15 +3,20 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import connectWebsiteDatabase, {
-    connectClientDatabase,
-} from "./config/databaseConfig";
+import connectWebsiteDatabase from "./config/databaseConfig";
+import { UPLOAD_PATH } from "./helpers/constants";
 
 /**
  * Make express app
  */
 const app: express.Application = express();
 app.set("view engine", "ejs");
+
+/**
+ * Serve static files
+ */
+// Serve static files from the UPLOAD_PATH directory
+app.use("/assets", express.static(UPLOAD_PATH));
 
 /**
  * Website Database Connection
@@ -31,6 +36,21 @@ app.use(cors());
  * API routes
  */
 app.use("/", MainRoute);
+
+/**
+ * Handle the error in middleware request validation error
+ */
+app.use((err, req, res, next) => {
+    if (err && err.error && err.error.isJoi) {
+        console.log("app error", err.error);
+        return res.status(400).json({
+            responseStatus: "fail",
+            responseCode: 400,
+            responseMessage: err.error.details[0].message,
+        });
+    }
+    next(err);
+});
 
 /**
  *  App Listing
