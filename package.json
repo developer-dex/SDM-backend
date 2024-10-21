@@ -1,7 +1,7 @@
 {
-    "name": "aruku-backend",
+    "name": "sdm-backend",
     "version": "1.0.0",
-    "description": "This is the Aruku app.",
+    "description": "This is the SDM app.",
     "main": "app.ts",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
@@ -12,7 +12,7 @@
         "prebuild": "npm run clean",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "build": "netlify-lambda build functions",
+        "build": "npm run prod && node ./build/app.js",
         "format": "prettier --write .",
         "git": "git checkout development && git pull origin development && git merge feature/admin && git push origin development && git checkout main && git pull origin main && git merge development && git push origin main"
     },
@@ -47,13 +47,10 @@
         "mongoose": "^7.4.3",
         "multer": "^1.4.5-lts.1",
         "mysql2": "^3.11.3",
-        "netlify-cli": "^17.37.1",
-        "netlify-lambda": "^2.0.16",
         "nodemailer": "^6.9.15",
         "nodemon": "^3.0.1",
         "razorpay": "^2.9.4",
         "rimraf": "^5.0.5",
-        "serverless-http": "^3.2.0",
         "swagger-ui-express": "^5.0.0"
     }
 }

@@ -8,6 +8,7 @@
 
 # Compile code store
 /dist
+/build
 
 /sync_code.sh
 /src/assets/frontImages
