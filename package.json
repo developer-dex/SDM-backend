@@ -8,11 +8,11 @@
         "clean": "rimraf dist",
         "rimraf": "./node_modules/rimraf/bin.js",
         "dev": "nodemon --config nodemon.json --exec npx ts-node ./src/app.ts",
-        "build": "tsc --build",
+        "prod": "tsc --build",
         "prebuild": "npm run clean",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
-        "prod": "run build && node ./dist/app.js",
+        "build": "run build && node ./dist/app.js",
         "format": "prettier --write .",
         "git": "git checkout development && git pull origin development && git merge feature/admin && git push origin development && git checkout main && git pull origin main && git merge development && git push origin main"
     },
