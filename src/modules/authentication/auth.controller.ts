@@ -21,7 +21,35 @@ export class AuthController {
     login = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ILoginRequest = req.body;
         try {
-            const responseData = await this.authService.login(requestData);
+            const isExistUser = await this.authService.isExistUser(requestData.email);
+            console.log("isExistUser", isExistUser)
+            if (!isExistUser) {
+                return res
+                    .status(403)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.FORBIDDEN,
+                            "User already exist"
+                        )
+                    )
+            }
+            const isPasswordCorrect = this.authService.passwordMatch(
+                requestData.password,
+                isExistUser.password
+            );
+            if(!isPasswordCorrect){
+                return res
+                .status(StatusCodes.NOT_ACCEPTABLE)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.NOT_ACCEPTABLE,
+                        "Incorrect password"
+                    )
+                )
+            }
+            const responseData = await this.authService.login(isExistUser._id.toString(), {req, res});
             return res
                 .status(200)
                 .send(
@@ -52,14 +80,15 @@ export class AuthController {
                         )
                     )
             }
-            await this.authService.signUp(requestData);
+            const signUpToken = await this.authService.signUp(requestData);
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithoutData(
+                    this.responseService.responseWithData(
                         true,
                         StatusCodes.OK,
-                        "Signup successfully"
+                        "Signup successfully",
+                         signUpToken
                     )
                 );
         } catch (error) {
