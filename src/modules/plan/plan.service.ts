@@ -15,13 +15,13 @@ export class PlanService {
     createPlan = async (planCreatePayload: any) => {
         try {
             const plan = await this.razorpay.plans.create({
-                period: planCreatePayload.period,
+                period: planCreatePayload.plan_type,
                 interval: planCreatePayload.interval,
                 item: {
-                    name: planCreatePayload.planName,
-                    amount: planCreatePayload.amount,
+                    name: planCreatePayload.plan_name,
+                    amount: planCreatePayload.price,
                     currency: "INR",
-                    description: planCreatePayload.description,
+                    description: planCreatePayload.plan_name,
                 },
                 // ,
                 // notes: {
@@ -29,12 +29,14 @@ export class PlanService {
                 //   notes_key_2: "Tea, Earl Grey… decaf."
                 // }
             });
+            console.log(plan.id);
             return await Plan.create({
                 ...planCreatePayload,
-                razorpayPlanId: plan.id,
-                currency: getEnvVar("CURRENCY"),
+                product_id: plan.id,
+                // currency: getEnvVar("CURRENCY"),
             });
         } catch (error) {
+            console.log(error);
             throw new Error(
                 `Failed to create plan: ${error.error?.description || error.message}`
             );
@@ -49,7 +51,7 @@ export class PlanService {
 
     changePlanStatus = async (planId: string, status: string) => {
         const currentPlanStatus = await Plan.findOne({
-            razorpayPlanId: planId,
+            product_id: planId,
         });
         if (!currentPlanStatus) {
             throw new Error("Plan not found");
@@ -62,7 +64,7 @@ export class PlanService {
             { status: newPlanStatus },
             {
                 where: {
-                    razorpayPlanId: planId,
+                    product_id: planId,
                 },
             }
         );

@@ -17,14 +17,14 @@ export class SubscriptionService {
             throw new Error("Plan not found");
         }
         const subscription = await this.razorpay.subscriptions.create({
-            plan_id: plan.razorpayPlanId,
+            plan_id: plan.product_id,
             customer_notify: 1,
             total_count: 12,
         });
 
         return {
             subscriptionId: subscription.id,
-            shortUrl: subscription.short_url,
+            shortUrl: subscription.short_url, 
         };
     };
 }

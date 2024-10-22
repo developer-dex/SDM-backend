@@ -1,45 +1,46 @@
 import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-export const PlanSchema = new mongoose.Schema({
-    razorpayPlanId: {
-        type: String,
-        required: true, // Razorpay plan ID returned from Razorpay
-        unique: true,
-    },
-    planName: {
-        type: String,
-        required: true, // Name of the plan (e.g., "Premium Plan")
-    },
-    amount: {
-        type: Number,
-        required: true, // Amount in paise (store as integer, e.g., 500 INR = 50000 paise)
-    },
-    currency: {
-        type: String,
-        required: true, // Currency code (e.g., "INR")
-    },
-    period: {
-        type: String,
-        required: true, // Period for the plan (e.g., "monthly", "weekly")
-    },
-    interval: {
-        type: Number,
-        required: true, // Interval (e.g., every 1 month)
-    },
-    status: {
-        type: String,
-        default: "active", // Plan status (e.g., "active", "inactive")
-    },
-    description: {
-        type: String,
-        default: "",
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now, // Timestamp when the plan was created
-    },
+// Define the feature schema
+const featureSchema = new Schema({
+    feature_name: { type: String, required: true },
+    is_available: { type: Boolean, required: true },
 });
 
+// Define the main schema for product plans
+const PlanSchema = new Schema(
+    {
+        product_id: { type: String, required: true }, // Unique product ID
+        plan_type: {
+            type: String,
+            required: true,
+        },
+        plan_name: { type: String, required: true }, // Plan name: e.g., STANDARD, PROFESSIONAL
+        price: { type: Number, required: true },
+        features: [featureSchema],
+        min_users: { type: Number, required: false },
+        max_users: { type: Number, required: false },
+        currency: {
+            type: String,
+            required: true, // Currency code (e.g., "INR")
+        },
+        interval: {
+            type: Number,
+            required: true, // Interval (e.g., every 1 month)
+        },
+        status: {
+            type: String,
+            default: "active", // Plan status (e.g., "active", "inactive")
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now, // Timestamp when the plan was created
+        },
+    },
+    { timestamps: true }
+);
+
+// Create and export the model
 const Plan = mongoose.model("Plan", PlanSchema);
 
 export default Plan;
