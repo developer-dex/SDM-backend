@@ -12,10 +12,22 @@ const SubscriptionSchema: Schema = new Schema(
             ref: "Plan",
             required: true,
         },
+        orderId: {
+            type: String,
+            required: false,
+        },
+        purchaseId: {
+            type: String,
+            required: false,
+        },
+        accountId: {
+            type: String,
+            required: false,
+        },
         status: {
             type: String,
-            enum: ["active", "expired", "cancelled"],
-            default: "active",
+            enum: ["active", "expired", "cancelled", "pending"],
+            default: "pending",
             required: true,
         },
         startDate: {

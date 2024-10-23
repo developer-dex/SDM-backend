@@ -26,13 +26,7 @@ export class AuthService {
 
     login = async (
         userId: string,
-        iRevBase: {req: Request, res: Response}
     ): Promise<ILoginResponse> => {
-        iRevBase.res.status(200).send({
-            success: true,
-            message: "User logged in successfully",
-            token: this.jwtService.generateToken(userId),
-        })
         return this.generateLogInSignUpResponse(userId);
     };
 

@@ -1,6 +1,7 @@
 import Razorpay from "razorpay";
 import Plan from "../../models/Plans";
-
+import Subscription from "../../models/Subscription";
+import mongoose from "mongoose";
 export class SubscriptionService {
     private razorpay: Razorpay;
     constructor() {
@@ -10,9 +11,10 @@ export class SubscriptionService {
         });
     }
 
-    createSubscription = async (subscriptionCreatePayload: any) => {
-        const { planId, userId } = subscriptionCreatePayload;
-        const plan = await Plan.findOne({ razorpayPlanId: planId });
+    createSubscription = async (planId: string, userId: string) => {
+        
+        const plan = await Plan.findOne({ product_id: planId });
+        // console.log("plan", plan);
         if (!plan) {
             throw new Error("Plan not found");
         }
@@ -20,8 +22,20 @@ export class SubscriptionService {
             plan_id: plan.product_id,
             customer_notify: 1,
             total_count: 12,
+            notes: {
+                userId: userId.toString()
+            },
         });
 
+
+        // create user subscription entry
+        // await Subscription.create({
+        //     userId: new mongoose.Types.ObjectId(userId),
+        //     planId: new mongoose.Types.ObjectId(planId),
+        //     status: 'Pending',
+        // });
+
+        console.log("subscription", JSON.stringify(subscription));
         return {
             subscriptionId: subscription.id,
             shortUrl: subscription.short_url, 

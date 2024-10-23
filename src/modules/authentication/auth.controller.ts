@@ -21,35 +21,39 @@ export class AuthController {
     login = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ILoginRequest = req.body;
         try {
-            const isExistUser = await this.authService.isExistUser(requestData.email);
-            console.log("isExistUser", isExistUser)
+            const isExistUser = await this.authService.isExistUser(
+                requestData.email
+            );
+            console.log("isExistUser", isExistUser);
             if (!isExistUser) {
                 return res
-                    .status(403)
+                    .status(200)
                     .send(
                         this.responseService.responseWithoutData(
                             false,
                             StatusCodes.FORBIDDEN,
-                            "User already exist"
+                            "User dose not exist"
                         )
-                    )
+                    );
             }
             const isPasswordCorrect = this.authService.passwordMatch(
                 requestData.password,
                 isExistUser.password
             );
-            if(!isPasswordCorrect){
+            if (!isPasswordCorrect) {
                 return res
-                .status(StatusCodes.NOT_ACCEPTABLE)
-                .send(
-                    this.responseService.responseWithoutData(
-                        false,
-                        StatusCodes.NOT_ACCEPTABLE,
-                        "Incorrect password"
-                    )
-                )
+                    .status(StatusCodes.OK)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.NOT_ACCEPTABLE,
+                            "Incorrect password"
+                        )
+                    );
             }
-            const responseData = await this.authService.login(isExistUser._id.toString(), {req, res});
+            const responseData = await this.authService.login(
+                isExistUser._id.toString()
+            );
             return res
                 .status(200)
                 .send(
@@ -61,14 +65,24 @@ export class AuthController {
                     )
                 );
         } catch (error) {
-            return next(error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
     };
 
     signup = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ISignUpRequest = req.body;
         try {
-            const isExistUser = await this.authService.isExistUser(requestData.email);
+            const isExistUser = await this.authService.isExistUser(
+                requestData.email
+            );
             if (isExistUser) {
                 return res
                     .status(403)
@@ -78,7 +92,7 @@ export class AuthController {
                             StatusCodes.FORBIDDEN,
                             "User already exist"
                         )
-                    )
+                    );
             }
             const signUpToken = await this.authService.signUp(requestData);
             return res
@@ -88,11 +102,19 @@ export class AuthController {
                         true,
                         StatusCodes.OK,
                         "Signup successfully",
-                         signUpToken
+                        signUpToken
                     )
                 );
         } catch (error) {
-            return next(error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
     };
 
@@ -103,7 +125,9 @@ export class AuthController {
     ) => {
         const requestData: IForgetPasswordRequest = req.body;
         try {
-            const isExistUser = await this.authService.isExistUser(requestData.email);
+            const isExistUser = await this.authService.isExistUser(
+                requestData.email
+            );
             await this.authService.forgetPassword(requestData, isExistUser._id);
             return res
                 .status(200)
@@ -115,27 +139,40 @@ export class AuthController {
                     )
                 );
         } catch (error) {
-            console.log("ERROR", error)
-            return next(error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
     };
 
     resetPassword = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: IResetPasswordRequest = req.body;
         try {
-           const isValidRequest = await this.authService.isValidResetPasswordRequest(requestData.reset_password_token);
-           if(!isValidRequest) {
-               return res
-                .status(403)
-                .send(
-                    this.responseService.responseWithoutData(
-                        false,
-                        StatusCodes.FORBIDDEN,
-                        "This link has been expired. Please try again"
-                    )
-                )
-           } 
-           await this.authService.resetPassword(requestData, isValidRequest.email);
+            const isValidRequest =
+                await this.authService.isValidResetPasswordRequest(
+                    requestData.reset_password_token
+                );
+            if (!isValidRequest) {
+                return res
+                    .status(403)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.FORBIDDEN,
+                            "This link has been expired. Please try again"
+                        )
+                    );
+            }
+            await this.authService.resetPassword(
+                requestData,
+                isValidRequest.email
+            );
             return res
                 .status(200)
                 .send(
@@ -146,7 +183,15 @@ export class AuthController {
                     )
                 );
         } catch (error) {
-            return next(error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
     };
 }

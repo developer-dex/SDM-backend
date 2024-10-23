@@ -35,7 +35,15 @@ export class ScheduleDemoController {
                     )
                 );
         } catch (error) {
-            return next(error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
     };
 }
