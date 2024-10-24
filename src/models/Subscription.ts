@@ -16,7 +16,7 @@ const SubscriptionSchema: Schema = new Schema(
             type: String,
             required: false,
         },
-        purchaseId: {
+        subscriptionId: {
             type: String,
             required: false,
         },
@@ -26,7 +26,7 @@ const SubscriptionSchema: Schema = new Schema(
         },
         status: {
             type: String,
-            enum: ["active", "expired", "cancelled", "pending"],
+            enum: ["active", "expired", "cancelled", "pending", "created"],
             default: "pending",
             required: true,
         },
@@ -37,10 +37,11 @@ const SubscriptionSchema: Schema = new Schema(
         },
         plan_expired_at: {
             type: Date,
-            required: true,
+            required: false,
         },
         cancelledAt: {
             type: Date,
+            required: false,
         },
     },
     {

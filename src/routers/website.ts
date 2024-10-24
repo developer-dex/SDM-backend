@@ -31,6 +31,10 @@ WebsiteApi.post(
     scheduleDemoController.scheduleDemoRequest
 );
 
+WebsiteApi.get("/health-check", (req, res) => {
+    res.send("Hello World");
+});
+
 WebsiteApi.post(
     "/contact-us",
     validator.body(contactUsRequest),
@@ -71,6 +75,7 @@ WebsiteApi.get(
 // Subscription Routes
 WebsiteApi.post("/subscription",authMiddleware.verifyjwtToken, subscriptionController.createSubscription);
 WebsiteApi.post("/webhook", subscriptionController.handleSubscriptionWebhook);
+WebsiteApi.post("/subscription-success", subscriptionController.subscriptionSuccess);
 
 // Front Image Routes
 WebsiteApi.get(

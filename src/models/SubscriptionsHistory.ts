@@ -12,10 +12,22 @@ const SubscriptionHistorySchema: Schema = new Schema(
             ref: "Plan",
             required: true,
         },
+        orderId: {
+            type: String,
+            required: false,
+        },
+        subscriptionId: {
+            type: String,
+            required: false,
+        },
+        accountId: {
+            type: String,
+            required: false,
+        },
         status: {
             type: String,
-            enum: ["active", "expired", "cancelled"],
-            default: "active",
+            enum: ["active", "expired", "cancelled", "pending", "created"],
+            default: "pending",
             required: true,
         },
         startDate: {
@@ -25,10 +37,11 @@ const SubscriptionHistorySchema: Schema = new Schema(
         },
         plan_expired_at: {
             type: Date,
-            required: true,
+            required: false,
         },
         cancelledAt: {
             type: Date,
+            required: false,
         },
     },
     {

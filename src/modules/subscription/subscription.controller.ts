@@ -2,8 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ResponseService } from "../../helpers/response.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import { SubscriptionService } from "./subscription.service";
-import Subscription from "../../models/Subscription";
-import webhooks from "razorpay/dist/types/webhooks";
+import getEnvVar from "../../helpers/util";
 
 export class SubscriptionController {
     private responseService: ResponseService;
@@ -23,8 +22,12 @@ export class SubscriptionController {
         const token_payload = req.token_payload;
         console.log("token_payload", token_payload);
         try {
+            const isPlanExist = await this.subscriptionService.existPlan(requestData.planId);
+            if(!isPlanExist) {
+                return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Plan not found"));
+            }
             const subscriptionData =
-                await this.subscriptionService.createSubscription(requestData.planId, token_payload.data._id) ;
+                await this.subscriptionService.createSubscription(token_payload.data._id, isPlanExist) ;
             return res
                 .status(200)
                 .send(
@@ -57,6 +60,8 @@ export class SubscriptionController {
         try {
             const webhookData = req.body;
 
+
+            await this.subscriptionService.handleSubscriptionWebhook(webhookData);
             // Verify the webhook signature or authenticity here
             // This step depends on your payment provider's webhook implementation
             
@@ -64,11 +69,11 @@ export class SubscriptionController {
             // console.log("req.body.payload", req.body.payload);
             // console.log("req.body.payload.payment.entity.status", req.body.payload.payment);
             // console.log("req.body.payload.payment.entity",  req.body.payload.payment.entity);
-            console.log("webhook:::::::::::",  JSON.stringify(webhookData));
-            console.log("?//////////////////////////////////////////////////////")
-            console.log("?//////////////////////////////////////////////////////")
-            console.log("?//////////////////////////////////////////////////////")
-            console.log("?//////////////////////////////////////////////////////")
+            // console.log("webhook:::::::::::",  JSON.stringify(webhookData));
+            // console.log("?//////////////////////////////////////////////////////")
+            // console.log("?//////////////////////////////////////////////////////")
+            // console.log("?//////////////////////////////////////////////////////")
+            // console.log("?//////////////////////////////////////////////////////")
 
 
             // if (req.body.payload.payment.entity.status === "actived") {
@@ -103,9 +108,9 @@ export class SubscriptionController {
             //     //     );
             // }
 
-            return res.status(200).send("Webhook received");
+            return res.status(200).send("subscription webhook handled successfully");
         } catch (error) {
-            console.log("ERROR", error);
+            console.log("subscription webhook", error);
             return res
                 .status(200)
                 .send(
@@ -117,6 +122,19 @@ export class SubscriptionController {
                 );
         }
     };
+
+    subscriptionSuccess = async (req: Request, res: Response, next: NextFunction) => {
+        console.log("subscription success", req.body);
+        try {
+            await this.subscriptionService.subscriptionSuccess(req.body);
+            return res.redirect(getEnvVar("FRONTEND_URL") + "/home");
+          
+        } catch (error) {
+            console.log("subscription success", error);
+            return res.status(200).send("subscription success");
+        }
+    }
+
 }
 
 export const subscriptionController = new SubscriptionController();
