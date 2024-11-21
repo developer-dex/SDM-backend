@@ -4,6 +4,7 @@ import { EPlanStatus } from "./plan.interface";
 import getEnvVar from "../../helpers/util";
 import { retrieveData, executeSqlQuery } from "../../config/databaseConfig";
 
+
 export class PlanService {
     public razorpay: Razorpay;
     constructor() {
@@ -46,6 +47,8 @@ export class PlanService {
         if (!isAdminSide) {
             query += ` WHERE status = '${EPlanStatus.ACTIVE}'`;
         }
+
+        console.log("query: ", query);
         const plans = await retrieveData(query);
         return plans;
     };
@@ -67,4 +70,18 @@ export class PlanService {
         const plansQuery = `SELECT * FROM Plans`;
         return await retrieveData(plansQuery);
     };
+
+    createOffer = async (offerCreatePayload: any) => {
+        const offerData = {
+            name: offerCreatePayload.name,
+            code: offerCreatePayload.code,
+            type: offerCreatePayload.type,
+            discount: offerCreatePayload.discount,
+            plans: offerCreatePayload.plans,
+            status: offerCreatePayload.status,
+            expire_by: Math.floor(new Date(offerCreatePayload.expire_by).getTime() / 1000)
+        };
+        // const offer: any = await this.razorpay.offer.create(offerData);
+        // return offer;
+    }
 }

@@ -389,7 +389,11 @@ export async function executeSqlQuery(
 }
 
 export async function retrieveData(sqlQuery: string): Promise<any[]> {
-    console.log("sqlQuery111:::",sqlQuery);
+
+    if (superAdminConnection) {
+        console.log("Connection already initialized.");
+        // return;
+    }
     if (!superAdminConnection) {
         console.log("Database connection is not initialized.");
         return [];
@@ -397,7 +401,6 @@ export async function retrieveData(sqlQuery: string): Promise<any[]> {
 
     return new Promise((resolve, reject) => {
         const request = new Request(sqlQuery, (err) => {
-            console.log("sqlQuery:::",sqlQuery);
             if (err) {
                 console.log("Failed to execute query:", err);
                 reject(err);

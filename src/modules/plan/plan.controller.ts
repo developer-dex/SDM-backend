@@ -110,6 +110,19 @@ export class PlanController {
                 );
         }
     };
+
+    createOffer = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const requestData = req.body;
+            const createdOffer = await this.planService.createOffer(requestData);
+        } catch (error) {
+            
+        }
+    }
 }
 
 export const planController = new PlanController();

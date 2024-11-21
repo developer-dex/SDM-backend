@@ -2,7 +2,14 @@ import { NextFunction, Request, Response } from "express";
 import { ResponseService } from "../../helpers/response.service";
 import { SuperAdminService } from "./superAdmin.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
-import { IChangeNotificationStatusRequest, IClientRequest, IGetAllClientsRequest, ISignInRequest } from "./superAdmin.interface";
+import {
+    IChangeNotificationStatusRequest,
+    ICreateClientRequest,
+    ICreateLicenseRequest,
+    IGetAllUsersRequest,
+    ISignInRequest,
+    IUserRequest,
+} from "./superAdmin.interface";
 import json2csv from "json2csv";
 
 export class SuperAdminController {
@@ -14,40 +21,55 @@ export class SuperAdminController {
         this.superAdminService = new SuperAdminService();
     }
 
-    signIn = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
+    signIn = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ISignInRequest = req.body;
         try {
             const result = await this.superAdminService.signIn(requestData);
-            if (!result) {
+            if (!result || result.length === 0) {
                 return res
                     .status(StatusCodes.BAD_REQUEST)
-                    .send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Invalid email or password"));
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.BAD_REQUEST,
+                            "Invalid email or password"
+                        )
+                    );
             }
             return res
                 .status(StatusCodes.OK)
-                .send(this.responseService.responseWithData(false, StatusCodes.OK, "Sign in successfully", result));
+                .send(
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Sign in successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("superAdmin signIn ERROR", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
-    getAllClients = async (
+    getAllUsers = async (
         req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
         const { limit, page, searchParameter } =
-            req.query as unknown as IGetAllClientsRequest;
+            req.query as unknown as IGetAllUsersRequest;
         const token_payload = req.token_payload;
         try {
-            const clients = await this.superAdminService.getAllClients(
+            const clients = await this.superAdminService.getAllUsers(
                 page,
                 limit,
                 searchParameter
@@ -76,15 +98,23 @@ export class SuperAdminController {
         }
     };
 
-    deleteClient = async (
+    deleteUser = async (
         req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
         const { userId } = req.params;
-        const token_payload = req.token_payload;
         try {
-            await this.superAdminService.deleteClient(Number(userId));
+            await this.superAdminService.deleteUser(Number(userId));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "User deleted successfully"
+                    )
+                );
         } catch (error) {}
     };
 
@@ -96,7 +126,7 @@ export class SuperAdminController {
         const token_payload = req.token_payload;
         console.log("token_payload:::", token_payload);
         const userId = token_payload.data._id;
-        const requestData: IClientRequest = req.body;
+        const requestData: IUserRequest = req.body;
         const whereConfition = `email = '${requestData.email}'`;
         try {
             // const isExistClient = await this.superAdminService.isExistClient(
@@ -113,17 +143,28 @@ export class SuperAdminController {
             //             )
             //         );
             // }
-    
-            await this.superAdminService.updateClient(requestData, userId);
+
+            await this.superAdminService.updateUser(requestData);
             return res
                 .status(200)
-                .send(this.responseService.responseWithoutData(true, StatusCodes.OK, "User updated successfully"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "User updated successfully"
+                    )
+                );
         } catch (error) {
             return res
                 .status(200)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-
     };
 
     addClient = async (
@@ -161,11 +202,10 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const clients = await this.superAdminService.getAllClients();
+        const clients = await this.superAdminService.getAllUsers();
         const csv = json2csv.parse(clients);
         return res.status(200).send(csv);
     };
-
 
     // Notification Module
     getAllNotifications = async (
@@ -208,11 +248,288 @@ export class SuperAdminController {
         const requestData: IChangeNotificationStatusRequest = req.body;
         try {
             await this.superAdminService.changeNotificationStatus(requestData);
-            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Notification status changed successfully"));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Notification status changed successfully"
+                    )
+                );
         } catch (error) {
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
+
+    // Client Management
+
+    getAllClients = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const {
+            limit,
+            page,
+            searchParameter,
+            company_name,
+            company_address,
+            start_date,
+            end_date,
+            payment_method,
+            status,
+        } = req.query as unknown as IGetAllUsersRequest;
+        try {
+            const clients = await this.superAdminService.getAllClients(
+                limit,
+                page,
+                searchParameter,
+                company_name,
+                company_address,
+                start_date,
+                end_date,
+                payment_method,
+                status
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Clients fetched successfully",
+                        clients
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    createClient = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData: ICreateClientRequest = req.body;
+        try {
+            await this.superAdminService.createClient(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Client created successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    deleteClient = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { userId } = req.params;
+        try {
+            await this.superAdminService.deleteClient(Number(userId));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "User deleted successfully"
+                    )
+                );
+        } catch (error) {}
+    };
+
+    updateClient = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData: ICreateClientRequest = req.body;
+        try {
+            await this.superAdminService.updateClient(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Client updated successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    // Licenses Management
+    getAllLicenses = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { page, limit } = req.query as unknown as {
+                page: number;
+                limit: number;
+            };
+            const licenses = await this.superAdminService.getAllLicenses(
+                page,
+                limit
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Licenses fetched successfully",
+                        licenses
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    createLicense = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData: ICreateLicenseRequest = req.body;
+        try {
+            await this.superAdminService.createLicense(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "License created successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    deleteLicense = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { licenseId } = req.params;
+        try {
+            await this.superAdminService.deleteLicense(Number(licenseId));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "License deleted successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    updateLicense = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData: ICreateLicenseRequest = req.body;
+        try {
+            await this.superAdminService.updateLicense(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "License updated successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 }
 
 export const superAdminController = new SuperAdminController();

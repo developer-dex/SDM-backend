@@ -79,54 +79,83 @@ export const addMuniteIntoCurrentTime = (minutes: number) => {
     const currentTime = new Date();
     const newTime = new Date(currentTime.getTime() + minutes * 60 * 1000);
     return newTime;
-}
-
+};
 
 export const generateRandomString = (length: number) => {
-    const characters =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
     const charactersLength = characters.length;
-  
-    for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * charactersLength);
-      result += characters.charAt(randomIndex);
-    }
-  
-    return result;
-  };
 
-  export const parseTimeInterval = (interval: string) => {
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charactersLength);
+        result += characters.charAt(randomIndex);
+    }
+
+    return result;
+};
+
+export const parseTimeInterval = (interval: string) => {
     const regex = /^(\d+)([smhdwMy])$/;
     const matches = interval.match(regex);
-  
+
     if (matches) {
-      const value = parseInt(matches[1], 10);
-      const unit = matches[2];
-  
-      switch (unit) {
-        case 's':
-          return { ms: value * 1000, long: value + ' ' + 'Seconds' };
-        case 'm':
-          return { ms: value * 60000, long: value + ' ' + 'Minutes' };
-        case 'h':
-          return { ms: value * 3600000, long: value + ' ' + 'Hours' };
-        case 'd':
-          return { ms: value * 86400000, long: value + ' ' + 'Days' };
-        case 'w':
-          return { ms: value * 604800000, long: value + ' ' + 'Weeks' };
-        case 'M':
-          return { ms: value * 2592000000, long: value + ' ' + 'Months' };
-        case 'y':
-          return { ms: value * 31536000000, long: value + ' ' + 'Years' };
-      }
+        const value = parseInt(matches[1], 10);
+        const unit = matches[2];
+
+        switch (unit) {
+            case "s":
+                return { ms: value * 1000, long: value + " " + "Seconds" };
+            case "m":
+                return { ms: value * 60000, long: value + " " + "Minutes" };
+            case "h":
+                return { ms: value * 3600000, long: value + " " + "Hours" };
+            case "d":
+                return { ms: value * 86400000, long: value + " " + "Days" };
+            case "w":
+                return { ms: value * 604800000, long: value + " " + "Weeks" };
+            case "M":
+                return { ms: value * 2592000000, long: value + " " + "Months" };
+            case "y":
+                return { ms: value * 31536000000, long: value + " " + "Years" };
+        }
     }
-  
-    return { ms: 0, long: '' }; // Invalid time interval format
-  };
 
+    return { ms: 0, long: "" }; // Invalid time interval format
+};
 
-  export const calculatePagination = (page: number, limit: number) => {
+export const calculatePagination = (page: number, limit: number) => {
     const offset = (page - 1) * limit;
     return { offset, limit };
-}
+};
+
+export const generateLicenseKey = (
+    plan: string,
+    pan: string,
+    issueDate: string,
+    expirationDate: string
+) => {
+    // Extracting components from the inputs
+    const planCode = plan.toUpperCase(); // Plan code in uppercase
+    const firstTwoLetters = pan.substring(0, 2).toUpperCase(); // First 2 letters of PAN
+    const thirdToSeventhLetters = pan.substring(2, 7).toUpperCase(); // 3rd to 7th letters of PAN
+    const eighthToTenthLetters = pan.substring(7, 10).toUpperCase(); // 8th to 10th letters of PAN
+
+    // Formatting issue date
+    const issueDateObj = new Date(issueDate);
+    const dayOfPurchase = String(issueDateObj.getDate()).padStart(2, "0"); // Day of purchase
+    const monthYearOfPurchase =
+        String(issueDateObj.getMonth() + 1).padStart(2, "0") +
+        String(issueDateObj.getFullYear()).slice(-2); // MMYY
+
+    // Formatting expiration date
+    const expirationDateObj = new Date(expirationDate);
+    const dayOfExpiry = String(expirationDateObj.getDate()).padStart(2, "0"); // Day of expiry
+    const expiryDateMMYY =
+        String(expirationDateObj.getMonth() + 1).padStart(2, "0") +
+        String(expirationDateObj.getFullYear()).slice(-2); // MMYY
+
+    // Constructing the license key
+    const licenseKey = `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${dayOfExpiry}-${expiryDateMMYY}`;
+
+    return licenseKey;
+};

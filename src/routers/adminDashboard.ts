@@ -8,14 +8,23 @@ import { createValidator } from "express-joi-validation";
 import { listingPlanRequest } from "../modules/plan/plan.validation";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { superAdminController } from "../modules/superAdmin/superAdmin.controller";
-import { addOrUpdateClientRequest, changeNotificationStatusRequest, getAllClientsRequest } from "../modules/superAdmin/superAdmin.validation";
+import {
+    addOrUpdateClientRequest,
+    changeNotificationStatusRequest,
+    createClientRequest,
+    createLicenseRequest,
+    deleteClientRequest,
+    deleteLicenseRequest,
+    getAllClientsRequest,
+    getAllusersRequest,
+    updateUserRequest,
+} from "../modules/superAdmin/superAdmin.validation";
 
 // TODO: admin.auth.middleware have to be added
 
 const validator = createValidator({ passError: true });
 
 const authMiddleware = new AuthMiddleware();
-
 
 const fileUploadMiddleware = new FileUploadMiddleware();
 const uploadFrontImageMiddleware: any =
@@ -29,8 +38,15 @@ AdminDashboardApi.post("/signin", superAdminController.signIn);
 AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 
 // Notification Module
-AdminDashboardApi.get("/notifications", superAdminController.getAllNotifications);
-AdminDashboardApi.patch("/notification", validator.body(changeNotificationStatusRequest), superAdminController.changeNotificationStatus);
+AdminDashboardApi.get(
+    "/notifications",
+    superAdminController.getAllNotifications
+);
+AdminDashboardApi.patch(
+    "/notification",
+    validator.body(changeNotificationStatusRequest),
+    superAdminController.changeNotificationStatus
+);
 
 AdminDashboardApi.patch(
     "/front-image",
@@ -45,27 +61,91 @@ AdminDashboardApi.get(
 
 // Plan Routes
 AdminDashboardApi.post("/plan", planController.createPlan);
-AdminDashboardApi.get("/plan",validator.query(listingPlanRequest),planController.listing);
+AdminDashboardApi.get(
+    "/plan",
+    validator.query(listingPlanRequest),
+    planController.listing
+);
 AdminDashboardApi.post("/plan/change-status", planController.changePlanStatus);
+AdminDashboardApi.post("/offer", planController.createOffer);
 
 // Support Ticket Routes
-AdminDashboardApi.get("/support-ticket", supportTicketController.getAllSupportTicket);
-AdminDashboardApi.patch("/support-ticket", supportTicketController.changeSupportTicketStatus);
-
-
-
+AdminDashboardApi.get(
+    "/support-ticket",
+    supportTicketController.getAllSupportTicket
+);
+AdminDashboardApi.patch(
+    "/support-ticket",
+    supportTicketController.changeSupportTicketStatus
+);
 
 // User Management Routes
-AdminDashboardApi.get("/users", validator.query(getAllClientsRequest), superAdminController.getAllClients);
+AdminDashboardApi.get(
+    "/users",
+    validator.query(getAllusersRequest),
+    superAdminController.getAllUsers
+);
 
-AdminDashboardApi.delete("/user/:userId/delete", superAdminController.deleteClient);
+AdminDashboardApi.delete(
+    "/user/:userId/delete",
+    validator.params(deleteClientRequest),
+    superAdminController.deleteUser
+);
 
-AdminDashboardApi.post("/user", validator.body(addOrUpdateClientRequest), superAdminController.addClient);
+AdminDashboardApi.post(
+    "/user",
+    validator.body(addOrUpdateClientRequest),
+    superAdminController.addClient
+);
 
-AdminDashboardApi.put("/user", validator.body(addOrUpdateClientRequest), superAdminController.updateUserData);
+AdminDashboardApi.put(
+    "/user",
+    validator.body(addOrUpdateClientRequest),
+    superAdminController.updateUserData
+);
 
+// Client Management routes
+AdminDashboardApi.get(
+    "/client",
+    validator.query(getAllClientsRequest),
+    superAdminController.getAllClients
+);
+AdminDashboardApi.post(
+    "/client",
+    validator.body(createClientRequest),
+    superAdminController.createClient
+);
+AdminDashboardApi.delete(
+    "/client/:clientId/delete",
+    validator.params(deleteClientRequest),
+    superAdminController.deleteClient
+);
+AdminDashboardApi.put(
+    "/client",
+    validator.body(updateUserRequest),
+    superAdminController.updateClient
+);
 
-
-
-// 
+// Licenses Management Routes
+AdminDashboardApi.get(
+    "/licenses",
+    validator.query(listingPlanRequest),
+    superAdminController.getAllLicenses
+);
+AdminDashboardApi.post(
+    "/license",
+    validator.body(createLicenseRequest),
+    superAdminController.createLicense
+);
+AdminDashboardApi.delete(
+    "/license/:licenseId/delete",
+    validator.params(deleteLicenseRequest),
+    superAdminController.deleteLicense
+);
+AdminDashboardApi.put(
+    "/license",
+    validator.body(createLicenseRequest),
+    superAdminController.updateLicense
+);
+//
 export default AdminDashboardApi;
