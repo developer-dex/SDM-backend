@@ -11,7 +11,7 @@ export interface ISignUpRequest {
 
 export interface ILoginResponse {
     authorization_token: string;
-    user_id: string;
+    user_id: number;
     redirect_url: string;
 }
 

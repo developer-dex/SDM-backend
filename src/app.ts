@@ -3,8 +3,8 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import connectWebsiteDatabase from "./config/databaseConfig";
-import { UPLOAD_PATH } from "./helpers/constants";
+import { SUPER_ADMIN_DATABASE, UPLOAD_PATH } from "./helpers/constants";
+import connectWebsiteDatabase, { connectClientDatabase, replicateTables } from "./config/databaseConfig";
 
 /**
  * Make express app
@@ -22,6 +22,18 @@ app.use("/assets", express.static(UPLOAD_PATH));
  * Website Database Connection
  */
 connectWebsiteDatabase();
+
+connectClientDatabase(SUPER_ADMIN_DATABASE);
+
+// replicateTables('DEMODATA', "DEMODATA3");
+/**
+ * Connect to SQLBASE Database
+ */
+// connectClientDatabase('CentralizedClientDB');
+
+// createDatabase('CentralizedClientDBTeste');
+
+// copyTableStructure('CentralizedClientDB', 'CentralizedClientDBTeste');
 
 /**
  * Client Database Connection

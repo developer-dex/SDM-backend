@@ -4,6 +4,7 @@ import { ResponseService } from "../helpers/response.service";
 import { ReasonMessage, StatusCodes } from "../common/responseStatusEnum";
 import getEnvVar from "../helpers/util";
 import User from "../models/User";
+import { executeSqlQuery, retrieveData } from "../config/databaseConfig";
 
 export class AuthMiddleware {
     constructor(private responseService = new ResponseService()) {}
@@ -28,8 +29,12 @@ export class AuthMiddleware {
         try {
             const decoded = jwt.verify(token, getEnvVar("JWT_SECRETKEY"));
             req.token_payload = decoded;
-            const user = await User.findById(decoded['data']._id);
-            req.user = user;
+            // console.log("decoded:::",decoded);
+            // const query = `SELECT * FROM ${decoded['data'].databaseName}.Users WHERE id = ${decoded['data'].id}`;
+            // const user = await retrieveData(query);
+            // if(user.length !== 0){
+            //     req.user = user[0];
+            // }
         } catch (err) {
             return res
                 .status(StatusCodes.UNAUTHORIZED)

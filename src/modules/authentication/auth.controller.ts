@@ -21,11 +21,11 @@ export class AuthController {
     login = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ILoginRequest = req.body;
         try {
-            const isExistUser = await this.authService.isExistUser(
+            const isExistUser: any = await this.authService.isExistUser(
                 requestData.email
             );
             console.log("isExistUser", isExistUser);
-            if (!isExistUser) {
+            if (!isExistUser[0]) {
                 return res
                     .status(200)
                     .send(
@@ -38,7 +38,7 @@ export class AuthController {
             }
             const isPasswordCorrect = this.authService.passwordMatch(
                 requestData.password,
-                isExistUser.password
+                isExistUser[0].password
             );
             if (!isPasswordCorrect) {
                 return res
@@ -52,7 +52,7 @@ export class AuthController {
                     );
             }
             const responseData = await this.authService.login(
-                isExistUser._id.toString()
+                isExistUser[0].id, isExistUser[0].databaseName
             );
             return res
                 .status(200)
@@ -83,17 +83,17 @@ export class AuthController {
             const isExistUser = await this.authService.isExistUser(
                 requestData.email
             );
-            if (isExistUser) {
-                return res
-                    .status(403)
-                    .send(
-                        this.responseService.responseWithoutData(
-                            false,
-                            StatusCodes.FORBIDDEN,
-                            "User already exist"
-                        )
-                    );
-            }
+            // if (isExistUser) {
+            //     return res
+            //         .status(403)
+            //         .send(
+            //             this.responseService.responseWithoutData(
+            //                 false,
+            //                 StatusCodes.FORBIDDEN,
+            //                 "User already exist"
+            //             )
+            //         );
+            // }
             const signUpToken = await this.authService.signUp(requestData);
             return res
                 .status(200)
@@ -106,6 +106,7 @@ export class AuthController {
                     )
                 );
         } catch (error) {
+            console.log("error:::", error);
             return res
                 .status(200)
                 .send(
@@ -128,7 +129,7 @@ export class AuthController {
             const isExistUser = await this.authService.isExistUser(
                 requestData.email
             );
-            await this.authService.forgetPassword(requestData, isExistUser._id);
+            await this.authService.forgetPassword(requestData, isExistUser[0].id);
             return res
                 .status(200)
                 .send(

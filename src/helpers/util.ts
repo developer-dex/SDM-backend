@@ -124,3 +124,9 @@ export const generateRandomString = (length: number) => {
   
     return { ms: 0, long: '' }; // Invalid time interval format
   };
+
+
+  export const calculatePagination = (page: number, limit: number) => {
+    const offset = (page - 1) * limit;
+    return { offset, limit };
+}

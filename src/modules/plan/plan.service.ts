@@ -2,6 +2,7 @@ import Plan from "../../models/Plans";
 import Razorpay from "razorpay";
 import { EPlanStatus } from "./plan.interface";
 import getEnvVar from "../../helpers/util";
+import { retrieveData, executeSqlQuery } from "../../config/databaseConfig";
 
 export class PlanService {
     public razorpay: Razorpay;
@@ -29,12 +30,9 @@ export class PlanService {
                 //   notes_key_2: "Tea, Earl Grey… decaf."
                 // }
             });
-            console.log(plan.id);
-            return await Plan.create({
-                ...planCreatePayload,
-                product_id: plan.id,
-                // currency: getEnvVar("CURRENCY"),
-            });
+            const insertQuery = `INSERT INTO Plans (plan_name, plan_type, interval, price, product_id, features, min_users, max_users, currency) VALUES ('${planCreatePayload.plan_name}', '${planCreatePayload.plan_type}', '${planCreatePayload.interval}', '${planCreatePayload.price}', '${plan.id}', '${JSON.stringify(planCreatePayload.features)}', '${planCreatePayload.min_users}', '${planCreatePayload.max_users}', '${getEnvVar("CURRENCY")}')`;
+            return await executeSqlQuery(insertQuery);
+            
         } catch (error) {
             console.log(error);
             throw new Error(
@@ -44,29 +42,29 @@ export class PlanService {
     };
 
     listing = async (isAdminSide: boolean) => {
-        const query = isAdminSide ? {} : { status: EPlanStatus.ACTIVE };
-        const plans = await Plan.find(query);
+        let query = 'SELECT * FROM Plans';
+        if (!isAdminSide) {
+            query += ` WHERE status = '${EPlanStatus.ACTIVE}'`;
+        }
+        const plans = await retrieveData(query);
         return plans;
     };
 
     changePlanStatus = async (planId: string, status: string) => {
-        const currentPlanStatus = await Plan.findOne({
-            product_id: planId,
-        });
-        if (!currentPlanStatus) {
+
+        const query = `SELECT * FROM Plans WHERE product_id = '${planId}'`;
+        const currentPlanStatus = await retrieveData(query);
+        if (!currentPlanStatus[0]) {
             throw new Error("Plan not found");
         }
         const newPlanStatus =
-            currentPlanStatus.status === EPlanStatus.ACTIVE
+            currentPlanStatus[0].status === EPlanStatus.ACTIVE
                 ? EPlanStatus.INACTIVE
                 : EPlanStatus.ACTIVE;
-        await Plan.updateOne(
-            { status: newPlanStatus },
-            {
-                where: {
-                    product_id: planId,
-                },
-            }
-        );
+        const updateQuery = `UPDATE Plans SET status = '${newPlanStatus}' WHERE product_id = '${planId}'`;
+        await executeSqlQuery(updateQuery);
+
+        const plansQuery = `SELECT * FROM Plans`;
+        return await retrieveData(plansQuery);
     };
 }

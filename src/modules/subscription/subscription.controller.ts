@@ -23,7 +23,7 @@ export class SubscriptionController {
         console.log("token_payload", token_payload);
         try {
             const isPlanExist = await this.subscriptionService.existPlan(requestData.planId);
-            if(!isPlanExist) {
+            if(!isPlanExist[0]) {
                 return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Plan not found"));
             }
             const subscriptionData =

@@ -8,3 +8,10 @@ export enum EWebsiteFromImage {
     PRICING = "pricing",
     FEATURES = "features",
 }
+
+
+export enum ESupportTicketStatus {
+    OPEN = "Open",
+    SOLVED = "Sloved",
+    ONGOING = "Ongoing",
+}

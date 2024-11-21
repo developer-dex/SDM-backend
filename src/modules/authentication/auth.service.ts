@@ -15,8 +15,11 @@ import ResetPassword from "../../models/ResetPassword";
 import { mailConfig } from "../../config/mail";
 import sendMail from "../../helpers/sendMail";
 import mongoose from "mongoose";
-import { RESET_PASSWORD_FRONT_URL } from "../../helpers/constants";
+import {
+    RESET_PASSWORD_FRONT_URL,
+    } from "../../helpers/constants";
 import { Request, Response } from "express";
+import { executeSqlQuery, retrieveData } from "../../config/databaseConfig";
 
 export class AuthService {
     private jwtService: JwtService;
@@ -24,23 +27,24 @@ export class AuthService {
         this.jwtService = new JwtService();
     }
 
-    login = async (
-        userId: string,
-    ): Promise<ILoginResponse> => {
-        return this.generateLogInSignUpResponse(userId);
+    login = async (userId: number, databaseName: string): Promise<ILoginResponse> => {
+        return this.generateLogInSignUpResponse(userId, databaseName);
     };
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
-        const newUser = await User.create({
-            ...signUpReqPayload,
-            password: bcryptjs.hashSync(signUpReqPayload.password),
-        });
-        return this.generateLogInSignUpResponse(newUser._id.toString());
+        const createUserQuery = `INSERT INTO Users (full_name, email, password) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}')`;
+        await executeSqlQuery(createUserQuery);
+
+        const newUserDetailsQuery = `SELECT * FROM Users WHERE email = '${signUpReqPayload.email}'`;
+        const newUserDetails = await retrieveData(
+                        newUserDetailsQuery
+        );
+        return this.generateLogInSignUpResponse(newUserDetails[0].id);
     };
 
     forgetPassword = async (
         forgetPasswordReqPayload: IForgetPasswordRequest,
-        userId: mongoose.Types.ObjectId
+        userId: number
     ) => {
         await this.deleteResetPasswordRecord(forgetPasswordReqPayload.email);
 
@@ -50,15 +54,12 @@ export class AuthService {
 
         const forgotPasswordURl = `${RESET_PASSWORD_FRONT_URL}/${forgotPasswordToken}`;
 
-        await ResetPassword.create({
-            userId,
-            email: forgetPasswordReqPayload.email,
-            token: forgotPasswordToken,
-            expired_at: new Date(
-                Date.now() +
-                    parseTimeInterval(mailConfig.passwordResetTokenExpire).ms
-            ),
-        });
+        const createResetPasswordQuery = `INSERT INTO ResetPassword (user_id, email, token, expired_at) VALUES ('${userId}', '${forgetPasswordReqPayload.email}', '${forgotPasswordToken}', '${new Date(    
+            Date.now() +
+                parseTimeInterval(mailConfig.passwordResetTokenExpire).ms
+        )}')`;
+        await executeSqlQuery(createResetPasswordQuery);
+           
 
         const emailData = {
             email: forgetPasswordReqPayload.email,
@@ -73,19 +74,14 @@ export class AuthService {
         resetPasswordReqPayload: IResetPasswordRequest,
         email: string
     ) => {
-        await User.updateOne(
-            { email },
-            {
-                password: bcryptjs.hashSync(
-                    resetPasswordReqPayload.new_password
-                ),
-            }
-        );
+        const updateUserPasswordQuery = `UPDATE Users SET password = '${bcryptjs.hashSync(resetPasswordReqPayload.new_password)}' WHERE email = '${email}'`;
+        await executeSqlQuery(updateUserPasswordQuery);
         await this.deleteResetPasswordRecord(email);
     };
 
     isExistUser = async (email: string) => {
-        const user = await User.findOne({ email });
+        const query = `SELECT * FROM Users WHERE email = '${email}'`;
+        const user = await retrieveData(query);
         return user;
     };
 
@@ -100,16 +96,23 @@ export class AuthService {
     };
 
     isValidResetPasswordRequest = async (token: string) => {
-        return await ResetPassword.findOne({ token });
+        const query = `SELECT * FROM ResetPassword WHERE token = '${token}'`;
+        const resetPasswordRecord = await retrieveData(
+                        query
+        );
+        return resetPasswordRecord[0];
     };
 
     private deleteResetPasswordRecord = async (email: string) => {
-        return await ResetPassword.deleteOne({ email });
+        const deleteResetPasswordQuery = `DELETE FROM ResetPassword WHERE email = '${email}'`;
+        await executeSqlQuery(deleteResetPasswordQuery);
+        // return await ResetPassword.deleteOne({ email });
     };
 
-    private generateLogInSignUpResponse = (userId: string) => {
+    private generateLogInSignUpResponse = (userId: number, databaseName?: string) => {
         let jwtTokenPayload: Record<string, any> = {
-            _id: userId,
+            id: userId,
+            databaseName: databaseName || null
         };
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),

@@ -1,3 +1,4 @@
+import { executeSqlQuery, retrieveData } from "../../config/databaseConfig";
 import { UPLOAD_PATH } from "../../helpers/constants";
 import getEnvVar, {
     formateFrontImagePath,
@@ -13,13 +14,13 @@ export class WebsiteFrontImageService {
         requestData: Record<string, any>,
         file: Express.Multer.File
     ): Promise<void> => {
-        const isExistImagePath = await FrontImage.findOne({
-            category: requestData.category,
-        });
+        const query = `SELECT * FROM FrontImages WHERE category = '${requestData.category}'`;   
+        const isExistImagePath = await retrieveData(query);
 
-        if (isExistImagePath) {
-            removeFile(isExistImagePath.imagePath);
-            await FrontImage.deleteOne({ category: requestData.category });
+        if (isExistImagePath[0]) {
+            removeFile(isExistImagePath[0].imagePath);
+            const deleteQuery = `DELETE FROM FrontImages WHERE category = '${requestData.category}'`;
+            await executeSqlQuery(deleteQuery);
         }
 
         await FrontImage.create({
@@ -31,11 +32,12 @@ export class WebsiteFrontImageService {
     getWebsiteFrontImageUrlByCategory = async (
         category: any
     ) => {
-        const frontImage = await FrontImage.findOne({ category });
+        const query = `SELECT * FROM FrontImages WHERE category = '${category}'`;
+        const frontImage = await retrieveData(query);
 
-        if (frontImage) {
+        if (frontImage[0]) {
             // Construct the full URL using the base URL from config and the image path
-            const relativePath = formateFrontImagePath(frontImage.imagePath);
+            const relativePath = formateFrontImagePath(frontImage[0].imagePath);
 
 
             return {
@@ -46,13 +48,15 @@ export class WebsiteFrontImageService {
     };
 
     getAllWebsiteFrontImages = async () => {
-        const frontImages = await FrontImage.find();
+        const query = `SELECT * FROM FrontImage`;
+        const frontImages = await retrieveData(query);
+        console.log(frontImages);
         const frontImagesWithFullUrl = frontImages.map((frontImage) => {
             const relativePath = formateFrontImagePath(frontImage.imagePath);
             const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
 
             return {
-                ...frontImage.toObject(),
+                ...frontImage,
                 imagePath: fullImagePath,
             };
         });

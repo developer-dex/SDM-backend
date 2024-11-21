@@ -52,6 +52,7 @@ export class PlanController {
         try {
             const isAdminSide = req.query.isAdminSide === "true";
             console.log("isAdminSide: ", isAdminSide);
+            
             const plans = await this.planService.listing(isAdminSide);
             return res
                 .status(200)
