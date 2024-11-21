@@ -7,6 +7,6 @@ const MainRoute = Router();
 
 MainRoute.use("/api", WebsiteApi);
 MainRoute.use("/api/client", ClientDashboardApi);
-MainRoute.use("/api/admin", AdminDashboardApi);
+MainRoute.use("/api/admin", AdminDashboardApi); 
 
 export default MainRoute;
