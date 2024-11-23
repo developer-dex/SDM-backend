@@ -44,3 +44,10 @@ export const listingPlanRequest = Joi.object({
         "boolean.base": "isAdminSide must be a boolean",
     }),
 });
+
+
+export const getAllLicensesRequest = Joi.object({
+    page: Joi.number().required(),
+    limit: Joi.number().required(),
+    searchParameter: Joi.string().optional(),
+});

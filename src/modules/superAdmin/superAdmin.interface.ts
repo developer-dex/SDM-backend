@@ -51,17 +51,18 @@ export interface ICreateClientRequest {
     plan_id: string;
     plan_type: string;
     cost: number;
+    id: number;
 }
 
 
 export interface ICreateLicenseRequest {
     license_id?: string;
-    user_email: string;
+    user_id: string;
     issue_date: string;
     expiry_date: string;
-    license_type: string;
+    // license_type: string;
     status: string;
-    company_id: string;
-    company_name: string;
-    company_pan: string;
+    // company_id: string;
+    // company_name: string;
+    // company_pan: string;
 }

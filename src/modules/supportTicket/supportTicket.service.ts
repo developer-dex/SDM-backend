@@ -1,6 +1,6 @@
 import { Model } from "mongoose";
 import SupportTicket from "../../models/SupportTicket";
-import { executeSqlQuery, retrieveData } from "../../config/databaseConfig";
+import { executeQuery, executeSqlQuery, retrieveData } from "../../config/databaseConfig";
 
 export class SupportTicketService {
     constructor() {}
@@ -28,8 +28,11 @@ JOIN
 
     getAllSupportTicket = async () => {
         const query = `SELECT * FROM SupportTickets`;
-        const supportTicketData = await retrieveData(query);
-        return supportTicketData;
+        const supportTicketData = await executeQuery(query);
+        return {
+            totalCount: supportTicketData.rows.length,
+            data: supportTicketData.rows
+        };
     };
 
     changeSupportTicketStatus = async (requestData: any) => {

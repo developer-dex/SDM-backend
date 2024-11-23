@@ -5,7 +5,7 @@ import { FileUploadMiddleware } from "../middlewares/fileupload.middleware";
 import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
 import { planController } from "../modules/plan/plan.controller";
 import { createValidator } from "express-joi-validation";
-import { listingPlanRequest } from "../modules/plan/plan.validation";
+import { getAllLicensesRequest, listingPlanRequest } from "../modules/plan/plan.validation";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { superAdminController } from "../modules/superAdmin/superAdmin.controller";
 import {
@@ -122,14 +122,14 @@ AdminDashboardApi.delete(
 );
 AdminDashboardApi.put(
     "/client",
-    validator.body(updateUserRequest),
+    validator.body(createClientRequest),
     superAdminController.updateClient
 );
 
 // Licenses Management Routes
 AdminDashboardApi.get(
     "/licenses",
-    validator.query(listingPlanRequest),
+    validator.query(getAllLicensesRequest),
     superAdminController.getAllLicenses
 );
 AdminDashboardApi.post(
@@ -147,5 +147,11 @@ AdminDashboardApi.put(
     validator.body(createLicenseRequest),
     superAdminController.updateLicense
 );
-//
+
+// Customer management routes
+AdminDashboardApi.get(
+    "/customer",
+    // validator.query(getAllClientsRequest),
+    superAdminController.getAllCustomers
+);
 export default AdminDashboardApi;

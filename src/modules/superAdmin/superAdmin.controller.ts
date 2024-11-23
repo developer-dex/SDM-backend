@@ -311,6 +311,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
+            console.log("superAdmin getAllClients ERROR", error);
             return res
                 .status(200)
                 .send(
@@ -380,6 +381,20 @@ export class SuperAdminController {
     ) => {
         const requestData: ICreateClientRequest = req.body;
         try {
+
+            // Check that updated pan number  OR gst numberis already exist in other client
+            const isPanNumberExist = await this.superAdminService.getDatabyConnection(`SELECT * FROM ClientManagement WHERE pan = '${requestData.pan_number}'`);
+            console.log("isPanNumberExist:::", isPanNumberExist[0].company_id, requestData.company_id);
+            if (isPanNumberExist[0].company_id === requestData.company_id) {
+                return res.status(StatusCodes.BAD_REQUEST).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Pan number already exist"));
+            }
+            // Also checek for the gst number is already exist in other client
+            const isGstNumberExist = await this.superAdminService.getDatabyConnection(`SELECT * FROM ClientManagement WHERE gst = '${requestData.gst_number}'`);
+            if (isGstNumberExist[0].company_id === requestData.company_id) {
+                return res.status(StatusCodes.BAD_REQUEST).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Gst number already exist"));
+            }
+
+
             await this.superAdminService.updateClient(requestData);
             return res
                 .status(200)
@@ -391,6 +406,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
+            console.log("superAdmin updateClient ERROR", error);
             return res
                 .status(200)
                 .send(
@@ -447,6 +463,7 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         const requestData: ICreateLicenseRequest = req.body;
+        console.log("requestData:::", requestData);
         try {
             await this.superAdminService.createLicense(requestData);
             return res
@@ -459,6 +476,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
+            console.log("superAdmin createLicense ERROR", error);
             return res
                 .status(200)
                 .send(
@@ -530,6 +548,30 @@ export class SuperAdminController {
                 );
         }
     };
+
+    // Customer Management
+
+    getAllCustomers = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        // const { limit, page } = req.query as unknown as IGetAllUsersRequest;
+        try {
+            const customers = await this.superAdminService.getAllCustomers();
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(true, StatusCodes.OK, "Customers fetched successfully", customers)
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                );
+        }
+    }
 }
 
 export const superAdminController = new SuperAdminController();

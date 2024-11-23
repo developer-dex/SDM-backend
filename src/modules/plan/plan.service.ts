@@ -2,7 +2,7 @@ import Plan from "../../models/Plans";
 import Razorpay from "razorpay";
 import { EPlanStatus } from "./plan.interface";
 import getEnvVar from "../../helpers/util";
-import { retrieveData, executeSqlQuery } from "../../config/databaseConfig";
+import { retrieveData, executeSqlQuery, executeQuery } from "../../config/databaseConfig";
 
 
 export class PlanService {
@@ -49,7 +49,7 @@ export class PlanService {
         }
 
         console.log("query: ", query);
-        const plans = await retrieveData(query);
+        const plans = await executeQuery(query);
         return plans;
     };
 

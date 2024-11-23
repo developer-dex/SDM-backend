@@ -54,9 +54,10 @@ export const createClientRequest = Joi.object({
     industry_type: Joi.string().required(),
     company_id: Joi.string().required(),
     status: Joi.string().required(),
-    plan_id: Joi.string().required(),
     plan_type: Joi.string().required(),
     cost: Joi.number().required(),
+    user_id: Joi.number().required(),
+    id: Joi.number().optional(),
 });
 
 export const listingPlanRequest = Joi.object({
@@ -65,15 +66,15 @@ export const listingPlanRequest = Joi.object({
 });
 
 export const createLicenseRequest = Joi.object({
-    license_id: Joi.string().optional(),
-    user_email: Joi.string().required(),
+    // license_id: Joi.string().optional(),
+    user_id: Joi.string().required(),
     issue_date: Joi.string().required(),
     expiry_date: Joi.string().required(),
-    license_type: Joi.string().required(),
+    // license_type: Joi.string().required(),
     status: Joi.string().required(),
-    company_id: Joi.string().required(),
-    company_name: Joi.string().required(),
-    company_pan: Joi.string().required(),
+    // company_id: Joi.string().required(),
+    // company_name: Joi.string().required(),
+    // company_pan: Joi.string().required(),
 });
 
 export const deleteLicenseRequest = Joi.object({

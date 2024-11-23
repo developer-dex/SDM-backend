@@ -692,5 +692,68 @@ export async function executeSqlQuery(
       connection.connect(); // Initiate the connection
     });
   }
+
+  let testConnection: Connection;
   
   
+// Initialize database connection (called once during server start)
+export const initializeDatabase = () => {
+    testConnection = new Connection({
+      server: getEnvVar("SQLBASE_HOST"), // Replace with your server
+      options: {
+        database: SUPER_ADMIN_DATABASE, // Replace with your database
+        encrypt: true,
+        port: Number(getEnvVar("SQLBASE_PORT")) || 1440,
+        trustServerCertificate: true, // Allows self-signed certificates
+
+      },
+      authentication: {
+        type: "default",
+        options: {
+          userName: getEnvVar("SQLBASE_USER"), // Replace with your username
+          password: getEnvVar("SQLBASE_PASSWORD"), // Replace with your password
+          
+        },
+      },
+    });
+  
+    testConnection.on("connect", (err) => {
+      if (err) {
+        console.error("Database connection failed:", err);
+      } else {
+        console.log("Database connected successfully.");
+      }
+    });
+  
+    testConnection.connect();
+  };
+
+  interface QueryResult {
+    rows: any[];
+  }
+  
+  // Query execution function
+  export const executeQuery = (query: string): Promise<QueryResult> => {
+    return new Promise((resolve, reject) => {
+      const request = new Request(query, (err, rowCount) => {
+        if (err) {
+          reject(err);
+        }
+      });
+  
+      const rows: any[] = [];
+      request.on("row", (columns) => {
+        const row: any = {};
+        columns.forEach((column) => {
+          row[column.metadata.colName] = column.value;
+        });
+        rows.push(row);
+      });
+  
+      request.on("requestCompleted", () => {
+        resolve({ rows });
+      });
+  
+      testConnection.execSql(request);
+    });
+  };
