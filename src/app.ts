@@ -21,9 +21,11 @@ app.use("/assets", express.static(UPLOAD_PATH));
 /**
  * Website Database Connection
  */
-connectWebsiteDatabase();
+// connectWebsiteDatabase();
 
-connectClientDatabase(SUPER_ADMIN_DATABASE);
+// connectClientDatabase(SUPER_ADMIN_DATABASE);
+
+// connectClientDatabasetest(SUPER_ADMIN_DATABASE);
 
 // replicateTables('DEMODATA', "DEMODATA3");
 /**

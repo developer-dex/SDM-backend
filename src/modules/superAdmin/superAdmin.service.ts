@@ -26,37 +26,56 @@ export class SuperAdminService {
         const query = `SELECT * FROM Admin WHERE email = '${email}' AND password = '${password}'`;
         const result = await retrieveData(query);
         console.log("result:::", result);
-        if (result.length === 0) {
-            console.log("result.length:::", result.length);
+        if (result.rowCount === 0) {
             return [];
         }
-        const responseData = this.generateLogInSignUpResponse(result[0].id);
-        return { ...result[0], ...responseData, role: "admin" };
+        const responseData = this.generateLogInSignUpResponse(result.rows[0].id);
+        return { ...result.rows[0], ...responseData, role: "admin" };
     };
 
     getAllUsers = async (
         page?: number,
         limit?: number,
         searchParameter?: string
-    ) => {
+      ) => {
         // Count total number of clients
-        // const totalCountQuery = `SELECT COUNT(*) as count FROM Admin`;
-        // const totalCount = await retrieveData(totalCountQuery);
-        // console.log("totalCount:::", totalCount);
-        // const totalCountData = totalCount;
-
+        const totalCountQuery = `SELECT COUNT(*) as count FROM Admin`;
+        let totalCountData;
+      
+        try {
+          const totalCountResult = await retrieveData(totalCountQuery);
+          totalCountData = totalCountResult.rows[0].count; // Access the count from the query result
+          console.log("totalCountData:::", totalCountData)
+        } catch (err) {
+          console.error("Error fetching total count:", err);
+          throw new Error("Failed to fetch total count.");
+        }
+      
+        // Pagination
         const { offset, limit: limitData } = calculatePagination(page, limit);
+      
         let query = `SELECT * FROM Admin`;
         if (searchParameter) {
-            query += ` WHERE full_name LIKE '%${searchParameter}%' OR email LIKE '%${searchParameter}%' OR phoneNo LIKE '%${searchParameter}%'`;
+          query += ` WHERE full_name LIKE '%${searchParameter}%' OR email LIKE '%${searchParameter}%' OR phoneNo LIKE '%${searchParameter}%'`;
         }
         query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
-        const admins = await retrieveData(query);
+      
+        let admins;
+        try {
+          const adminsResult = await retrieveData(query);
+          admins = adminsResult.rows;
+          console.log("admins:::", JSON.stringify(adminsResult))
+        } catch (err) {
+          console.error("Error fetching admins:", err);
+          throw new Error("Failed to fetch admins.");
+        }
+      
         return {
-            admins,
-            //  totalCountData
+          admins,
+          totalCount: totalCountData,
         };
-    };
+      };
+      
 
     deleteUser = async (clientId: number) => {
         const query = `DELETE FROM Admin WHERE id = '${clientId}'`;
@@ -88,7 +107,8 @@ export class SuperAdminService {
     getNotifications = async () => {
         console.log("getNotifications:::");
         const query = `SELECT * FROM Notifications`;
-        return await retrieveData(query);
+        const data = await retrieveData(query);
+        return data.rows;
     };
 
     changeNotificationStatus = async (
@@ -115,7 +135,12 @@ export class SuperAdminService {
     ) => {
         let query = `SELECT * FROM ClientManagement`;
         if (searchParameter) {
-            query += ` WHERE company_name LIKE '%${searchParameter}%' OR address LIKE '%${searchParameter}%'`;
+            query += ` WHERE company_name LIKE '%${searchParameter}%' OR
+            company_address LIKE '%${searchParameter}%' OR
+            gst LIKE '%${searchParameter}%' OR
+            pan LIKE '%${searchParameter}%' OR
+            industry_type LIKE '%${searchParameter}%' OR
+            company_id LIKE '%${searchParameter}%'`;
         }
         if (company_name) {
             query += ` WHERE company_name LIKE '%${company_name}%'`;
@@ -137,7 +162,9 @@ export class SuperAdminService {
         }
         const { offset, limit: limitData } = calculatePagination(page, limit);
         query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
-        return await retrieveData(query);
+        console.log("query:::", query);
+        const data = await retrieveData(query);
+        return data.rows;
     };
 
     createClient = async (requestData: ICreateClientRequest) => {
@@ -154,14 +181,13 @@ export class SuperAdminService {
             plan_type,
             cost,
         } = requestData;
-        const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst_number, pan_number, industry_type, company_id, status, plan_id, plan_type, cost) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_id}', '${plan_type}', ${cost})`;
+        const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst, pan, industry_type, company_id, status, plan_id, plan_type, cost) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_id}', '${plan_type}', ${cost})`;
         return await executeSqlQuery(query);
     };
 
-    deleteClient = async (clientId: number) => {
-        const query = `DELETE FROM ClientManagement WHERE client_id = '${clientId}'`;
-        const clients = await executeSqlQuery(query);
-        return clients;
+    deleteClient = async (companyId: string) => {
+        const query = `DELETE FROM ClientManagement WHERE company_id = '${companyId}'`;
+        return await executeSqlQuery(query);
     };
 
     updateClient = async (requestData: ICreateClientRequest) => {
@@ -189,13 +215,14 @@ export class SuperAdminService {
         let query = `SELECT * FROM Licenses`;
         const { offset, limit: limitData } = calculatePagination(page, limit);
         query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
-        return await retrieveData(query);
+        const data = await retrieveData(query);
+        return data.rows;
     };
 
     createLicense = async (requestData: ICreateLicenseRequest) => {
         const findUserQuery = `SELECT id FROM Users WHERE email = '${requestData.user_email}'`;
         const user = await retrieveData(findUserQuery);
-        if (user.length === 0) {
+        if (user.rowCount === 0) {
             return this.responseService.responseWithoutData(
                 false,
                 StatusCodes.BAD_REQUEST,
@@ -241,13 +268,13 @@ export class SuperAdminService {
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
         const clients = await retrieveData(query);
-        return clients;
+        return clients.rows;
     };
 
     isExistClient = async (whereCondition: string) => {
         const query = `SELECT * FROM Admin WHERE ${whereCondition}`;
         const clients = await retrieveData(query);
-        return clients;
+        return clients.rows;
     };
 
     private generateLogInSignUpResponse = (userId: number) => {

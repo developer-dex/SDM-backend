@@ -30,12 +30,12 @@ export const updateUserRequest = Joi.object({
 });
 
 export const deleteClientRequest = Joi.object({
-    userId: Joi.string().required(),
+    companyId: Joi.string().required(),
 });
 
 export const getAllClientsRequest = Joi.object({
-    page: Joi.number().required(),
-    limit: Joi.number().required(),
+    page: Joi.number().optional(),
+    limit: Joi.number().optional(),
     searchParameter: Joi.string().optional(),
     company_name: Joi.string().optional(),
     address: Joi.string().optional(),

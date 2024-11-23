@@ -203,7 +203,7 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         const clients = await this.superAdminService.getAllUsers();
-        const csv = json2csv.parse(clients);
+        const csv = json2csv.parse(clients.admins);
         return res.status(200).send(csv);
     };
 
@@ -342,12 +342,12 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
                         StatusCodes.INTERNAL_SERVER_ERROR,
-                        "Internal server error"
+                        error.message
                     )
                 );
         }
@@ -358,9 +358,9 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { userId } = req.params;
+        const { companyId } = req.params;
         try {
-            await this.superAdminService.deleteClient(Number(userId));
+            await this.superAdminService.deleteClient(companyId);
             return res
                 .status(200)
                 .send(

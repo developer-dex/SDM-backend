@@ -12,9 +12,8 @@ export class ContactUsService {
 
         const query = `INSERT INTO ContactUs (name, email, message, phoneNo, subject) VALUES ('${contactUsRequestpayload.name}', '${contactUsRequestpayload.email}', '${contactUsRequestpayload.message}', '${contactUsRequestpayload.phoneNo}', '${contactUsRequestpayload.subject}')`;
 
-        await executeSqlQuery(
+        return await executeSqlQuery(
             query
         );
-        await ContactUs.create(contactUsRequestpayload);
     }
 }

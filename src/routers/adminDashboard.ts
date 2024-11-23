@@ -116,7 +116,7 @@ AdminDashboardApi.post(
     superAdminController.createClient
 );
 AdminDashboardApi.delete(
-    "/client/:clientId/delete",
+    "/client/:companyId/delete",
     validator.params(deleteClientRequest),
     superAdminController.deleteClient
 );

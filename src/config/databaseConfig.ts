@@ -1,13 +1,13 @@
 import { Databasetype } from "../common/interfaces";
 import mongoose from "mongoose";
 import getEnvVar from "../helpers/util";
-import { Connection, Request } from "tedious";
+import { Connection, ConnectionConfiguration, Request } from "tedious";
+import { SUPER_ADMIN_DATABASE } from "../helpers/constants";
 
 let superAdminConnection: Connection | null = null;
 
 let connection: Connection | null = null;
 let destinationConnection: Connection | null = null;
-
 
 export default async function connectWebsiteDatabase() {
     const options = {
@@ -176,17 +176,17 @@ function connectServer(): Promise<Connection> {
     const config: any = {
         server: getEnvVar("SQLBASE_HOST"),
         authentication: {
-            type: 'default',
+            type: "default",
             options: {
                 userName: getEnvVar("SQLBASE_USER"),
                 password: getEnvVar("SQLBASE_PASSWORD"),
-            }
+            },
         },
         options: {
             encrypt: true,
             port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
             trustServerCertificate: true,
-        }
+        },
     };
 
     const connection = new Connection(config);
@@ -204,7 +204,6 @@ function connectServer(): Promise<Connection> {
         connection.connect();
     });
 }
-
 
 export async function replicateTables(
     sourceDb: string,
@@ -257,10 +256,9 @@ export async function replicateTables(
             columns.forEach((column, index) => {
                 createTableSQL += `${column.name} ${column.type}`;
                 if (column.length) {
-                    if(column.length === -1){
+                    if (column.length === -1) {
                         createTableSQL += `(MAX)`;
-                    }
-                    else{
+                    } else {
                         createTableSQL += `(${column.length})`;
                     }
                 }
@@ -268,8 +266,7 @@ export async function replicateTables(
             });
             createTableSQL += ")";
 
-            console.log("createTableSQL:::",createTableSQL);
-
+            console.log("createTableSQL:::", createTableSQL);
 
             // Step 3: Create the table in the destination database
             await new Promise<void>((resolve, reject) => {
@@ -336,10 +333,13 @@ export async function replicateTables(
     }
 }
 
-async function createDatabaseIfNotExists(serverConnection: Connection, databaseName: string): Promise<void> {
+async function createDatabaseIfNotExists(
+    serverConnection: Connection,
+    databaseName: string
+): Promise<void> {
     // Wrap the database name in square brackets to prevent syntax errors with special characters
-    const safeDatabaseName = `[${databaseName.replace(/]/g, ']]')}]`; // Escape any `]` characters in the name
-    
+    const safeDatabaseName = `[${databaseName.replace(/]/g, "]]")}]`; // Escape any `]` characters in the name
+
     const checkDbQuery = `IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '${databaseName}')
                           BEGIN
                               CREATE DATABASE ${safeDatabaseName};
@@ -351,7 +351,9 @@ async function createDatabaseIfNotExists(serverConnection: Connection, databaseN
                 console.log("Error creating database:", err);
                 reject(err);
             } else {
-                console.log(`Database ${databaseName} created (if not already exists).`);
+                console.log(
+                    `Database ${databaseName} created (if not already exists).`
+                );
                 resolve();
             }
         });
@@ -360,68 +362,335 @@ async function createDatabaseIfNotExists(serverConnection: Connection, databaseN
     });
 }
 
+// export async function retrieveData(sqlQuery: string): Promise<any[]> {
+
+//     console.log("query:::::::::", sqlQuery)
+//     if (superAdminConnection) {
+//         console.log("Connection already initialized.");
+//         // return;
+//     }
+//     if (!superAdminConnection) {
+//         console.log("Database connection is not initialized.");
+//         return [];
+//     }
+
+//     return new Promise((resolve, reject) => {
+//         const request = new Request(sqlQuery, (err) => {
+//             console.log("insidde query::::::", sqlQuery)
+//             if (err) {
+//                 console.log("Failed to execute query:", err);
+//                 reject(err);
+//             }
+//         });
+
+//         const results: any[] = [];
+
+//         request.on("row", (columns) => {
+//             const row: any = {};
+//             columns.forEach((column) => {
+//                 row[column.metadata.colName] = column.value;
+//             });
+//             results.push(row);
+//         });
+
+//         request.on("doneInProc", (rowCount) => {
+//             console.log(`Retrieved ${rowCount} rows`);
+//             resolve(results);
+//         });
+
+//         superAdminConnection.execSql(request);
+//     });
+// }
+
+// const connectionConfig = {
+//     server: getEnvVar("SQLBASE_HOST"),
+//     options: {
+//         database: SUPER_ADMIN_DATABASE,
+//         encrypt: true,
+//         trustServerCertificate: true,
+//         rowCollectionOnRequestCompletion: false,
+//     },
+//     authentication: {
+//         type: "default",
+//         options: {
+//             userName: getEnvVar("SQLBASE_USER"),
+//             password: getEnvVar("SQLBASE_PASSWORD"),
+//             port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+//         },
+//     },
+// };
+
+// const connectionConfig = {
+//     server: getEnvVar("SQLBASE_HOST"),
+//     authentication: {
+//         type: "default" as "default",
+//         options: {
+//             userName: getEnvVar("SQLBASE_USER"),
+//             password: getEnvVar("SQLBASE_PASSWORD"),
+//         },
+//     },
+//     options: {
+//         database: SUPER_ADMIN_DATABASE,
+//         encrypt: true,
+//         port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+//         trustServerCertificate: true,
+//     },
+// };
+
+// async function createNewConnection(): Promise<Connection> {
+//     return new Promise((resolve, reject) => {
+//         const connection = new Connection(connectionConfig as ConnectionConfiguration);
+//         connection.on("connect", (err) => {
+//             if (err) {
+//                 console.error("Failed to connect to the database:", err);
+//                 return reject(err);
+//             }
+//             console.log("Connection is created:::::::::")
+//             resolve(connection);
+//         });
+
+//         connection.connect();
+//     });
+// }
+
+// export async function retrieveData(sqlQuery: string): Promise<any[]> {
+//     console.log("sqlQuery:::", sqlQuery);
+//     const connection = await createNewConnection(); // Create a new connection for this query
+//     console.log("connectionNewNew:::", connection);
+//     return new Promise((resolve, reject) => {
+//         const request = new Request(sqlQuery, (err) => {
+//             if (err) {
+//                 console.error("Failed to execute query:", err);
+//                 connection.close(); // Close the connection in case of an error
+//                 return reject(err);
+//             }
+//         });
+
+//         const results: any[] = [];
+
+//         request.on("row", (columns) => {
+//             const row: any = {};
+//             columns.forEach((column) => {
+//                 row[column.metadata.colName] = column.value;
+//             });
+//             results.push(row);
+//         });
+
+//         request.on("doneInProc", (rowCount) => {
+//             console.log(`Retrieved ${rowCount} rows`);
+//             connection.close(); // Close the connection after query completion
+//             resolve(results);
+//         });
+
+//         request.on("done", () => {
+//             console.log("Connection is closed:::::::::")
+//             connection.close(); // Ensure connection is closed after done
+//         });
+
+//         connection.execSql(request);
+//     });
+// }
+
+// export async function demoData (sql: string, callback: (err: Error | null, result: { rowCount: number; rows: any[] } | null) => void) {
+//     let connection = new Connection({
+//       "authentication": {
+//         "options": {
+//           "userName": getEnvVar("SQLBASE_USER"),
+//           "password": getEnvVar("SQLBASE_PASSWORD")
+//         },
+//         "type": "default"
+//       },
+//       "server": getEnvVar("SQLBASE_HOST"),
+//       "options": {
+//         // "validateBulkLoadParameters": false,
+//         "rowCollectionOnRequestCompletion": true,
+//         "database": SUPER_ADMIN_DATABASE,
+//         "port": Number(getEnvVar("SQLBASE_PORT")) || 1433,
+//         "encrypt": true,
+//         "trustServerCertificate": true,
+//       }
+//     });
+//     connection.connect((err) => {
+//       if (err)
+//         return callback(err, null);
+//       const request = new Request(sql, (err, rowCount, rows) => {
+//         connection.close();
+//         if (err)
+//           return callback(err, null);
+//         callback(null, {rowCount, rows});
+//       });
+//       connection.execSql(request);
+//     });
+//   };
+
+export function retrieveData(
+    sql: string
+): Promise<{ rowCount: number; rows: any[] }> {
+    return new Promise((resolve, reject) => {
+        const connection = new Connection({
+            authentication: {
+                options: {
+                    userName: getEnvVar("SQLBASE_USER"),
+                    password: getEnvVar("SQLBASE_PASSWORD"),
+                },
+                type: "default",
+            },
+            server: getEnvVar("SQLBASE_HOST"),
+            options: {
+                rowCollectionOnRequestCompletion: true,
+                database: SUPER_ADMIN_DATABASE,
+                port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+                encrypt: true,
+                trustServerCertificate: true,
+            },
+        });
+
+        connection.connect((err) => {
+            if (err) {
+                return reject(err);
+            }
+
+            const request = new Request(sql, (err, rowCount, rows) => {
+                connection.close();
+                if (err) {
+                    return reject(err);
+                }
+
+                // Transform rows to a simpler array of objects
+                const simplifiedRows = rows.map((row) =>
+                    row.reduce((acc, column) => {
+                        acc[column.metadata.colName] = column.value;
+                        return acc;
+                    }, {})
+                );
+
+                resolve({ rowCount, rows: simplifiedRows });
+            });
+
+            connection.execSql(request);
+        });
+    });
+}
+
+// export async function executeSqlQuery(
+//     sqlQuery: string,
+//     databasename?: string
+// ): Promise<void> {
+//     return new Promise((resolve, reject) => {
+//         const connection = new Connection({
+//             authentication: {
+//                 options: {
+//                     userName: getEnvVar("SQLBASE_USER"),
+//                     password: getEnvVar("SQLBASE_PASSWORD"),
+//                 },
+//                 type: "default",
+//             },
+//             server: getEnvVar("SQLBASE_HOST"),
+//             options: {
+//                 rowCollectionOnRequestCompletion: true,
+//                 database: databasename ?? SUPER_ADMIN_DATABASE,
+//                 port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+//                 encrypt: true,
+//                 trustServerCertificate: true,
+//             },
+//         });
+
+//         const request = new Request(sqlQuery, (err) => {
+//             if (err) {
+//                 console.log("Failed to execute query:", err);
+//                 reject(err);
+//             } else {
+//                 console.log("Query executed successfully.");
+//                 resolve();
+//             }
+//         });
+//         connection.execSql(request);
+//     });
+// }
+
+// export async function executeSqlQuery(
+//     sqlQuery: string,
+//     databasename?: string
+// ): Promise<void> {
+//     if (databasename) {
+//         await connectClientDatabase(databasename);
+//     }
+//     if (!superAdminConnection) {
+//         console.log("Database connection is not initialized.");
+//         return;
+//     }
+
+//     return new Promise((resolve, reject) => {
+//         const request = new Request(sqlQuery, (err) => {
+//             if (err) {
+//                 console.log("Failed to execute query:", err);
+//                 reject(err);
+//             } else {
+//                 console.log("Query executed successfully.");
+//                 resolve();
+//             }
+//         });
+
+//         superAdminConnection.execSql(request);
+//     });
+// }
 
 export async function executeSqlQuery(
     sqlQuery: string,
     databasename?: string
-): Promise<void> {
-    if (databasename) {
-        await connectClientDatabase(databasename);
-    }
-    if (!superAdminConnection) {
-        console.log("Database connection is not initialized.");
-        return;
-    }
-
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
+      const connection = new Connection({
+        authentication: {
+          options: {
+            userName: getEnvVar("SQLBASE_USER"),
+            password: getEnvVar("SQLBASE_PASSWORD"),
+          },
+          type: "default",
+        },
+        server: getEnvVar("SQLBASE_HOST"),
+        options: {
+          rowCollectionOnRequestCompletion: true,
+          database: databasename ?? SUPER_ADMIN_DATABASE,
+          port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+          encrypt: true,
+          trustServerCertificate: true,
+          connectTimeout: 15000, // Set connection timeout (15 seconds)
+          requestTimeout: 15000, // Set query execution timeout (15 seconds)
+        },
+      });
+  
+      connection.on("connect", (err) => {
+        if (err) {
+          console.error("Database connection failed:", err);
+          reject(err);
+          return;
+        }
+  
+        console.log("Connected to the database.");
+  
         const request = new Request(sqlQuery, (err) => {
-            if (err) {
-                console.log("Failed to execute query:", err);
-                reject(err);
-            } else {
-                console.log("Query executed successfully.");
-                resolve();
-            }
+          connection.close(); // Always close the connection
+          if (err) {
+            console.error("Failed to execute query:", err);
+            reject(err);
+            return;
+          }
+  
+          console.log("Query executed successfully.");
+          resolve();
         });
-
-        superAdminConnection.execSql(request);
+  
+        connection.execSql(request);
+      });
+  
+      connection.on("error", (err) => {
+        console.error("Connection error:", err);
+        reject(err);
+      });
+  
+      connection.connect(); // Initiate the connection
     });
-}
-
-export async function retrieveData(sqlQuery: string): Promise<any[]> {
-
-    if (superAdminConnection) {
-        console.log("Connection already initialized.");
-        // return;
-    }
-    if (!superAdminConnection) {
-        console.log("Database connection is not initialized.");
-        return [];
-    } 
-
-    return new Promise((resolve, reject) => {
-        const request = new Request(sqlQuery, (err) => {
-            if (err) {
-                console.log("Failed to execute query:", err);
-                reject(err);
-            }
-        });
-
-        const results: any[] = [];
-
-        request.on("row", (columns) => {
-            const row: any = {};
-            columns.forEach((column) => {
-                row[column.metadata.colName] = column.value;
-            });
-            results.push(row);
-        });
-
-        request.on("doneInProc", (rowCount) => {
-            console.log(`Retrieved ${rowCount} rows`);
-            resolve(results);
-        });
-
-        superAdminConnection.execSql(request);
-    });
-}
+  }
+  
+  

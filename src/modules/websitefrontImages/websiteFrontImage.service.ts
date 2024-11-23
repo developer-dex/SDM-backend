@@ -50,8 +50,7 @@ export class WebsiteFrontImageService {
     getAllWebsiteFrontImages = async () => {
         const query = `SELECT * FROM FrontImage`;
         const frontImages = await retrieveData(query);
-        console.log(frontImages);
-        const frontImagesWithFullUrl = frontImages.map((frontImage) => {
+        const frontImagesWithFullUrl = frontImages.rows.map((frontImage) => {
             const relativePath = formateFrontImagePath(frontImage.imagePath);
             const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
 
