@@ -1,7 +1,52 @@
 import getEnvVar from "./util";
 
 export const UPLOAD_PATH = "src/assets/frontImages";
-export const RESET_PASSWORD_FRONT_URL = getEnvVar('FRONTEND_URL') + "/reset-password"
+export const RESET_PASSWORD_FRONT_URL = getEnvVar('FRONTEND_URL') + "/reset-password";
+
+export const clientAdminPermissions = 'client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket'
 
 
 export const SUPER_ADMIN_DATABASE = "SuperAdmin";
+
+
+export const Modules = {
+    ADMIN_DASHBOARD: "Admin Dashboard",
+    PRICING_PLAN: "Pricing Plan",
+    SUPPORT_TICKET: "Support Ticket",
+    CUSTOMER_MANAGEMENT: "Customer Management",
+    USER_MANAGEMENT: "User Management",
+    AUDIT_LOGS: "Audit Logs",
+    NOTIFICATION: "Notification",
+    BANNER_MANAGEMENT: "Banner Management",
+    ANALYTICS: "Analytics",
+    LICENSE_MANAGEMENT: "License Management",
+
+}
+
+export const Actions = {
+        PRICING_PLAN: {
+            CREATE: "Create Plan",
+            UPDATE: "Update Plan",
+            DELETE: "Delete Plan",
+        },
+        SUPPORT_TICKET: {
+            CREATE: "Create Support Ticket",
+            UPDATE: "Update Support Ticket",
+            DELETE: "Delete Support Ticket",
+        },
+        CUSTOMER_MANAGEMENT: {
+            CREATE: "Create Customer",
+            UPDATE: "Update Customer",
+            DELETE: "Delete Customer",
+        },
+        USER_MANAGEMENT: {
+            GET_ALL: "Get All Users",
+            CREATE: "Create User",
+            UPDATE: "Update User",
+            DELETE: "Delete User",
+        },
+        ADMIN_DASHBOARD: {
+            LOGIN: "Login",
+            LOGOUT: "Logout",
+        }
+}

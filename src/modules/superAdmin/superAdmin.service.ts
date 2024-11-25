@@ -1,14 +1,17 @@
+import { createAuditTrail } from "../../common/function";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import {
     executeQuery,
     executeSqlQuery,
     retrieveData,
 } from "../../config/databaseConfig";
+import { Actions, Modules } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
 import { ResponseService } from "../../helpers/response.service";
 import { calculatePagination, generateLicenseKey } from "../../helpers/util";
 import {
     IChangeNotificationStatusRequest,
+    ICreateAuditLogRequest,
     ICreateClientRequest,
     ICreateLicenseRequest,
     ISignInRequest,
@@ -34,22 +37,35 @@ export class SuperAdminService {
             return [];
         }
         const responseData = this.generateLogInSignUpResponse(
-            result.rows[0].id
+            result.rows[0].id,
+            result.rows[0].full_name,
+            result.rows[0].role
         );
-        return { ...result.rows[0], ...responseData, role: "admin" };
+
+        const data = {
+            id: result.rows[0].id,
+            username: result.rows[0].full_name,
+            loginTime: new Date().toISOString(),
+            role: result.rows[0].role,
+            module: Modules.ADMIN_DASHBOARD,
+            action: Actions.ADMIN_DASHBOARD.LOGIN,
+        }
+        await createAuditTrail(data);
+        return { ...result.rows[0], ...responseData, role: result.rows[0].role };
     };
 
     getAllUsers = async (
         page?: number,
         limit?: number,
-        searchParameter?: string
+        searchParameter?: string,
+        token_payload?: any
     ) => {
         // Count total number of clients
         const totalCountQuery = `SELECT COUNT(*) as count FROM Admin`;
         let totalCountData;
 
         try {
-            const totalCountResult = await retrieveData(totalCountQuery);
+            const totalCountResult = await executeQuery(totalCountQuery);
             totalCountData = totalCountResult.rows[0].count; // Access the count from the query result
             console.log("totalCountData:::", totalCountData);
         } catch (err) {
@@ -68,7 +84,7 @@ export class SuperAdminService {
 
         let admins;
         try {
-            const adminsResult = await retrieveData(query);
+            const adminsResult = await executeQuery(query);
             admins = adminsResult.rows;
             console.log("admins:::", JSON.stringify(adminsResult));
         } catch (err) {
@@ -82,13 +98,22 @@ export class SuperAdminService {
         };
     };
 
-    deleteUser = async (clientId: number) => {
+    deleteUser = async (clientId: number, token_payload: any) => {
         const query = `DELETE FROM Admin WHERE id = '${clientId}'`;
         const clients = await executeSqlQuery(query);
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload.role,
+            module: Modules.USER_MANAGEMENT,
+            action: Actions.USER_MANAGEMENT.DELETE,
+        }
+        await createAuditTrail(data);
         return clients;
     };
 
-    updateUser = async (requestData: IUserRequest) => {
+    updateUser = async (requestData: IUserRequest, token_payload: any) => {
         const {
             full_name,
             email,
@@ -99,13 +124,32 @@ export class SuperAdminService {
             user_id,
         } = requestData;
         const query = `UPDATE Admin SET full_name = '${full_name}', email = '${email}', password = '${password}', role = '${role}', permissions = '${permissions}', phoneNo = '${phoneNo}' WHERE id = '${user_id}'`;
+
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload.role,
+            module: Modules.USER_MANAGEMENT,
+            action: Actions.USER_MANAGEMENT.UPDATE,
+        }
+        await createAuditTrail(data);
         return await executeSqlQuery(query);
     };
 
-    addClient = async (requestData: any) => {
+    addClient = async (requestData: any, token_payload: any) => {
         const { full_name, email, password, role, permissions, phoneNo } =
             requestData;
         const query = `INSERT INTO Admin (full_name, email, password, role, permissions, phoneNo) VALUES ('${full_name}', '${email}', '${password}', '${role}', '${permissions}', '${phoneNo}')`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload.role,
+            module: Modules.USER_MANAGEMENT,
+            action: Actions.USER_MANAGEMENT.CREATE,
+        }
+        await createAuditTrail(data);
         return await executeSqlQuery(query);
     };
 
@@ -332,6 +376,35 @@ export class SuperAdminService {
         };
     };
 
+    // Audit Logs
+
+    createAuditLog = async (requestData: ICreateAuditLogRequest, payloadData: any) => {
+        const { id, username, loginTime, role } = payloadData;
+        console.log("requestData:::", requestData);
+        console.log("user_id:::", id, username, loginTime, role  );
+        let logoutQueryAdd = '';
+        if(requestData.action === 'logout') {
+            const currentTime = new Date().toISOString();
+            logoutQueryAdd = `, logout_time = '${currentTime}'`;
+        }
+        const query = `INSERT INTO AuditTrail (module, action, user_id, username, login_time, role ${logoutQueryAdd}) VALUES ('${requestData.module}', '${requestData.action}', '${id}', '${username}', '${loginTime}', '${role}')`;
+        return await executeQuery(query);
+    }
+
+    getAllAuditLogs = async (page: number, limit: number) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM AuditTrail`;
+        query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+
+        const totalCountQuery = `SELECT COUNT(*) as count FROM AuditTrail`; 
+        const totalCountData = await executeQuery(totalCountQuery);
+        const data = await executeQuery(query);
+        return {
+            auditLogs: data.rows,
+            totalCount: totalCountData.rows[0].count,
+        };
+    }
+
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
         const clients = await retrieveData(query);
@@ -349,9 +422,12 @@ export class SuperAdminService {
         return data.rows;
     };
 
-    private generateLogInSignUpResponse = (userId: number) => {
+    private generateLogInSignUpResponse = (userId: number, userName?: string, role?: string) => {
         let jwtTokenPayload: Record<string, any> = {
-            _id: userId,
+            id: userId,
+            username: userName,
+            loginTime: new Date().toISOString(),
+            role: role,
         };
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),

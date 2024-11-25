@@ -154,4 +154,9 @@ AdminDashboardApi.get(
     // validator.query(getAllClientsRequest),
     superAdminController.getAllCustomers
 );
+
+// Audit Logs
+AdminDashboardApi.post("/audit-logs", superAdminController.createAuditLog);
+AdminDashboardApi.get("/audit-logs", superAdminController.getAllAuditLogs);
+
 export default AdminDashboardApi;

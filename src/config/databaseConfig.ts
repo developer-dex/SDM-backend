@@ -694,6 +694,8 @@ export async function executeSqlQuery(
   }
 
   let testConnection: Connection;
+  let clientConneection: Connection;
+
   
   
 // Initialize database connection (called once during server start)
@@ -728,6 +730,37 @@ export const initializeDatabase = () => {
     testConnection.connect();
   };
 
+  export const initializeDatabaseClient = () => {
+    clientConneection = new Connection({
+      server: getEnvVar("SQLBASE_HOST"), // Replace with your server
+      options: {
+        // database: SUPER_ADMIN_DATABASE, // Replace with your database
+        encrypt: true,
+        port: Number(getEnvVar("SQLBASE_PORT")) || 1440,
+        trustServerCertificate: true, // Allows self-signed certificates
+
+      },
+      authentication: {
+        type: "default",
+        options: {
+          userName: getEnvVar("SQLBASE_USER"), // Replace with your username
+          password: getEnvVar("SQLBASE_PASSWORD"), // Replace with your password
+          
+        },
+      },
+    });
+  
+    clientConneection.on("connect", (err) => {
+      if (err) {
+        console.error("Client Database connection failed:", err);
+      } else {
+        console.log("Client Database connected successfully.");
+      }
+    });
+  
+    clientConneection.connect();
+  }; 
+
   interface QueryResult {
     rows: any[];
   }
@@ -755,5 +788,31 @@ export const initializeDatabase = () => {
       });
   
       testConnection.execSql(request);
+    });
+  };
+
+
+  export const executeQueryClient = (query: string): Promise<QueryResult> => {
+    return new Promise((resolve, reject) => {
+      const request = new Request(query, (err, rowCount) => {
+        if (err) {
+          reject(err);
+        }
+      });
+  
+      const rows: any[] = [];
+      request.on("row", (columns) => {
+        const row: any = {};
+        columns.forEach((column) => {
+          row[column.metadata.colName] = column.value;
+        });
+        rows.push(row);
+      });
+  
+      request.on("requestCompleted", () => {
+        resolve({ rows });
+      });
+  
+      clientConneection.execSql(request);
     });
   };

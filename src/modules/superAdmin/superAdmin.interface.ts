@@ -66,3 +66,8 @@ export interface ICreateLicenseRequest {
     // company_name: string;
     // company_pan: string;
 }
+
+export interface ICreateAuditLogRequest {
+   module: string;
+   action: string;
+}

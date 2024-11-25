@@ -4,6 +4,7 @@ import { SuperAdminService } from "./superAdmin.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import {
     IChangeNotificationStatusRequest,
+    ICreateAuditLogRequest,
     ICreateClientRequest,
     ICreateLicenseRequest,
     IGetAllUsersRequest,
@@ -72,7 +73,8 @@ export class SuperAdminController {
             const clients = await this.superAdminService.getAllUsers(
                 page,
                 limit,
-                searchParameter
+                searchParameter,
+                token_payload.data
             );
             return res
                 .status(200)
@@ -104,8 +106,9 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         const { userId } = req.params;
+        const token_payload = req.token_payload;
         try {
-            await this.superAdminService.deleteUser(Number(userId));
+            await this.superAdminService.deleteUser(Number(userId), token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -124,8 +127,6 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         const token_payload = req.token_payload;
-        console.log("token_payload:::", token_payload);
-        const userId = token_payload.data._id;
         const requestData: IUserRequest = req.body;
         const whereConfition = `email = '${requestData.email}'`;
         try {
@@ -144,7 +145,7 @@ export class SuperAdminController {
             //         );
             // }
 
-            await this.superAdminService.updateUser(requestData);
+            await this.superAdminService.updateUser(requestData, token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -173,8 +174,9 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         const requestData = req.body;
+        const token_payload = req.token_payload;
         try {
-            await this.superAdminService.addClient(requestData);
+            await this.superAdminService.addClient(requestData, token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -570,6 +572,30 @@ export class SuperAdminController {
                 .send(
                     this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
                 );
+        }
+    }
+
+    // Audit Logs
+    createAuditLog = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
+        try {   
+            const requestData: ICreateAuditLogRequest = req.body;
+            await this.superAdminService.createAuditLog(requestData, req.token_payload.data);
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Audit log created successfully"));
+        } catch (error) {
+            console.log("superAdmin createAuditLog ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    getAllAuditLogs = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
+        try {
+
+            const { page, limit } = req.query as unknown as { page: number, limit: number };
+            const auditLogs = await this.superAdminService.getAllAuditLogs(page, limit);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Audit logs fetched successfully", auditLogs));
+        } catch (error) {
+            console.log("superAdmin getAllAuditLogs ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 }

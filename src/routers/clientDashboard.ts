@@ -11,6 +11,8 @@ const validator = createValidator({ passError: true });
 
 const authMiddleware = new AuthMiddleware();
 
+ClientDashboardApi.post("/login/internal", clientAdminController.loginInternal);
+
 ClientDashboardApi.use(authMiddleware.verifyjwtToken);
 
 ClientDashboardApi.post(
@@ -20,6 +22,7 @@ ClientDashboardApi.post(
 );
 ClientDashboardApi.get(
     "/get-support-ticket",
+    validator.query(paginationRequest),
     supportTicketController.getSupportTicket
 );
 
@@ -48,10 +51,11 @@ ClientDashboardApi.get(
 );
 
 // Job Fire Statistics
-// ClientDashboardApi.get(
-//     "/job-fire-statistics",
-//     clientAdminController.getJobFireStatistics
-// );
+ClientDashboardApi.get(
+    "/job-fire-statistics",
+    validator.query(paginationRequest),
+    clientAdminController.getJobFireStatistics
+);
 
 // Audit Trail log
 ClientDashboardApi.get(

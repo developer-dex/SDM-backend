@@ -13,17 +13,39 @@ export class ClientAdminController {
         this.clientAdminService = new ClientAdminService();
     }
 
+    loginInternal = async (req: Request, res: Response) => {
+        try {
+            const result = await this.clientAdminService.loginInternal(req.body);
+            return res
+                .status(StatusCodes.OK)
+                .send(this.responseService.responseWithData(false, StatusCodes.OK, "Internal login successful", result));
+        } catch (error) {
+            return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
     getBackupSS = async (
         req: Request & { token_payload?: any },
         res: Response
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter, jobName, jobGroup, backupType, sourceIp, sourceFolder, sourceUsername, sourcePassword, description } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getBackupSS(
                 tokenPayload?.data.databaseName,
                 Number(page),
-                Number(limit)
+                Number(limit),
+                jobName,
+                jobGroup,
+                backupType,
+                sourceIp,
+                sourceFolder,
+                sourceUsername,
+                sourcePassword,
+                description,
+                searchParameter
             );
             return res
                 .status(StatusCodes.OK)
@@ -36,6 +58,7 @@ export class ClientAdminController {
                     )
                 );
         } catch (error) {
+            console.log("clientAdminController:::backupSS:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
@@ -74,11 +97,12 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getPingAndPath(
                 tokenPayload?.data.databaseName,
                 Number(page),
-                Number(limit)
+                Number(limit),
+                searchParameter
             );
             return res
                 .status(StatusCodes.OK)
@@ -91,6 +115,7 @@ export class ClientAdminController {
                     )
                 );
         } catch (error) {
+            console.log("clientAdminController:::getPingAndpath:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
@@ -155,15 +180,16 @@ export class ClientAdminController {
         }
     }
 
-    // User management
-    getUsersList = async (
+    getJobFireStatistics = async (
         req: Request & { token_payload?: any },
         res: Response
     ) => {
+
+        console.log("clientAdminController:::getJobFireStatistics:::", req.query);
         try {
             const tokenPayload = req.token_payload;
             const { limit, page, searchParameter } = req.query as unknown as paginationRequeset;
-            const result = await this.clientAdminService.getUsersList(
+            const result = await this.clientAdminService.getJobFireStatistics(
                 tokenPayload?.data.databaseName,
                 Number(page),
                 Number(limit),
@@ -172,8 +198,42 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
+                    this.responseService.responseWithData(false, StatusCodes.OK, "Job fire statistics fetched successfully", result));
+        } catch (error) {
+            console.log("clientAdminController:::jobFireStatistics:::", error);
+            return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // User management
+    getUsersList = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        try {
+            const tokenPayload = req.token_payload;
+            const { limit, page, searchParameter, username, email, role, phone, entryDate, moduleNames, password } = req.query as unknown as paginationRequeset;
+            const result = await this.clientAdminService.getUsersList(
+                tokenPayload?.data.databaseName,
+                Number(page),
+                Number(limit),
+                searchParameter,
+                username,
+                email,
+                role,
+                phone,
+                entryDate,
+                moduleNames,
+                password
+            );
+            return res
+                .status(StatusCodes.OK)
+                .send(
                     this.responseService.responseWithData(false, StatusCodes.OK, "Users list fetched successfully", result));
         } catch (error) {
+            console.log("clientAdminController:::getUsersList:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(

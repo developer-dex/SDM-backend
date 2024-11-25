@@ -4,7 +4,7 @@ import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
 import { SUPER_ADMIN_DATABASE, UPLOAD_PATH } from "./helpers/constants";
-import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, replicateTables } from "./config/databaseConfig";
+import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, replicateTables } from "./config/databaseConfig";
 
 /**
  * Make express app
@@ -28,6 +28,8 @@ app.use("/assets", express.static(UPLOAD_PATH));
 // connectClientDatabasetest(SUPER_ADMIN_DATABASE);
 
 initializeDatabase();
+
+initializeDatabaseClient()
 
 // replicateTables('DEMODATA', "DEMODATA3");
 /**
