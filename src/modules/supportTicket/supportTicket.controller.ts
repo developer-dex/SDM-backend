@@ -18,7 +18,6 @@ export class SupportTicketController {
         res: Response,
         next: NextFunction
     ) => {
-        console.log("create-client-support-ticket-request:::", req.body);
         const requestData: createSupportTicketRequest = req.body;
         const token_payload = req.token_payload;
         try {
@@ -36,7 +35,6 @@ export class SupportTicketController {
                     )
                 );
         } catch (error) {
-            console.log("create-client-support-ticket-error:::", error);
             return res.status(500).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     };
@@ -50,6 +48,17 @@ export class SupportTicketController {
         } catch (error) {}
     }
 
+    updateSupportTicket = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
+        const token_payload = req.token_payload;
+        const requestData = req.body;
+        try {
+            await this.supportTicketService.changeSupportTicketStatus(requestData, token_payload.data);
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Support ticket status changed successfully"));
+        } catch (error) {
+            return res.status(500).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
     getAllSupportTicket = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
         const token_payload = req.token_payload;
         try {
@@ -60,7 +69,6 @@ export class SupportTicketController {
 
     changeSupportTicketStatus = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
         const token_payload = req.token_payload;
-        console.log("token_payload:::", token_payload);
         const requestData = req.body;
         try {
             await this.supportTicketService.changeSupportTicketStatus(requestData, token_payload.data);

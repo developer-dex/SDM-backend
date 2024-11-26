@@ -1,8 +1,8 @@
 import nodeMailer from "nodemailer";
 import getEnvVar from "./util";
+import fs from "fs";
 
-export default async function sendMail(email: any, subject: any, text: any) {
-    console.log("email: ", email, "subject: ", subject, "text: ", text);
+export default async function sendCsvToMail(email: any, subject: any, text: any, path?: string, fileName?: string) {
     const transporter = nodeMailer.createTransport({
         service: "gmail",
         auth: {
@@ -10,15 +10,26 @@ export default async function sendMail(email: any, subject: any, text: any) {
             pass: getEnvVar("PASSWORD"),
         },
     });
-    const options = {
+
+
+    const mailOptions = {
+        from: getEnvVar("EMAIL"),
         to: email,
         subject: subject,
-        html: text,
+        text: text,
+        attachments: [
+            {
+                filename: fileName,
+                path: path,
+            },
+        ],
     };
-    transporter.sendMail(options, (error, result) => {
+    transporter.sendMail(mailOptions, (error, result) => {
         if (error) {
+            fs.unlinkSync(path);
             console.log("email error", error)
         } else {
+            fs.unlinkSync(path);
             console.log("Mail sent:", result.response);
         }
     });

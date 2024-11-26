@@ -3,7 +3,7 @@ import { AuthMiddleware } from "../middlewares/auth.middleware";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { clientAdminController } from "../modules/clientAdmin/clientAdmin.controller";
 import { createValidator } from "express-joi-validation";
-import { createSupportTicketRequest, paginationRequest } from "../modules/clientAdmin/clientAdmin.validation";
+import { createSupportTicketRequest, paginationRequest, updateSupportTicketRequest } from "../modules/clientAdmin/clientAdmin.validation";
 
 const ClientDashboardApi: Router = Router();
 
@@ -24,6 +24,11 @@ ClientDashboardApi.get(
     "/get-support-ticket",
     validator.query(paginationRequest),
     supportTicketController.getSupportTicket
+);
+ClientDashboardApi.patch(
+    "/update-support-ticket",
+    validator.body(updateSupportTicketRequest),
+    supportTicketController.updateSupportTicket
 );
 
 //Backup ss

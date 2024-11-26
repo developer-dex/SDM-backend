@@ -108,7 +108,10 @@ export class SuperAdminController {
         const { userId } = req.params;
         const token_payload = req.token_payload;
         try {
-            await this.superAdminService.deleteUser(Number(userId), token_payload.data);
+            await this.superAdminService.deleteUser(
+                Number(userId),
+                token_payload.data
+            );
             return res
                 .status(200)
                 .send(
@@ -129,6 +132,7 @@ export class SuperAdminController {
         const token_payload = req.token_payload;
         const requestData: IUserRequest = req.body;
         const whereConfition = `email = '${requestData.email}'`;
+        console.log("requestData:::", requestData);
         try {
             // const isExistClient = await this.superAdminService.isExistClient(
             //     whereConfition
@@ -145,7 +149,10 @@ export class SuperAdminController {
             //         );
             // }
 
-            await this.superAdminService.updateUser(requestData, token_payload.data);
+            await this.superAdminService.updateUser(
+                requestData,
+                token_payload.data
+            );
             return res
                 .status(200)
                 .send(
@@ -176,7 +183,10 @@ export class SuperAdminController {
         const requestData = req.body;
         const token_payload = req.token_payload;
         try {
-            await this.superAdminService.addClient(requestData, token_payload.data);
+            await this.superAdminService.addClient(
+                requestData,
+                token_payload.data
+            );
             return res
                 .status(200)
                 .send(
@@ -383,19 +393,43 @@ export class SuperAdminController {
     ) => {
         const requestData: ICreateClientRequest = req.body;
         try {
-
             // Check that updated pan number  OR gst numberis already exist in other client
-            const isPanNumberExist = await this.superAdminService.getDatabyConnection(`SELECT * FROM ClientManagement WHERE pan = '${requestData.pan_number}'`);
-            console.log("isPanNumberExist:::", isPanNumberExist[0].company_id, requestData.company_id);
+            const isPanNumberExist =
+                await this.superAdminService.getDatabyConnection(
+                    `SELECT * FROM ClientManagement WHERE pan = '${requestData.pan_number}'`
+                );
+            console.log(
+                "isPanNumberExist:::",
+                isPanNumberExist[0].company_id,
+                requestData.company_id
+            );
             if (isPanNumberExist[0].company_id === requestData.company_id) {
-                return res.status(StatusCodes.BAD_REQUEST).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Pan number already exist"));
+                return res
+                    .status(StatusCodes.BAD_REQUEST)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.BAD_REQUEST,
+                            "Pan number already exist"
+                        )
+                    );
             }
             // Also checek for the gst number is already exist in other client
-            const isGstNumberExist = await this.superAdminService.getDatabyConnection(`SELECT * FROM ClientManagement WHERE gst = '${requestData.gst_number}'`);
+            const isGstNumberExist =
+                await this.superAdminService.getDatabyConnection(
+                    `SELECT * FROM ClientManagement WHERE gst = '${requestData.gst_number}'`
+                );
             if (isGstNumberExist[0].company_id === requestData.company_id) {
-                return res.status(StatusCodes.BAD_REQUEST).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Gst number already exist"));
+                return res
+                    .status(StatusCodes.BAD_REQUEST)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.BAD_REQUEST,
+                            "Gst number already exist"
+                        )
+                    );
             }
-
 
             await this.superAdminService.updateClient(requestData);
             return res
@@ -564,38 +598,295 @@ export class SuperAdminController {
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithData(true, StatusCodes.OK, "Customers fetched successfully", customers)
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Customers fetched successfully",
+                        customers
+                    )
                 );
         } catch (error) {
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
                 );
         }
-    }
+    };
 
     // Audit Logs
-    createAuditLog = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
-        try {   
+    createAuditLog = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
             const requestData: ICreateAuditLogRequest = req.body;
-            await this.superAdminService.createAuditLog(requestData, req.token_payload.data);
-            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Audit log created successfully"));
+            await this.superAdminService.createAuditLog(
+                requestData,
+                req.token_payload.data
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Audit log created successfully"
+                    )
+                );
         } catch (error) {
             console.log("superAdmin createAuditLog ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
-    getAllAuditLogs = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
+    getAllAuditLogs = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
         try {
-
-            const { page, limit } = req.query as unknown as { page: number, limit: number };
-            const auditLogs = await this.superAdminService.getAllAuditLogs(page, limit);
-            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Audit logs fetched successfully", auditLogs));
+            const { page, limit, isExportToEmail, recipientEmail } = req.query as unknown as {
+                page: number;
+                limit: number;
+                isExportToEmail?: boolean;
+                recipientEmail?: string;
+            };
+            const auditLogs = await this.superAdminService.getAllAuditLogs(
+                page,
+                limit,
+                Boolean(isExportToEmail),
+                recipientEmail
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Audit logs fetched successfully",
+                        auditLogs
+                    )
+                );
         } catch (error) {
             console.log("superAdmin getAllAuditLogs ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    // Dashboard Temp
+    dashboardTemp = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            // const requestData = req.body;
+            const data = await this.superAdminService.dashboardTemp();
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Dashboard temp fetched successfully",
+                        data
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin dashboardTemp ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    // support ticket management
+    getAllSupportTicketTitles = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { page, limit } = req.query as unknown as {
+                page: number;
+                limit: number;
+            };
+            const supportTicketTitles =
+                await this.superAdminService.getAllSupportTicketTitles(
+                    page,
+                    limit
+                );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Support ticket titles fetched successfully",
+                        supportTicketTitles
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getAllSupportTicketTitles ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    addSupportTicketTitle = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const requestData = req.body;
+            await this.superAdminService.addSupportTicketTitle(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Support ticket title added successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin addSupportTicketTitle ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    deleteSupportTicketTitle = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { titleId } = req.params;
+            await this.superAdminService.deleteSupportTicketTitle(
+                Number(titleId)
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Support ticket title deleted successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin deleteSupportTicketTitle ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    updateSupportTicketTitle = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const requestData = req.body;
+            await this.superAdminService.updateSupportTicketTitle(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Support ticket title updated successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin updateSupportTicketTitle ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    exportCsv = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        try {
+            // await this.superAdminService.exportCsv(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Csv exported successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin exportCsv ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                );
         }
     }
 }

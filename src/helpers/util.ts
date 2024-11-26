@@ -6,6 +6,7 @@ import { EWebsiteFromImage } from "../common/common.enum";
 import { ICreateAuditLogRequest } from "../modules/superAdmin/superAdmin.interface";
 import { executeQuery } from "../config/databaseConfig";
 import { Actions } from "./constants";
+import { createObjectCsvWriter } from "csv-writer";
 export default function getEnvVar(envVarName: string | number): string {
     const value = process.env[envVarName];
 
@@ -162,5 +163,25 @@ export const generateLicenseKey = (
 
     return licenseKey;
 };
+
+export const createCsvFile = async (data: any[], header: any[]) => {
+    // Define the CSV writer
+
+    // insed of fileName I want current timestamp   
+    const fileName = `${Date.now()}.csv`;
+    const path = `src/public/${fileName}`;
+    const csvWriter = createObjectCsvWriter({
+        path: path, 
+        header: header,
+    });
+
+    // Write data to CSV
+    await csvWriter.writeRecords(data);
+    return path;
+
+    // setTimeout(() => {
+    //     fs.unlinkSync('src/public/support_ticket_titles.csv');
+    // }, 5000);
+}
 
 

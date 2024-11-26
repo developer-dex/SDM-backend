@@ -12,6 +12,7 @@ export const changeNotificationStatusRequest = Joi.object({
 });
 
 export const addOrUpdateClientRequest = Joi.object({
+    user_id: Joi.number().optional(),
     full_name: Joi.string().required(),
     email: Joi.string().required(),
     password: Joi.string().required(),
@@ -79,4 +80,22 @@ export const createLicenseRequest = Joi.object({
 
 export const deleteLicenseRequest = Joi.object({
     licenseId: Joi.string().required(),
+});
+
+
+export const deleteSupportTicketTitleRequest = Joi.object({
+    titleId: Joi.string().required(),
+});
+
+export const addSupportTicketTitleRequest = Joi.object({
+    title: Joi.string().required(),
+});
+
+export const updateSupportTicketTitleRequest = Joi.object({
+    title: Joi.string().required(),
+    titleId: Joi.number().required(),
+});
+
+export const exportCsvRequest = Joi.object({
+    email: Joi.string().required(),
 });

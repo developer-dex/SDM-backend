@@ -66,15 +66,17 @@ JOIN
         }
 
         const updateQuery = `UPDATE SupportTickets SET ${updateSet} WHERE id = ${requestData.id}`;
-        const data = {
-            id: token_payload.id,
-            username: token_payload.username,
-            loginTime: new Date().toISOString(),
-            role: token_payload.role,
-            module: Modules.SUPPORT_TICKET,
-            action: Actions.SUPPORT_TICKET.UPDATE,
+        if(token_payload.login_type && token_payload.login_type === "admin") {
+            const data = {
+                id: token_payload.id,
+                username: token_payload.username,
+                loginTime: new Date().toISOString(),
+                role: token_payload.role,
+                module: Modules.SUPPORT_TICKET,
+                action: Actions.SUPPORT_TICKET.UPDATE,
+            }
+            await createAuditTrail(data);
         }
-        await createAuditTrail(data);
         return await executeQuery(updateQuery);
     };
 }

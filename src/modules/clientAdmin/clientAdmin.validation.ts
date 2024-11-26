@@ -31,3 +31,8 @@ export const pagination = Joi.object({
     page: Joi.number().optional(),
     limit: Joi.number().optional(),
 });
+
+export const updateSupportTicketRequest = Joi.object({
+    id: Joi.number().required(),
+    status: Joi.string().required(),
+});

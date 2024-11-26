@@ -8,7 +8,11 @@ import {
 import { Actions, Modules } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
 import { ResponseService } from "../../helpers/response.service";
-import { calculatePagination, generateLicenseKey } from "../../helpers/util";
+import {
+    calculatePagination,
+    createCsvFile,
+    generateLicenseKey,
+} from "../../helpers/util";
 import {
     IChangeNotificationStatusRequest,
     ICreateAuditLogRequest,
@@ -17,7 +21,11 @@ import {
     ISignInRequest,
     IUserRequest,
 } from "./superAdmin.interface";
-
+import { createObjectCsvWriter } from "csv-writer";
+import nodemailer from "nodemailer";
+import fs from "fs";
+import sendMail from "../../helpers/sendMail";
+import sendCsvToMail from "../../helpers/sendMail";
 export class SuperAdminService {
     private jwtService: JwtService;
     private responseService: ResponseService;
@@ -49,9 +57,13 @@ export class SuperAdminService {
             role: result.rows[0].role,
             module: Modules.ADMIN_DASHBOARD,
             action: Actions.ADMIN_DASHBOARD.LOGIN,
-        }
+        };
         await createAuditTrail(data);
-        return { ...result.rows[0], ...responseData, role: result.rows[0].role };
+        return {
+            ...result.rows[0],
+            ...responseData,
+            role: result.rows[0].role,
+        };
     };
 
     getAllUsers = async (
@@ -86,7 +98,6 @@ export class SuperAdminService {
         try {
             const adminsResult = await executeQuery(query);
             admins = adminsResult.rows;
-            console.log("admins:::", JSON.stringify(adminsResult));
         } catch (err) {
             console.error("Error fetching admins:", err);
             throw new Error("Failed to fetch admins.");
@@ -108,7 +119,7 @@ export class SuperAdminService {
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.DELETE,
-        }
+        };
         await createAuditTrail(data);
         return clients;
     };
@@ -125,6 +136,8 @@ export class SuperAdminService {
         } = requestData;
         const query = `UPDATE Admin SET full_name = '${full_name}', email = '${email}', password = '${password}', role = '${role}', permissions = '${permissions}', phoneNo = '${phoneNo}' WHERE id = '${user_id}'`;
 
+        console.log("query:::", query);
+
         const data = {
             id: token_payload.id,
             username: token_payload.username,
@@ -132,7 +145,7 @@ export class SuperAdminService {
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.UPDATE,
-        }
+        };
         await createAuditTrail(data);
         return await executeSqlQuery(query);
     };
@@ -148,7 +161,7 @@ export class SuperAdminService {
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.CREATE,
-        }
+        };
         await createAuditTrail(data);
         return await executeSqlQuery(query);
     };
@@ -281,7 +294,6 @@ export class SuperAdminService {
     };
 
     createLicense = async (requestData: ICreateLicenseRequest) => {
-
         const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, p.plan_name, u.id FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
@@ -297,11 +309,7 @@ export class SuperAdminService {
                 "User not found"
             );
         }
-        const {
-            issue_date,
-            expiry_date,
-            status,
-        } = requestData;
+        const { issue_date, expiry_date, status } = requestData;
 
         console.log("Checking values:", {
             userId: user.rows[0].id,
@@ -309,11 +317,10 @@ export class SuperAdminService {
             expiryDate: expiry_date,
         });
 
-          // Ensure that the required fields are defined
-          if (!user.rows[0].id || !issue_date || !expiry_date) {
+        // Ensure that the required fields are defined
+        if (!user.rows[0].id || !issue_date || !expiry_date) {
             throw new Error("Required fields are missing.");
         }
-
 
         const license_key = generateLicenseKey(
             user.rows[0].plan_name,
@@ -346,12 +353,7 @@ export class SuperAdminService {
                 "User not found"
             );
         }
-        const {
-            license_id,
-            issue_date,
-            expiry_date,
-            status,
-        } = requestData;
+        const { license_id, issue_date, expiry_date, status } = requestData;
         const license_key = generateLicenseKey(
             user[0].plan_name,
             user[0].pan,
@@ -378,38 +380,148 @@ export class SuperAdminService {
 
     // Audit Logs
 
-    createAuditLog = async (requestData: ICreateAuditLogRequest, payloadData: any) => {
+    createAuditLog = async (
+        requestData: ICreateAuditLogRequest,
+        payloadData: any
+    ) => {
         const { id, username, loginTime, role } = payloadData;
         console.log("requestData:::", requestData);
-        console.log("user_id:::", id, username, loginTime, role  );
-        let logoutQueryAdd = '';
-        if(requestData.action === 'logout') {
+        console.log("user_id:::", id, username, loginTime, role);
+        let logoutQueryAdd = "";
+        if (requestData.action === "logout") {
             const currentTime = new Date().toISOString();
             logoutQueryAdd = `, logout_time = '${currentTime}'`;
         }
         const query = `INSERT INTO AuditTrail (module, action, user_id, username, login_time, role ${logoutQueryAdd}) VALUES ('${requestData.module}', '${requestData.action}', '${id}', '${username}', '${loginTime}', '${role}')`;
         return await executeQuery(query);
-    }
+    };
 
-    getAllAuditLogs = async (page: number, limit: number) => {
+    getAllAuditLogs = async (
+        page: number,
+        limit: number,
+        isExportToEmail?: boolean,
+        recipientEmail?: string
+    ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT * FROM AuditTrail`;
-        query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        if (limit && page 
+            // && (isExportToEmail && !isExportToEmail)
+            ) {
+            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
 
-        const totalCountQuery = `SELECT COUNT(*) as count FROM AuditTrail`; 
+        const totalCountQuery = `SELECT COUNT(*) as count FROM AuditTrail`;
         const totalCountData = await executeQuery(totalCountQuery);
         const data = await executeQuery(query);
+
+        if (isExportToEmail) {
+            const header = [
+                { id: "Id", title: "ID" },
+                { id: "module", title: "Module" },
+                { id: "action", title: "Action" },
+                { id: "user_id", title: "User ID" },
+                { id: "username", title: "Username" },
+                { id: "login_time", title: "Login Time" },
+                { id: "role", title: "Role" },
+                { id: "logout_time", title: "Logout Time" },
+                { id: "createdAt", title: "Created At" },
+            ];
+            const path = await createCsvFile(data.rows, header);
+            await sendCsvToMail(
+                recipientEmail,
+                "Audit Logs CSV",
+                "Please find the attached CSV file of audit logs.",
+                path,
+                "support_ticket_titles.csv"
+            )
+        }
         return {
             auditLogs: data.rows,
             totalCount: totalCountData.rows[0].count,
         };
-    }
+    };
+
+    // Dashboard Temp
+    dashboardTemp = async () => {
+        const query = `SELECT * FROM Users `;
+        const users = await executeQuery(query);
+
+        const NoDataInLast24Hours = [];
+        const DataInLast24Hours = [];
+
+        for (let i = 0; i < users.rows.length; i++) {
+            const databaseName = users.rows[i].databaseName;
+            const query = `SELECT 
+                '${databaseName}' AS SchemaName,
+                COUNT(*) AS RecordCount
+            FROM ${databaseName}.dbo.PingPathLogs
+            WHERE EntryDateTime >= DATEADD(HOUR, -24, GETDATE())`;
+            const data = await executeQuery(query);
+
+            // Check the count and push to the respective arrays
+            if (data.rows[0].RecordCount === 0) {
+                NoDataInLast24Hours.push(databaseName);
+            } else {
+                DataInLast24Hours.push(databaseName);
+            }
+        }
+
+        // Return the counts in the final result
+        return {
+            onlineClients: NoDataInLast24Hours.length,
+            offlineClients: DataInLast24Hours.length,
+            totalUsers: users.rows.length,
+        };
+    };
+
+    // Support Ticket Management
+
+    getAllSupportTicketTitles = async (page: number, limit: number) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM SupportTicketTitles`;
+        if (limit && page) {
+            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        let totalCountQuery = `SELECT COUNT(*) as count FROM SupportTicketTitles`;
+        const totalCountData = await executeQuery(totalCountQuery);
+        const data = await executeQuery(query);
+        return {
+            supportTicketTitles: data.rows,
+            totalCount: totalCountData.rows[0].count,
+        };
+    };
+
+    addSupportTicketTitle = async (requestData: any) => {
+        const query = `INSERT INTO SupportTicketTitles (title) VALUES ('${requestData.title}')`;
+        return await executeQuery(query);
+    };
+
+    deleteSupportTicketTitle = async (titleId: number) => {
+        const query = `DELETE FROM SupportTicketTitles WHERE id = '${titleId}'`;
+        return await executeQuery(query);
+    };
+
+    updateSupportTicketTitle = async (requestData: any) => {
+        const query = `UPDATE SupportTicketTitles SET title = '${requestData.title}' WHERE id = '${requestData.titleId}'`;
+        return await executeQuery(query);
+    };
 
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
         const clients = await retrieveData(query);
         return clients.rows;
     };
+
+    // exportCsv = async (requestData: any) => {
+    //     const { email } = requestData;
+    //     const query = `SELECT * FROM SupportTicketTitles`;
+    //     const data = await executeQuery(query);
+
+    //     // Call the function to send CSV via email
+    //     await this.sendCsvEmail(data.rows, email);
+    //     return data.rows;
+    // }
 
     isExistClient = async (whereCondition: string) => {
         const query = `SELECT * FROM Admin WHERE ${whereCondition}`;
@@ -422,12 +534,17 @@ export class SuperAdminService {
         return data.rows;
     };
 
-    private generateLogInSignUpResponse = (userId: number, userName?: string, role?: string) => {
+    private generateLogInSignUpResponse = (
+        userId: number,
+        userName?: string,
+        role?: string
+    ) => {
         let jwtTokenPayload: Record<string, any> = {
             id: userId,
             username: userName,
             loginTime: new Date().toISOString(),
             role: role,
+            login_type: "admin",
         };
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),

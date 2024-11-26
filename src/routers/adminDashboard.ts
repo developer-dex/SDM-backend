@@ -5,18 +5,25 @@ import { FileUploadMiddleware } from "../middlewares/fileupload.middleware";
 import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
 import { planController } from "../modules/plan/plan.controller";
 import { createValidator } from "express-joi-validation";
-import { getAllLicensesRequest, listingPlanRequest } from "../modules/plan/plan.validation";
+import {
+    getAllLicensesRequest,
+    listingPlanRequest,
+} from "../modules/plan/plan.validation";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { superAdminController } from "../modules/superAdmin/superAdmin.controller";
 import {
     addOrUpdateClientRequest,
+    addSupportTicketTitleRequest,
     changeNotificationStatusRequest,
     createClientRequest,
     createLicenseRequest,
     deleteClientRequest,
     deleteLicenseRequest,
+    deleteSupportTicketTitleRequest,
+    exportCsvRequest,
     getAllClientsRequest,
     getAllusersRequest,
+    updateSupportTicketTitleRequest,
     updateUserRequest,
 } from "../modules/superAdmin/superAdmin.validation";
 
@@ -34,8 +41,15 @@ const AdminDashboardApi: Router = Router();
 
 AdminDashboardApi.post("/signin", superAdminController.signIn);
 
+AdminDashboardApi.post("/dashboard-temp", superAdminController.dashboardTemp);
+
+AdminDashboardApi.post("/export-csv",
+    validator.body(exportCsvRequest),
+    superAdminController.exportCsv
+);
+
 // Use the auth middleware before defining the routes
-AdminDashboardApi.use(authMiddleware.verifyjwtToken);
+// AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 
 // Notification Module
 AdminDashboardApi.get(
@@ -154,6 +168,30 @@ AdminDashboardApi.get(
     // validator.query(getAllClientsRequest),
     superAdminController.getAllCustomers
 );
+
+// Manage support ticket titles
+AdminDashboardApi.get(
+    "/support-ticket-titles",
+    superAdminController.getAllSupportTicketTitles
+);
+AdminDashboardApi.post(
+    "/support-ticket-title",
+    validator.body(addSupportTicketTitleRequest),
+    superAdminController.addSupportTicketTitle
+);
+AdminDashboardApi.delete(
+    "/support-ticket-title/:titleId/delete",
+    validator.params(deleteSupportTicketTitleRequest),
+    superAdminController.deleteSupportTicketTitle
+);
+AdminDashboardApi.put(
+    "/support-ticket-title",
+    validator.body(updateSupportTicketTitleRequest),
+    superAdminController.updateSupportTicketTitle
+);
+
+// Export csv and send email in body I am getting customer email
+
 
 // Audit Logs
 AdminDashboardApi.post("/audit-logs", superAdminController.createAuditLog);

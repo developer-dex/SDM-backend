@@ -28,7 +28,8 @@ export class ClientAdminService {
             findUserWithTokenResult.rows[0].email,
             findUserWithTokenResult.rows[0].databaseName?.length > 0
                 ? `${findUserWithTokenResult.rows[0].databaseName}.dbo`
-                : "DEMODATA.dbo"
+                : "DEMODATA.dbo",
+            "client"
         );
 
         return {
@@ -460,7 +461,8 @@ LEFT JOIN
         userId: number,
         userName?: string,
         userEmail?: string,
-        databaseName?: string
+        databaseName?: string,
+        login_type?: string
     ) => {
         let jwtTokenPayload: Record<string, any> = {
             id: userId,
@@ -468,6 +470,7 @@ LEFT JOIN
             userEmail: userEmail,
             loginTime: new Date().toISOString(),
             databaseName: databaseName,
+            login_type: login_type
         };
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),
