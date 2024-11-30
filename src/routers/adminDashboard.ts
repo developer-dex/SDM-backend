@@ -26,6 +26,7 @@ import {
     updateSupportTicketTitleRequest,
     updateUserRequest,
 } from "../modules/superAdmin/superAdmin.validation";
+import { getAllSupportTicketRequest } from "../modules/supportTicket/supportTicket.validation";
 
 // TODO: admin.auth.middleware have to be added
 
@@ -41,15 +42,16 @@ const AdminDashboardApi: Router = Router();
 
 AdminDashboardApi.post("/signin", superAdminController.signIn);
 
-AdminDashboardApi.post("/dashboard-temp", superAdminController.dashboardTemp);
+AdminDashboardApi.get("/dashboard", superAdminController.dashboardDetails);
 
-AdminDashboardApi.post("/export-csv",
+AdminDashboardApi.post(
+    "/export-csv",
     validator.body(exportCsvRequest),
     superAdminController.exportCsv
 );
 
 // Use the auth middleware before defining the routes
-// AdminDashboardApi.use(authMiddleware.verifyjwtToken);
+AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 
 // Notification Module
 AdminDashboardApi.get(
@@ -75,6 +77,7 @@ AdminDashboardApi.get(
 
 // Plan Routes
 AdminDashboardApi.post("/plan", planController.createPlan);
+AdminDashboardApi.put("/plan", planController.updatePlan);
 AdminDashboardApi.get(
     "/plan",
     validator.query(listingPlanRequest),
@@ -86,6 +89,7 @@ AdminDashboardApi.post("/offer", planController.createOffer);
 // Support Ticket Routes
 AdminDashboardApi.get(
     "/support-ticket",
+    validator.query(getAllSupportTicketRequest),
     supportTicketController.getAllSupportTicket
 );
 AdminDashboardApi.patch(
@@ -96,7 +100,7 @@ AdminDashboardApi.patch(
 // User Management Routes
 AdminDashboardApi.get(
     "/users",
-    validator.query(getAllusersRequest),
+    // validator.query(getAllusersRequest),
     superAdminController.getAllUsers
 );
 
@@ -121,7 +125,7 @@ AdminDashboardApi.put(
 // Client Management routes
 AdminDashboardApi.get(
     "/client",
-    validator.query(getAllClientsRequest),
+    // validator.query(getAllClientsRequest),
     superAdminController.getAllClients
 );
 AdminDashboardApi.post(
@@ -192,9 +196,41 @@ AdminDashboardApi.put(
 
 // Export csv and send email in body I am getting customer email
 
-
 // Audit Logs
 AdminDashboardApi.post("/audit-logs", superAdminController.createAuditLog);
 AdminDashboardApi.get("/audit-logs", superAdminController.getAllAuditLogs);
+
+// Website banner management
+AdminDashboardApi.post(
+    "/website-banner",
+    fileUploadMiddleware.uploadClientWebsiteBanner,
+    websiteFrontImageController.uploadClientWebsiteBanner
+);
+
+AdminDashboardApi.get(
+    "/website-banner",
+    websiteFrontImageController.getClientWebsiteBanner
+);
+AdminDashboardApi.delete(
+    "/website-banner/:bannerId/delete",
+    websiteFrontImageController.deleteClientWebsiteBanner
+);
+AdminDashboardApi.put(
+    "/website-banner",
+    fileUploadMiddleware.uploadClientWebsiteBanner,
+    websiteFrontImageController.updateClientWebsiteBanner
+);
+
+// Training files
+AdminDashboardApi.post(
+    "/training-files",
+    fileUploadMiddleware.uploadTrainingFiles,
+    websiteFrontImageController.addTrainingFiles
+);
+
+AdminDashboardApi.get(
+    "/training-files",
+    websiteFrontImageController.getTrainingFiles
+);
 
 export default AdminDashboardApi;

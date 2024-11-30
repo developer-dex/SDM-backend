@@ -1,7 +1,6 @@
-import { UPLOAD_PATH } from "../helpers/constants";
+import { CLIENT_WEBSITE_BANNER_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "../helpers/constants";
 import { createMulterMiddleware } from "../helpers/util";
 import { Request, Response, NextFunction } from "express";
-import multer from "multer"; // Ensure multer is imported
 
 export class FileUploadMiddleware {
     uploadWebsiteFrontImage = (
@@ -20,4 +19,35 @@ export class FileUploadMiddleware {
             next();
         });
     };
+
+    uploadClientWebsiteBanner = (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        console.log("uploadClientWebsiteBanner");
+        const multerMiddleware = createMulterMiddleware(CLIENT_WEBSITE_BANNER_PATH);
+        multerMiddleware.single("image")(req, res, (err) => {
+            if (err) {
+                return res
+                    .status(400)
+                    .json({ message: "File upload failed", error: err });
+            }
+            next();
+        });
+    }
+
+    uploadTrainingFiles = (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        const multerMiddleware = createMulterMiddleware(TRAINING_FILES_PATH);
+        multerMiddleware.single("file")(req, res, (err) => {
+            if (err) {
+                return res.status(400).json({ message: "File upload failed", error: err });
+            }
+            next();
+        });
+    }
 }

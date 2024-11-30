@@ -32,19 +32,19 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, jobName, jobGroup, backupType, sourceIp, sourceFolder, sourceUsername, sourcePassword, description } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter, jobName, ClientFolderName, ClientData, BaseFolderName, BaseFolderData, Difference, Status, EntryDateTime } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getBackupSS(
                 tokenPayload?.data.databaseName,
                 Number(page),
                 Number(limit),
                 jobName,
-                jobGroup,
-                backupType,
-                sourceIp,
-                sourceFolder,
-                sourceUsername,
-                sourcePassword,
-                description,
+                ClientFolderName,
+                ClientData,
+                BaseFolderName,
+                BaseFolderData,
+                Difference,
+                Status,
+                EntryDateTime,
                 searchParameter
             );
             return res
@@ -97,12 +97,19 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter, jobName, ipMachine, sharedPath, pingStatus, connection, errors, entryDateTime } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getPingAndPath(
                 tokenPayload?.data.databaseName,
                 Number(page),
                 Number(limit),
-                searchParameter
+                searchParameter,
+                jobName,
+                ipMachine,
+                sharedPath,
+                pingStatus,
+                connection,
+                errors,
+                entryDateTime
             );
             return res
                 .status(StatusCodes.OK)
@@ -155,12 +162,20 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter, Username, UserRole, JobName, Module, Action, DateTimeStamp, LoginTime, LogoutTime } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getAuditTrailLog(
                 tokenPayload?.data.databaseName,
                 Number(page),
                 Number(limit),
-                searchParameter
+                searchParameter,
+                Username,
+                UserRole,
+                JobName,
+                Module,
+                Action,
+                DateTimeStamp,
+                LoginTime,
+                LogoutTime
             );
             return res
                 .status(StatusCodes.OK)
@@ -188,12 +203,19 @@ export class ClientAdminController {
         console.log("clientAdminController:::getJobFireStatistics:::", req.query);
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter } = req.query as unknown as paginationRequeset;
+            const { limit, page, searchParameter, jobName, jobGroup, sourceIp, sourceFolder, destinationFolder, status, startTime } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getJobFireStatistics(
                 tokenPayload?.data.databaseName,
                 Number(page),
                 Number(limit),
-                searchParameter
+                searchParameter,
+                jobName,
+                jobGroup,
+                sourceIp,
+                sourceFolder,
+                destinationFolder,
+                status,
+                startTime
             );
             return res
                 .status(StatusCodes.OK)
@@ -240,6 +262,51 @@ export class ClientAdminController {
                     this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
+
+    // Setting
+    getSetting = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        try {
+            const tokenPayload = req.token_payload;
+            const result = await this.clientAdminService.getSetting(
+                tokenPayload?.data.databaseName
+            );
+            return res
+                .status(StatusCodes.OK)
+                .send(
+                    this.responseService.responseWithData(false, StatusCodes.OK, "Setting fetched successfully", result));
+        } catch (error) {
+            console.log("clientAdminController:::getSetting:::", error);
+            return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // Dashboard
+    getDashboard = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        try {
+            const tokenPayload = req.token_payload;
+            const result = await this.clientAdminService.getDashboard(
+                tokenPayload?.data.databaseName
+            );
+            return res
+                .status(StatusCodes.OK)
+                .send(
+                    this.responseService.responseWithData(false, StatusCodes.OK, "Dashboard fetched successfully", result));
+        } catch (error) {
+            console.log("clientAdminController:::getDashboard:::", error);
+            return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
 }
 
 export const clientAdminController = new ClientAdminController();

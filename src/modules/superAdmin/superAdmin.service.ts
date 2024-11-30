@@ -70,42 +70,96 @@ export class SuperAdminService {
         page?: number,
         limit?: number,
         searchParameter?: string,
-        token_payload?: any
+        isExportToEmail?: boolean,
+        recipientEmail?: string,
+        full_name?: string,
+        email?: string,
+        phoneNo?: string,
+        role?: string,
+        permissions?: string,
+        password?: string,
+        created_at?: string
     ) => {
         // Count total number of clients
         const totalCountQuery = `SELECT COUNT(*) as count FROM Admin`;
-        let totalCountData;
-
-        try {
-            const totalCountResult = await executeQuery(totalCountQuery);
-            totalCountData = totalCountResult.rows[0].count; // Access the count from the query result
-            console.log("totalCountData:::", totalCountData);
-        } catch (err) {
-            console.error("Error fetching total count:", err);
-            throw new Error("Failed to fetch total count.");
-        }
 
         // Pagination
         const { offset, limit: limitData } = calculatePagination(page, limit);
 
         let query = `SELECT * FROM Admin`;
-        if (searchParameter) {
-            query += ` WHERE full_name LIKE '%${searchParameter}%' OR email LIKE '%${searchParameter}%' OR phoneNo LIKE '%${searchParameter}%'`;
-        }
-        query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
 
-        let admins;
-        try {
-            const adminsResult = await executeQuery(query);
-            admins = adminsResult.rows;
-        } catch (err) {
-            console.error("Error fetching admins:", err);
-            throw new Error("Failed to fetch admins.");
+        const filters = [];
+        const searchFilters = [];
+
+        if (searchParameter) {
+            searchFilters.push(`full_name LIKE '%${searchParameter}%'`);
+            searchFilters.push(`email LIKE '%${searchParameter}%'`);
+            searchFilters.push(`phoneNo LIKE '%${searchParameter}%'`);
+            searchFilters.push(`role LIKE '%${searchParameter}%'`);
+            searchFilters.push(`permissions LIKE '%${searchParameter}%'`);
+            searchFilters.push(`created_at LIKE '%${searchParameter}%'`);
+        }
+
+        if (full_name) {
+            filters.push(`full_name LIKE '%${full_name}%'`);
+        }
+        if (email) {
+            filters.push(`email LIKE '%${email}%'`);
+        }
+        if (phoneNo) {
+            filters.push(`phoneNo LIKE '%${phoneNo}%'`);
+        }
+        if (role) {
+            filters.push(`role LIKE '%${role}%'`);
+        }
+        if (permissions) {
+            filters.push(`permissions LIKE '%${permissions}%'`);
+        }
+        if (password) {
+            filters.push(`password LIKE '%${password}%'`);
+        }
+        if (created_at) {
+            filters.push(this.getDateCondition(created_at, "created_at"));
+        }
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+        if (searchFilters.length > 0) {
+            query += ` WHERE ${searchFilters.join(" OR ")}`;
+        }
+
+        if (limit && page) {
+            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        const adminsResult = await executeQuery(query);
+        const totalCountResult = await executeQuery(totalCountQuery);
+        const admins = adminsResult.rows;
+
+        if (isExportToEmail) {
+            const header = [
+                { id: "id", title: "User Id" },
+                { id: "full_name", title: "Username" },
+                { id: "role", title: "User role" },
+                { id: "password", title: "Password" },
+                { id: "email", title: "Email" },
+                { id: "phoneNo", title: "Phone No" },
+                { id: "created_at", title: "Entry Date Time" },
+                { id: "permissions", title: "Modules" },
+            ];
+            const path = await createCsvFile(admins, header);
+            await sendCsvToMail(
+                recipientEmail,
+                "Users CSV",
+                "Please find the attached CSV file of users.",
+                path,
+                "users.csv"
+            );
         }
 
         return {
             admins,
-            totalCount: totalCountData,
+            totalCount: totalCountResult.rows[0].count,
         };
     };
 
@@ -192,34 +246,68 @@ export class SuperAdminService {
         start_date?: string,
         end_date?: string,
         payment_method?: string,
-        status?: string
+        status?: string,
+        isExportToEmail?: boolean,
+        recipientEmail?: string,
+        gst?: string,
+        pan?: string,
+        industry_type?: string,
+        cost?: string
     ) => {
         let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
+
+        const filters = [];
+        const searchFilters = [];
+
         if (searchParameter) {
-            query += ` WHERE cm.company_name LIKE '%${searchParameter}%' OR
-            cm.company_address LIKE '%${searchParameter}%' OR
-            cm.gst LIKE '%${searchParameter}%' OR
-            cm.pan LIKE '%${searchParameter}%' OR
-            cm.industry_type LIKE '%${searchParameter}%' OR
-            cm.company_id LIKE '%${searchParameter}%'`;
+            searchFilters.push(`cm.company_name LIKE '%${searchParameter}%'`);
+            searchFilters.push(
+                `cm.company_address LIKE '%${searchParameter}%'`
+            );
+            searchFilters.push(`cm.gst LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.pan LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.industry_type LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.company_id LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.cost LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.payment_method LIKE '%${searchParameter}%'`);
+            searchFilters.push(`cm.status LIKE '%${searchParameter}%'`)
         }
         if (company_name) {
-            query += ` AND cm.company_name LIKE '%${company_name}%'`;
+            filters.push(`cm.company_name LIKE '%${company_name}%'`);
         }
         if (company_address) {
-            query += ` AND cm.company_address LIKE '%${company_address}%'`;
+            filters.push(`cm.company_address LIKE '%${company_address}%'`);
         }
         if (start_date) {
-            query += ` AND cm.created_at >= '${start_date}'`;
+            filters.push(this.getDateCondition(start_date, "created_at"));
         }
         if (end_date) {
-            query += ` AND cm.created_at <= '${end_date}'`;
+            filters.push(this.getDateCondition(end_date, "created_at"));
         }
         if (payment_method) {
-            query += ` AND cm.payment_method = '${payment_method}'`;
+            filters.push(`cm.payment_method = '${payment_method}'`);
         }
         if (status) {
-            query += ` AND cm.status = '${status}'`;
+            filters.push(`cm.status = '${status}'`);
+        }
+        if (gst) {
+            filters.push(`cm.gst = '${gst}'`);
+        }
+        if (pan) {
+            filters.push(`cm.pan = '${pan}'`);
+        }
+        if (industry_type) {
+            filters.push(`cm.industry_type = '${industry_type}'`);
+        }
+        if (cost) {
+            filters.push(`cm.cost = '${cost}'`);
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+        if (searchFilters.length > 0) {
+            query += ` WHERE ${searchFilters.join(" OR ")}`;
         }
         const { offset, limit: limitData } = calculatePagination(page, limit);
         query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
@@ -228,6 +316,31 @@ export class SuperAdminService {
         // total count of client
         const totalCountQuery = `SELECT COUNT(*) as count FROM ClientManagement`;
         const totalCountData = await executeQuery(totalCountQuery);
+
+        if (isExportToEmail) {
+            const header = [
+                { id: "id", title: "ID" },
+                { id: "company_name", title: "Company Name" },
+                { id: "company_address", title: "Company Address" },
+                { id: "gst", title: "GST" },
+                { id: "pan", title: "PAN" },
+                { id: "industry_type", title: "Industry Type" },
+                { id: "company_id", title: "Company ID" },
+                { id: "plan_type", title: "Plan Type" },
+                { id: "cost", title: "Cost" },
+                { id: "status", title: "Status" },
+                { id: "payment_method", title: "Payment Method" },
+                { id: "created_at", title: "Created At" },
+            ];
+            const path = await createCsvFile(data.rows, header);
+            await sendCsvToMail(
+                recipientEmail,
+                "Clients CSV",
+                "Please find the attached CSV file of clients.",
+                path,
+                "clients.csv"
+            );
+        }
         return {
             clients: data.rows,
             totalCount: totalCountData.rows[0].count,
@@ -278,15 +391,111 @@ export class SuperAdminService {
 
     // Licenses Management
 
-    getAllLicenses = async (page: number, limit: number) => {
+    getAllLicenses = async (
+        page: number,
+        limit: number,
+        isExportToEmail?: boolean,
+        recipientEmail?: string,
+        searchParameter?: string,
+        issue_date?: string,
+        expiry_date?: string,
+        expiration_date?: string,
+        license_key?: string,
+        license_type?: string,
+        status?: string,
+        company_id?: string,
+        company_name?: string,
+        company_pan?: string,
+        user_email?: string
+    ) => {
         let query = `SELECT l.issue_date, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
+
+        const filters = [];
+        const searchFilters = [];
+
+        if (searchParameter) {
+            searchFilters.push(`l.license_key LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.license_type LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.status LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.company_id LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.company_name LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.company_pan LIKE '%${searchParameter}%'`);
+            searchFilters.push(`u.email LIKE '%${searchParameter}%'`);
+        }
+
+        if (issue_date) {
+            filters.push(this.getDateCondition(issue_date, "issue_date"));
+        }
+        if (expiry_date) {
+            filters.push(this.getDateCondition(expiry_date, "expiration_date"));
+        }
+        if (expiration_date) {
+            filters.push(
+                this.getDateCondition(expiration_date, "expiration_date")
+            );
+        }
+        if (license_key) {
+            filters.push(`l.license_key LIKE '%${license_key}%'`);
+        }
+        if (license_type) {
+            filters.push(`l.license_type LIKE '%${license_type}%'`);
+        }
+        if (status) {
+            filters.push(`l.status LIKE '%${status}%'`);
+        }
+        if (company_id) {
+            filters.push(`l.company_id LIKE '%${company_id}%'`);
+        }
+        if (company_name) {
+            filters.push(`l.company_name LIKE '%${company_name}%'`);
+        }
+        if (company_pan) {
+            filters.push(`l.company_pan LIKE '%${company_pan}%'`);
+        }
+        if (user_email) {
+            filters.push(`u.email LIKE '%${user_email}%'`);
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+        if (searchFilters.length > 0) {
+            query += ` WHERE ${searchFilters.join(" OR ")}`;
+        }
+
         const { offset, limit: limitData } = calculatePagination(page, limit);
-        query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        if (limit && page) {
+            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        console.log("query:::", query);
         const data = await executeQuery(query);
 
         // totalCount
         const totalCountQuery = `SELECT COUNT(*) as count FROM Licenses`;
         const totalCountData = await executeQuery(totalCountQuery);
+
+        if (isExportToEmail) {
+            const header = [
+                { id: "license_id", title: "ID" },
+                { id: "issue_date", title: "Issue Date" },
+                { id: "expiration_date", title: "Expiration Date" },
+                { id: "license_key", title: "License Key" },
+                { id: "license_type", title: "License Type" },
+                { id: "status", title: "Status" },
+                { id: "company_id", title: "Company ID" },
+                { id: "company_name", title: "Company Name" },
+                { id: "company_pan", title: "Company PAN" },
+            ];
+            const path = await createCsvFile(data.rows, header);
+            await sendCsvToMail(
+                recipientEmail,
+                "Licenses CSV",
+                "Please find the attached CSV file of licenses.",
+                path,
+                "licenses.csv"
+            );
+        }
         return {
             licenses: data.rows,
             totalCount: totalCountData.rows[0].count,
@@ -400,15 +609,94 @@ export class SuperAdminService {
         page: number,
         limit: number,
         isExportToEmail?: boolean,
-        recipientEmail?: string
+        recipientEmail?: string,
+        searchParameter?: string,
+        createdAt?: string,
+        username?: string,
+        role?: string,
+        module?: string,
+        action?: string,
+        loginTime?: string,
+        logoutTime?: string,
+        start_from?: string,
+        end_to?: string
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT * FROM AuditTrail`;
-        if (limit && page 
+
+        const filters = [];
+        const searchFilters = [];
+
+        if (searchParameter) {
+            searchFilters.push(`module LIKE '%${searchParameter}%'`);
+            searchFilters.push(`action LIKE '%${searchParameter}%'`);
+            searchFilters.push(`username LIKE '%${searchParameter}%'`);
+            searchFilters.push(`role LIKE '%${searchParameter}%'`);
+            searchFilters.push(`login_time LIKE '%${searchParameter}%'`);
+            searchFilters.push(`logout_time LIKE '%${searchParameter}%'`);
+            searchFilters.push(`createdAt LIKE '%${searchParameter}%'`);
+        }
+
+        if (createdAt) {
+            filters.push(
+                this.getDateCondition(
+                    createdAt,
+                    "createdAt",
+                    start_from,
+                    end_to
+                )
+            );
+        }
+        if (username) {
+            filters.push(`username LIKE '%${username}%'`);
+        }
+        if (role) {
+            filters.push(`role LIKE '%${role}%'`);
+        }
+        if (module) {
+            filters.push(`module LIKE '%${module}%'`);
+        }
+        if (action) {
+            filters.push(`action LIKE '%${action}%'`);
+        }
+        if (loginTime) {
+            filters.push(
+                this.getDateCondition(
+                    loginTime,
+                    "login_time",
+                    start_from,
+                    end_to
+                )
+            );
+        }
+        if (logoutTime) {
+            filters.push(
+                this.getDateCondition(
+                    logoutTime,
+                    "logout_time",
+                    start_from,
+                    end_to
+                )
+            );
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+
+        if (searchFilters.length > 0) {
+            query += ` WHERE ${searchFilters.join(" OR ")}`;
+        }
+
+        if (
+            limit &&
+            page
             // && (isExportToEmail && !isExportToEmail)
-            ) {
+        ) {
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
+
+        console.log("query:::", query);
 
         const totalCountQuery = `SELECT COUNT(*) as count FROM AuditTrail`;
         const totalCountData = await executeQuery(totalCountQuery);
@@ -433,7 +721,7 @@ export class SuperAdminService {
                 "Please find the attached CSV file of audit logs.",
                 path,
                 "support_ticket_titles.csv"
-            )
+            );
         }
         return {
             auditLogs: data.rows,
@@ -442,12 +730,13 @@ export class SuperAdminService {
     };
 
     // Dashboard Temp
-    dashboardTemp = async () => {
+    dashboardDetails = async () => {
         const query = `SELECT * FROM Users `;
         const users = await executeQuery(query);
 
         const NoDataInLast24Hours = [];
         const DataInLast24Hours = [];
+
 
         for (let i = 0; i < users.rows.length; i++) {
             const databaseName = users.rows[i].databaseName;
@@ -466,11 +755,100 @@ export class SuperAdminService {
             }
         }
 
+//         const supportTicketDataQuery = `SELECT 
+//     COUNT(*) AS total_tickets,
+//     COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_tickets,
+//     COUNT(CASE WHEN status = 'closed' THEN 1 END) AS closed_tickets,
+//     ROUND((COUNT(CASE WHEN is_on_time = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)),2) AS response_on_time_percentage
+// FROM 
+//     SupportTickets;`;
+
+        const latestSupportTicketDataQuery = `SELECT 
+    cm.company_name,
+    st.Topic AS support_subject,
+    st.createdAt AS date_time,
+    st.status AS status
+FROM 
+    ClientManagement cm
+JOIN 
+    SupportTickets st ON cm.user_id = st.userId;`;
+
+        const plansOverviewQuery = `SELECT 
+    p.plan_name,
+    p.plan_type,
+    COUNT(sh.id) AS subscription_count,
+    ROUND(COUNT(sh.id) * 100.0 / NULLIF(SUM(COUNT(sh.id)) OVER (), 0), 2) AS popularity_percentage
+FROM 
+    SubscriptionHistory sh
+JOIN 
+    Plans p ON sh.planId = p.id
+GROUP BY 
+    p.plan_name, p.plan_type
+ORDER BY 
+    subscription_count DESC`;
+
+//     const licenseOverviewQuery = `SELECT 
+//     COUNT(*) AS total_licenses,
+//     COUNT(CASE WHEN status = 'Active' THEN 1 END) AS running_licenses,
+//     COUNT(CASE WHEN status = 'Inactive' THEN 1 END) AS expired_licenses,
+//     COUNT(CASE WHEN expiration_date >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) 
+//                 AND expiration_date < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0) 
+//                 THEN 1 END) AS licenses_expiring_this_month
+// FROM 
+//     Licenses`
+
+const query2 = `
+            WITH 
+            SupportTicketCounts AS (
+                SELECT 
+                    COUNT(*) AS total_tickets,
+                    COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_tickets,
+                    COUNT(CASE WHEN status = 'closed' THEN 1 END) AS closed_tickets,
+                    ROUND((COUNT(CASE WHEN is_on_time = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 2) AS response_on_time_percentage
+                FROM SupportTickets
+            ),
+            LicenseCounts AS (
+                SELECT 
+                    COUNT(*) AS total_licenses,
+                    COUNT(CASE WHEN status = 'Active' THEN 1 END) AS running_licenses,
+                    COUNT(CASE WHEN status = 'Inactive' THEN 1 END) AS expired_licenses,
+                    COUNT(CASE WHEN expiration_date >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) 
+                                AND expiration_date < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0) 
+                                THEN 1 END) AS licenses_expiring_this_month
+                FROM Licenses
+            )
+            SELECT 
+                (SELECT total_tickets FROM SupportTicketCounts) AS totalTickets,
+                (SELECT open_tickets FROM SupportTicketCounts) AS openTickets,
+                (SELECT closed_tickets FROM SupportTicketCounts) AS closedTickets,
+                (SELECT response_on_time_percentage FROM SupportTicketCounts) AS responseOnTimePercentage,
+                (SELECT total_licenses FROM LicenseCounts) AS totalLicenses,
+                (SELECT running_licenses FROM LicenseCounts) AS runningLicenses,
+                (SELECT expired_licenses FROM LicenseCounts) AS expiredLicenses,
+                (SELECT licenses_expiring_this_month FROM LicenseCounts) AS licensesExpiringThisMonth;
+        `;
+        
+        // const result = await executeQuery(query2);
+
+        // const [latestSupportTicketData, plansOverviewData, result] = await Promise.all([
+        //     executeQuery(latestSupportTicketDataQuery),
+        //     executeQuery(plansOverviewQuery),
+        //     executeQuery(query2)
+        // ]);
+
+        const latestSupportTicketData = await executeQuery(latestSupportTicketDataQuery);
+        const plansOverviewData = await executeQuery(plansOverviewQuery);
+        const result = await executeQuery(query2);
+
+
         // Return the counts in the final result
         return {
             onlineClients: NoDataInLast24Hours.length,
             offlineClients: DataInLast24Hours.length,
             totalUsers: users.rows.length,
+            ticketAndLicenseData: result.rows,
+            latestSupportTicketData: latestSupportTicketData.rows,
+            plansOverviewData: plansOverviewData.rows,
         };
     };
 
@@ -551,4 +929,67 @@ export class SuperAdminService {
             user_id: userId,
         };
     };
+
+    // Function to convert special date strings to SQL date conditions
+    private getDateCondition(
+        dateString: string,
+        field: string,
+        start_from?: string,
+        end_to?: string
+    ): string {
+        const today = new Date();
+        let condition = "";
+
+        if (start_from && end_to) {
+            condition = `${field} >= '${start_from}' AND ${field} <= '${end_to}'`;
+        }
+
+        switch (dateString) {
+            case "yesterday":
+                const yesterday = new Date(today);
+                yesterday.setDate(today.getDate() - 1);
+                condition = `${field} >= '${yesterday.toISOString().split("T")[0]} 00:00:00' AND ${field} < '${today.toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "today":
+                condition = `${field} >= '${today.toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.setDate(today.getDate() + 1)).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "tomorrow":
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                condition = `${field} >= '${tomorrow.toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(tomorrow.setDate(tomorrow.getDate() + 1)).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "this_week":
+                condition = `${field} >= '${new Date(today.setDate(today.getDate() - today.getDay())).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.setDate(today.getDate() - today.getDay() + 7)).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "last_week":
+                condition = `${field} >= '${new Date(today.setDate(today.getDate() - today.getDay() - 7)).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.setDate(today.getDate() - today.getDay())).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "next_week":
+                condition = `${field} >= '${new Date(today.setDate(today.getDate() - today.getDay() + 7)).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.setDate(today.getDate() - today.getDay() + 14)).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "last_month":
+                condition = `${field} >= '${new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "this_month":
+                condition = `${field} >= '${new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "next_month":
+                condition = `${field} >= '${new Date(today.getFullYear(), today.getMonth() + 1, 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "last_year":
+                condition = `${field} >= '${new Date(today.getFullYear() - 1, 0, 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear(), 0, 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "this_year":
+                condition = `${field} >= '${new Date(today.getFullYear(), 0, 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear() + 1, 0, 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            case "next_year":
+                condition = `${field} >= '${new Date(today.getFullYear() + 1, 0, 1).toISOString().split("T")[0]} 00:00:00' AND ${field} < '${new Date(today.getFullYear() + 2, 0, 1).toISOString().split("T")[0]} 00:00:00'`;
+                break;
+            // Add cases for other date strings as needed
+            default:
+                condition = `${field} LIKE '%${dateString}%'`; // Fallback for other strings
+        }
+
+        return condition;
+    }
 }

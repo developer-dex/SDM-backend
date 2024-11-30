@@ -4,6 +4,7 @@ import { supportTicketController } from "../modules/supportTicket/supportTicket.
 import { clientAdminController } from "../modules/clientAdmin/clientAdmin.controller";
 import { createValidator } from "express-joi-validation";
 import { createSupportTicketRequest, paginationRequest, updateSupportTicketRequest } from "../modules/clientAdmin/clientAdmin.validation";
+import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
 
 const ClientDashboardApi: Router = Router();
 
@@ -75,4 +76,21 @@ ClientDashboardApi.get(
     validator.query(paginationRequest),
     clientAdminController.getUsersList
 );
+
+ClientDashboardApi.get(
+    "/dashboard",
+    clientAdminController.getDashboard
+);
+
+// Setting API
+ClientDashboardApi.get("/setting", clientAdminController.getSetting);
+
+// Training Files
+ClientDashboardApi.get(
+    "/training-files",
+    websiteFrontImageController.getTrainingFiles
+);
+
+// Dashboard
+// ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 export default ClientDashboardApi;

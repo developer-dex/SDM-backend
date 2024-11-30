@@ -66,15 +66,22 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { limit, page, searchParameter } =
+        const { limit, page, searchParameter, isExportToEmail, recipientEmail, full_name, email, phoneNo, role, permissions, password, created_at } =
             req.query as unknown as IGetAllUsersRequest;
-        const token_payload = req.token_payload;
         try {
             const clients = await this.superAdminService.getAllUsers(
                 page,
                 limit,
                 searchParameter,
-                token_payload.data
+                Boolean(isExportToEmail),
+                recipientEmail,
+                full_name,
+                email,
+                phoneNo,
+                role,
+                permissions,
+                password,
+                created_at
             );
             return res
                 .status(200)
@@ -299,6 +306,12 @@ export class SuperAdminController {
             end_date,
             payment_method,
             status,
+            isExportToEmail,
+            recipientEmail,
+            gst,
+            pan,
+            industry_type,
+            cost
         } = req.query as unknown as IGetAllUsersRequest;
         try {
             const clients = await this.superAdminService.getAllClients(
@@ -310,7 +323,13 @@ export class SuperAdminController {
                 start_date,
                 end_date,
                 payment_method,
-                status
+                status,
+                Boolean(isExportToEmail),
+                recipientEmail,
+                gst,
+                pan,
+                industry_type,
+                cost
             );
             return res
                 .status(200)
@@ -462,13 +481,39 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         try {
-            const { page, limit } = req.query as unknown as {
+            const { page, limit, isExportToEmail, recipientEmail, searchParameter, issue_date, expiry_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan, user_email } = req.query as unknown as {
                 page: number;
                 limit: number;
+                isExportToEmail?: string;
+                recipientEmail?: string;
+                searchParameter?: string,
+                issue_date?: string,
+                expiry_date?: string,
+                expiration_date?: string,
+                license_key?: string,
+                license_type?: string,
+                status?: string,
+                company_id?: string,
+                company_name?: string,
+                company_pan?: string,
+                user_email?: string
             };
             const licenses = await this.superAdminService.getAllLicenses(
                 page,
-                limit
+                limit,
+                Boolean(isExportToEmail),
+                recipientEmail,
+                searchParameter,
+                issue_date,
+                expiry_date,
+                expiration_date,
+                license_key,
+                license_type,
+                status,
+                company_id,
+                company_name,
+                company_pan,
+                user_email
             );
             return res
                 .status(200)
@@ -659,17 +704,37 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         try {
-            const { page, limit, isExportToEmail, recipientEmail } = req.query as unknown as {
+            const { page, limit, isExportToEmail, recipientEmail, searchParameter, createdAt, username, role, module, action, loginTime, logoutTime, start_from, end_to } = req.query as unknown as {
                 page: number;
                 limit: number;
                 isExportToEmail?: boolean;
                 recipientEmail?: string;
+                searchParameter?: string;
+                createdAt?: string;
+                username?: string;
+                role?: string;
+                module?: string;
+                action?: string;
+                loginTime?: string;
+                logoutTime?: string;
+                start_from?: string;
+                end_to?: string;
             };
             const auditLogs = await this.superAdminService.getAllAuditLogs(
                 page,
                 limit,
                 Boolean(isExportToEmail),
-                recipientEmail
+                recipientEmail,
+                searchParameter,
+                createdAt,
+                username,
+                role,
+                module,
+                action,
+                loginTime,
+                logoutTime,
+                start_from,
+                end_to
             );
             return res
                 .status(200)
@@ -696,14 +761,14 @@ export class SuperAdminController {
     };
 
     // Dashboard Temp
-    dashboardTemp = async (
+    dashboardDetails = async (
         req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
         try {
             // const requestData = req.body;
-            const data = await this.superAdminService.dashboardTemp();
+            const data = await this.superAdminService.dashboardDetails();
             return res
                 .status(200)
                 .send(

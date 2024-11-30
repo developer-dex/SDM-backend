@@ -36,6 +36,19 @@ export interface IGetAllUsersRequest {
     end_date?: string;
     payment_method?: string;
     status?: string;
+    isExportToEmail?: boolean;
+    recipientEmail?: string;
+    full_name?: string;
+    email?: string;
+    phoneNo?: string;
+    role?: string;
+    permissions?: string;
+    password?: string;
+    created_at?: string;
+    gst?: string;
+    pan?: string;
+    industry_type?: string;
+    cost?: string;
 }
 
 export interface ICreateClientRequest {

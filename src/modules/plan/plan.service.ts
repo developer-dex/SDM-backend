@@ -47,6 +47,11 @@ export class PlanService {
         }
     };
 
+    updatePlan = async (planId: string, features: object) => {
+        const updateQuery = `UPDATE Plans SET features = '${JSON.stringify(features)}' WHERE id = '${planId}'`;
+        return await executeQuery(updateQuery);
+    }
+
     listing = async (isAdminSide: boolean) => {
         let query = 'SELECT * FROM Plans';
         if (!isAdminSide) {

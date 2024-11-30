@@ -5,8 +5,12 @@ export interface paginationRequeset {
     limit: string;
     searchParameter?: string;
     jobName?: string;
-    jobGroup?: string;
-    backupType?: string;
+    ipMachine?: string;
+    sharedPath?: string;
+    pingStatus?: string;
+    connection?: string;
+    errors?: string;
+    entryDateTime?: string;
     sourceIp?: string;
     sourceFolder?: string;
     sourceUsername?: string;
@@ -19,8 +23,29 @@ export interface paginationRequeset {
     entryDate?: string;
     moduleNames?: string;
     password?: string;
-
-    
+    jobGroup?: string;
+    backupType?: string;
+    destinationFolder?: string;
+    status?: string;
+    startTime?: string;
+    action?: string;
+    oldValue?: string;
+    NewValue?: string;
+    Username?: string;
+    UserRole?: string;
+    JobName?: string;
+    Module?: string;
+    Action?: string;
+    DateTimeStamp?: string;
+    LoginTime?: string;
+    LogoutTime?: string;
+    ClientFolderName?: string;
+    ClientData?: string;
+    BaseFolderName?: string;
+    BaseFolderData?: string;
+    Difference?: string;
+    Status?: string;
+    EntryDateTime?: string;
 }
 
 export interface createSupportTicketRequest {

@@ -47,7 +47,17 @@ export const listingPlanRequest = Joi.object({
 
 
 export const getAllLicensesRequest = Joi.object({
-    page: Joi.number().required(),
-    limit: Joi.number().required(),
+    page: Joi.number().optional(),
+    limit: Joi.number().optional(),
     searchParameter: Joi.string().optional(),
+    issue_date: Joi.string().optional(),
+    expiry_date: Joi.string().optional(),
+    expiration_date: Joi.string().optional(),
+    license_key: Joi.string().optional(),
+    license_type: Joi.string().optional(),
+    status: Joi.string().optional(),
+    company_id: Joi.string().optional(),
+    company_name: Joi.string().optional(),
+    company_pan: Joi.string().optional(),
+    user_email: Joi.string().optional(),
 });

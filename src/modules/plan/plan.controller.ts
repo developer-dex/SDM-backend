@@ -44,6 +44,37 @@ export class PlanController {
         }
     };
 
+    updatePlan = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { plan_id, features } = req.body;
+            console.log("features: ", features);
+            await this.planService.updatePlan(plan_id, features);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Plan updated successfully",
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    }
+
     listing = async (
         req: Request & { token_payload?: any },
         res: Response,

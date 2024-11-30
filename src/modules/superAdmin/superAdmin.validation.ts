@@ -4,6 +4,8 @@ export const getAllusersRequest = Joi.object({
     page: Joi.number().required(),
     limit: Joi.number().required(),
     searchParameter: Joi.string().optional(),
+    isExportToEmail: Joi.string().optional(),
+    recipientEmail: Joi.string().optional(),
 });
 
 export const changeNotificationStatusRequest = Joi.object({
@@ -31,7 +33,7 @@ export const updateUserRequest = Joi.object({
 });
 
 export const deleteClientRequest = Joi.object({
-    companyId: Joi.string().required(),
+    userId: Joi.string().required(),
 });
 
 export const getAllClientsRequest = Joi.object({
@@ -44,6 +46,8 @@ export const getAllClientsRequest = Joi.object({
     end_date: Joi.string().optional(),
     payment_method: Joi.string().optional(),
     status: Joi.string().optional(),
+    isExportToEmail: Joi.string().optional(),
+    recipientEmail: Joi.string().optional(),
 });
 
 export const createClientRequest = Joi.object({

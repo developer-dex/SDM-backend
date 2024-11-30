@@ -816,3 +816,66 @@ export const initializeDatabase = () => {
       clientConneection.execSql(request);
     });
   };
+
+
+  /// Testing pooling
+  import ConnectionPool from 'tedious-connection-pool';
+
+  // Pool Configuration
+const poolConfig = {
+    min: 2,  // Minimum number of connections in the pool
+    max: 10, // Maximum number of connections in the pool
+    idleTimeoutMillis: 30000 // Time before idle connection is closed
+  };
+
+  const dbConfig = {
+    server: getEnvVar("SQLBASE_HOST"), // Replace with your server
+    options: {
+      database: SUPER_ADMIN_DATABASE, // Replace with your database
+      encrypt: true,
+      port: Number(getEnvVar("SQLBASE_PORT")) || 1440,
+      trustServerCertificate: true, // Allows self-signed certificates
+
+    },
+    authentication: {
+      type: "default",
+      options: {
+        userName: getEnvVar("SQLBASE_USER"), // Replace with your username
+        password: getEnvVar("SQLBASE_PASSWORD"), // Replace with your password
+        
+      },
+    },
+  }
+
+  console.log("dbConfig: ", dbConfig);
+
+  // Create a new connection pool
+// const pool = new ConnectionPool(poolConfig, dbConfig);
+
+// // Listen for pool events (optional)
+// pool.on('error', (err) => {
+//   console.error('Pool Error:', err);
+// });
+
+
+// Function to execute a single query
+// export const executeQuery2 = (query) => {
+//     return new Promise((resolve, reject) => {
+//       pool.acquire((err, connection) => {
+//         if (err) {
+//           return reject(err);
+//         }
+  
+//         const request = new Request(query, (err, rowCount, rows) => {
+//           connection.release(); // Release the connection back to the pool
+  
+//           if (err) {
+//             return reject(err);
+//           }
+//           resolve({ rowCount, rows });
+//         });
+  
+//         connection.execSql(request);
+//       });
+//     });
+//   };

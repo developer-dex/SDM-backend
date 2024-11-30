@@ -3,7 +3,7 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import { SUPER_ADMIN_DATABASE, UPLOAD_PATH } from "./helpers/constants";
+import { CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, replicateTables } from "./config/databaseConfig";
 
 /**
@@ -17,6 +17,8 @@ app.set("view engine", "ejs");
  */
 // Serve static files from the UPLOAD_PATH directory
 app.use("/assets", express.static(UPLOAD_PATH));
+app.use("/assets", express.static(CLIENT_WEBSITE_BANNER_PATH));
+app.use("/assets", express.static(TRAINING_FILES_PATH));
 
 /**
  * Website Database Connection
