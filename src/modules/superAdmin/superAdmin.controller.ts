@@ -422,7 +422,7 @@ export class SuperAdminController {
                 isPanNumberExist[0].company_id,
                 requestData.company_id
             );
-            if (isPanNumberExist[0].company_id === requestData.company_id) {
+            if (isPanNumberExist[0].company_id !== requestData.company_id) {
                 return res
                     .status(StatusCodes.BAD_REQUEST)
                     .send(
@@ -438,7 +438,7 @@ export class SuperAdminController {
                 await this.superAdminService.getDatabyConnection(
                     `SELECT * FROM ClientManagement WHERE gst = '${requestData.gst_number}'`
                 );
-            if (isGstNumberExist[0].company_id === requestData.company_id) {
+            if (isGstNumberExist[0].company_id !== requestData.company_id) {
                 return res
                     .status(StatusCodes.BAD_REQUEST)
                     .send(
@@ -618,6 +618,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
+            console.log("update license:::", error)
             return res
                 .status(200)
                 .send(

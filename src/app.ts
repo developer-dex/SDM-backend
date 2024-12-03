@@ -36,7 +36,7 @@ initializeDatabase();
 
 initializeDatabaseClient()
 
-// replicateTables('DEMODATA', "DEMODATA3");
+// replicateTables('SuperAdmin', "SuperAdmin3");
 /**
  * Connect to SQLBASE Database
  */

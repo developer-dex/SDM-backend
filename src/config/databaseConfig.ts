@@ -210,12 +210,8 @@ export async function replicateTables(
     destinationDb: string
 ): Promise<void> {
     try {
-        // Connect to the SQL server without specifying a database
         const serverConnection = await connectServer();
-
-        // Create destination database if it does not exist
         await createDatabaseIfNotExists(serverConnection, destinationDb);
-        // Connect to source and destination databases
         await connectSourceDatabase(sourceDb);
         await connectDestinationDatabase(destinationDb);
 
@@ -223,36 +219,32 @@ export async function replicateTables(
         const tables = await getTableNames(connection);
 
         for (const table of tables) {
-            // Step 2: Get the table schema
-            const schemaQuery = `SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH 
-                                 FROM INFORMATION_SCHEMA.COLUMNS 
-                                 WHERE TABLE_NAME = '${table}'`;
+            // Step 2: Get the table schema with keys and constraints
+            const schemaQuery = `
+                SELECT COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = '${table}';
 
-            const columns = await new Promise<
-                { name: string; type: string; length: number | null }[]
-            >((resolve, reject) => {
-                const columns: {
-                    name: string;
-                    type: string;
-                    length: number | null;
-                }[] = [];
-                const schemaRequest = new Request(schemaQuery, (err) => {
-                    if (err) reject(err);
-                    else resolve(columns);
-                });
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_NAME = '${table}' AND CONSTRAINT_NAME LIKE 'PK_%';
 
-                schemaRequest.on("row", (row) => {
-                    columns.push({
-                        name: row[0].value,
-                        type: row[1].value,
-                        length: row[2].value,
-                    });
-                });
+                SELECT COLUMN_NAME
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+                WHERE TABLE_NAME = '${table}' AND CONSTRAINT_NAME LIKE 'UQ_%';
 
-                connection!.execSql(schemaRequest);
-            });
+                SELECT CONSTRAINT_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+                FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS RC
+                INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE KCU
+                ON RC.CONSTRAINT_NAME = KCU.CONSTRAINT_NAME
+                WHERE KCU.TABLE_NAME = '${table}';
+            `;
 
+            const { columns, primaryKey, uniqueKeys, foreignKeys } = await getTableSchemaDetails(schemaQuery);
+
+            // Step 3: Build CREATE TABLE statement
             let createTableSQL = `CREATE TABLE ${destinationDb}.dbo.${table} (`;
+
             columns.forEach((column, index) => {
                 createTableSQL += `${column.name} ${column.type}`;
                 if (column.length) {
@@ -262,66 +254,39 @@ export async function replicateTables(
                         createTableSQL += `(${column.length})`;
                     }
                 }
-                if (index < columns.length - 1) createTableSQL += ", ";
-            });
-            createTableSQL += ")";
-
-            console.log("createTableSQL:::", createTableSQL);
-
-            // Step 3: Create the table in the destination database
-            await new Promise<void>((resolve, reject) => {
-                const destinationRequest = new Request(
-                    createTableSQL,
-                    (err) => {
-                        if (err) reject(err);
-                        else resolve();
-                    }
-                );
-                destinationConnection!.execSql(destinationRequest);
+                if (column.isNullable === 'NO') {
+                    createTableSQL += ` NOT NULL`;
+                }
+                if (index < columns.length - 1) createTableSQL += `, `;
             });
 
-            // // Step 4: Copy data from source to destination
-            // const dataQuery = `SELECT * FROM ${table}`;
-            // const dataResult = await new Promise<any[]>((resolve, reject) => {
-            //     const rows: any[] = [];
-            //     const dataRequest = new Request(dataQuery, (err) => {
-            //         if (err) reject(err);
-            //         else resolve(rows);
-            //     });
+            // Add Primary Key
+            if (primaryKey.length) {
+                createTableSQL += `, PRIMARY KEY (${primaryKey.join(', ')})`;
+            }
 
-            //     dataRequest.on("row", (row) => {
-            //         const rowData: { [key: string]: any } = {};
-            //         row.forEach((column) => {
-            //             rowData[column.metadata.colName] = column.value;
-            //         });
-            //         rows.push(rowData);
-            //     });
+            // Add Unique Keys
+            uniqueKeys.forEach((uniqueKey) => {
+                createTableSQL += `, UNIQUE (${uniqueKey})`;
+            });
 
-            //     connection!.execSql(dataRequest);
-            // });
+            createTableSQL += `);`;
 
-            // // Insert data into the destination table
-            // for (const row of dataResult) {
-            //     const columns = Object.keys(row).join(", ");
-            //     const values = Object.values(row)
-            //         .map((value) =>
-            //             typeof value === "string"
-            //                 ? `'${value.replace(/'/g, "''")}'`
-            //                 : value
-            //         )
-            //         .join(", ");
+            console.log(`createTableSQL::: ${createTableSQL}`);
 
-            //     const insertQuery = `INSERT INTO ${destinationDb}.dbo.${table} (${columns}) VALUES (${values})`;
-            //     console.log("insertQuery:::",insertQuery);
+            // Step 4: Create the table in the destination database
+            await executeQueryReplace(destinationConnection, createTableSQL);
 
-            //     await new Promise<void>((resolve, reject) => {
-            //         const insertRequest = new Request(insertQuery, (err) => {
-            //             if (err) reject(err);
-            //             else resolve();
-            //         });
-            //         destinationConnection!.execSql(insertRequest);
-            //     });
-            // }
+            // Step 5: Add Foreign Keys
+            for (const fk of foreignKeys) {
+                const addForeignKeyQuery = `
+                    ALTER TABLE ${destinationDb}.dbo.${table}
+                    ADD CONSTRAINT ${fk.constraintName}
+                    FOREIGN KEY (${fk.columnName})
+                    REFERENCES ${destinationDb}.dbo.${fk.referencedTableName}(${fk.referencedColumnName});
+                `;
+                await executeQueryReplace(destinationConnection, addForeignKeyQuery);
+            }
         }
 
         console.log("Tables replicated successfully!");
@@ -332,6 +297,63 @@ export async function replicateTables(
         if (destinationConnection) destinationConnection.close();
     }
 }
+
+async function getTableSchemaDetails(query: string): Promise<{
+    columns: { name: string; type: string; length: number | null; isNullable: string }[];
+    primaryKey: string[];
+    uniqueKeys: string[];
+    foreignKeys: { constraintName: string; columnName: string; referencedTableName: string; referencedColumnName: string }[];
+}> {
+    return new Promise((resolve, reject) => {
+        const columns: { name: string; type: string; length: number | null; isNullable: string }[] = [];
+        const primaryKey: string[] = [];
+        const uniqueKeys: string[] = [];
+        const foreignKeys: { constraintName: string; columnName: string; referencedTableName: string; referencedColumnName: string }[] = [];
+
+        const request = new Request(query, (err) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve({ columns, primaryKey, uniqueKeys, foreignKeys });
+            }
+        });
+
+        request.on("row", (row) => {
+            if (row[0].metadata.colName === "COLUMN_NAME") {
+                columns.push({
+                    name: row[0].value,
+                    type: row[1].value,
+                    length: row[2].value,
+                    isNullable: row[3].value,
+                });
+            } else if (row[0].metadata.colName.includes("PK_")) {
+                primaryKey.push(row[0].value);
+            } else if (row[0].metadata.colName.includes("UQ_")) {
+                uniqueKeys.push(row[0].value);
+            } else {
+                foreignKeys.push({
+                    constraintName: row[0].value,
+                    columnName: row[1].value,
+                    referencedTableName: row[2].value,
+                    referencedColumnName: row[3].value,
+                });
+            }
+        });
+
+        connection.execSql(request);
+    });
+}
+
+async function executeQueryReplace(connection: Connection, query: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const request = new Request(query, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+        connection.execSql(request);
+    });
+}
+
 
 async function createDatabaseIfNotExists(
     serverConnection: Connection,

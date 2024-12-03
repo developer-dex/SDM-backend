@@ -254,7 +254,7 @@ export class SuperAdminService {
         industry_type?: string,
         cost?: string
     ) => {
-        let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
+        let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
 
         const filters = [];
         const searchFilters = [];
@@ -366,6 +366,8 @@ export class SuperAdminService {
         return await executeQuery(query);
     };
 
+    islicenceExist 
+
     deleteClient = async (companyId: string) => {
         const query = `DELETE FROM ClientManagement WHERE company_id = '${companyId}'`;
         return await executeQuery(query);
@@ -408,7 +410,7 @@ export class SuperAdminService {
         company_pan?: string,
         user_email?: string
     ) => {
-        let query = `SELECT l.issue_date, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
+        let query = `SELECT l.issue_date, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email, u.id as user_id FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
 
         const filters = [];
         const searchFilters = [];
@@ -503,7 +505,7 @@ export class SuperAdminService {
     };
 
     createLicense = async (requestData: ICreateLicenseRequest) => {
-        const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, p.plan_name, u.id FROM Users u 
+        const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name, u.id FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
         LEFT JOIN Plans p ON p.id = s.planId
@@ -521,7 +523,7 @@ export class SuperAdminService {
         const { issue_date, expiry_date, status } = requestData;
 
         console.log("Checking values:", {
-            userId: user.rows[0].id,
+            userId: user.rows[0].plan_type,
             issueDate: issue_date,
             expiryDate: expiry_date,
         });
@@ -532,14 +534,14 @@ export class SuperAdminService {
         }
 
         const license_key = generateLicenseKey(
-            user.rows[0].plan_name,
+            user.rows[0].plan_type,
             user.rows[0].pan,
             issue_date,
             expiry_date
         );
 
         console.log("license_key:::", license_key);
-        const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_name}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}')`;
+        const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_type}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}')`;
         return await executeQuery(query);
     };
 
@@ -549,11 +551,13 @@ export class SuperAdminService {
     };
 
     updateLicense = async (requestData: ICreateLicenseRequest) => {
-        const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, p.plan_name FROM Users u 
+        const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
-        LEFT JOIN Plan p ON p.id = s.planId
+        LEFT JOIN Plans p ON p.id = s.planId
         WHERE u.id = '${requestData.user_id}'`;
+
+        console.log("findUserQuery", findUserQuery)
         const user = await executeQuery(findUserQuery);
         if (user.rows.length === 0) {
             return this.responseService.responseWithoutData(
@@ -562,14 +566,15 @@ export class SuperAdminService {
                 "User not found"
             );
         }
+        console.log("user[0]user[0]user[0]", user.rows[0].plan_type)
         const { license_id, issue_date, expiry_date, status } = requestData;
         const license_key = generateLicenseKey(
-            user[0].plan_name,
-            user[0].pan,
+            user.rows[0].plan_type,
+            user.rows[0].pan,
             issue_date,
             expiry_date
         );
-        const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user[0].plan_name}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user[0].company_id}', company_name = '${user[0].company_name}', company_pan = '${user[0].pan}' WHERE id = '${license_id}'`;
+        const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user.rows[0].plan_type}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user.rows[0].company_id}', company_name = '${user.rows[0].company_name}', company_pan = '${user.rows[0].pan}' WHERE id = '${license_id}'`;
         return await executeSqlQuery(query);
     };
 

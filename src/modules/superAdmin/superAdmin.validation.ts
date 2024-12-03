@@ -71,8 +71,8 @@ export const listingPlanRequest = Joi.object({
 });
 
 export const createLicenseRequest = Joi.object({
-    // license_id: Joi.string().optional(),
-    user_id: Joi.string().required(),
+    license_id: Joi.number().optional(),
+    user_id: Joi.number().required(),
     issue_date: Joi.string().required(),
     expiry_date: Joi.string().required(),
     // license_type: Joi.string().required(),
