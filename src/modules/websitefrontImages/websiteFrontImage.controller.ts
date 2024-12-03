@@ -266,6 +266,7 @@ export class WebsiteFrontImageController {
         const trainingFile = req.file;
         const tokenPayload = req.token_payload;
         const { issue_date, file_name } = req.body;
+        console.log(trainingFile, tokenPayload, issue_date, file_name);
         try {
             await this.websiteFrontImageService.addTrainingFiles(
                 trainingFile,
@@ -322,6 +323,42 @@ export class WebsiteFrontImageController {
                         "Internal server error"
                     )
                 );
+        }
+    }
+
+    deleteTrainingFiles = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const fileId = parseInt(req.params.fileId);
+            await this.websiteFrontImageService.deleteTrainingFiles(fileId);
+            return res
+                .status(200)
+                .send(
+                this.responseService.responseWithoutData(false, StatusCodes.OK, "Training file deleted successfully")
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                );
+        }
+    }
+
+    updateTrainingFiles = async (req: Request, res: Response, next: NextFunction) => {
+        const fileId = parseInt(req.params.fileId);
+        const file = req.file;
+        const { issue_date, filename } = req.body;
+        try {
+            await this.websiteFrontImageService.updateTrainingFiles(fileId, file, issue_date, filename);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.OK, "Training file updated successfully")
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 }

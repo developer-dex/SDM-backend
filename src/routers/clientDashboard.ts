@@ -91,6 +91,12 @@ ClientDashboardApi.get(
     websiteFrontImageController.getTrainingFiles
 );
 
+// Ticket manager
+ClientDashboardApi.get(
+    "/ticket-manager",
+    clientAdminController.getAllSupportTicketTitles
+);
+
 // Dashboard
 // ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 export default ClientDashboardApi;

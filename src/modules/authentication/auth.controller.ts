@@ -25,7 +25,7 @@ export class AuthController {
                 requestData.email
             );
             console.log("isExistUser", isExistUser);
-            if (!isExistUser[0]) {
+            if (!isExistUser.rows[0]) {
                 return res
                     .status(200)
                     .send(
@@ -36,23 +36,23 @@ export class AuthController {
                         )
                     );
             }
-            const isPasswordCorrect = this.authService.passwordMatch(
-                requestData.password,
-                isExistUser[0].password
-            );
-            if (!isPasswordCorrect) {
-                return res
-                    .status(StatusCodes.OK)
-                    .send(
-                        this.responseService.responseWithoutData(
-                            false,
-                            StatusCodes.NOT_ACCEPTABLE,
-                            "Incorrect password"
-                        )
-                    );
-            }
+            // const isPasswordCorrect = this.authService.passwordMatch(
+            //     requestData.password,
+            //     isExistUser.rows[0].password
+            // );
+            // if (!isPasswordCorrect) {
+            //     return res
+            //         .status(StatusCodes.OK)
+            //         .send(
+            //             this.responseService.responseWithoutData(
+            //                 false,
+            //                 StatusCodes.NOT_ACCEPTABLE,
+            //                 "Incorrect password"
+            //             )
+            //         );
+            // }
             const responseData = await this.authService.login(
-                isExistUser[0].id, isExistUser[0].databaseName
+                isExistUser.rows[0].id, isExistUser.rows[0].databaseName
             );
             return res
                 .status(200)

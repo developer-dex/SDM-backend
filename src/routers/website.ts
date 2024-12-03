@@ -75,7 +75,7 @@ WebsiteApi.get(
 // Subscription Routes
 WebsiteApi.post("/subscription",authMiddleware.verifyjwtToken, subscriptionController.createSubscription);
 WebsiteApi.post("/webhook", subscriptionController.handleSubscriptionWebhook);
-WebsiteApi.post("/subscription-success", subscriptionController.subscriptionSuccess);
+WebsiteApi.get("/subscription-success", subscriptionController.subscriptionSuccess);
 
 // Front Image Routes
 WebsiteApi.get(

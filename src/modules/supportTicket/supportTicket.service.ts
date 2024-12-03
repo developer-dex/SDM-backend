@@ -135,6 +135,7 @@ JOIN
         requestData: any,
         token_payload: any
     ) => {
+        console.log("requestData",requestData);
         const existTicketInfoQuery = `SELECT * FROM SupportTickets WHERE id = ${requestData.id}`;
         const existTicketInfo = await executeQuery(existTicketInfoQuery);
 
@@ -150,6 +151,7 @@ JOIN
                 (1000 * 60 * 60);
             isOnTime =
                 timeTakenInHours <= existTicketInfo.rows[0].take_time_in_hr;
+            console.log("isOnTime",isOnTime);
             updateSet += `, end_time = GETDATE(), is_on_time = ${isOnTime === true ? 1 : 0}`;
         }
 

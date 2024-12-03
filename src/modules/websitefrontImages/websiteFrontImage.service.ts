@@ -158,4 +158,26 @@ export class WebsiteFrontImageService {
         });
         return trainingFilesWithFullUrl;
     }
+
+    deleteTrainingFiles = async (fileId: number) => {
+        const query = `SELECT * FROM TrainingFiles WHERE id = ${fileId}`;
+        const existingImagePath = await executeQuery(query);
+        if (existingImagePath.rows[0]) {
+            removeFile(existingImagePath.rows[0].filePath);
+        }
+        const deleteQuery = `DELETE FROM TrainingFiles WHERE id = ${fileId}`;
+        await executeQuery(deleteQuery);
+    }
+
+    updateTrainingFiles = async (fileId: number, file: Express.Multer.File, issue_date: string, filename: string) => {
+        if (file) {
+            const query = `SELECT * FROM TrainingFiles WHERE id = ${fileId}`;
+            const existingImagePath = await executeQuery(query);
+            if (existingImagePath.rows[0]) {
+                removeFile(existingImagePath.rows[0].filePath);
+            }
+        }
+        const updateQuery = `UPDATE TrainingFiles SET ${file ? `filePath = '${file.path}',` : ''} issue_date = '${issue_date}', filename = '${filename}' WHERE id = ${fileId}`;
+        await executeQuery(updateQuery);
+    }
 }

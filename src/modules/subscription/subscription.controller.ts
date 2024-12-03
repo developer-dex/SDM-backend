@@ -20,14 +20,15 @@ export class SubscriptionController {
     ) => {
         const requestData = req.body;
         const token_payload = req.token_payload;
-        console.log("token_payload", token_payload);
+        console.log("requestData", requestData);
         try {
             const isPlanExist = await this.subscriptionService.existPlan(requestData.planId);
-            if(!isPlanExist[0]) {
+            console.log("isPlanExist", isPlanExist);
+            if(!isPlanExist) {
                 return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "Plan not found"));
             }
             const subscriptionData =
-                await this.subscriptionService.createSubscription(token_payload.data._id, isPlanExist) ;
+                await this.subscriptionService.createSubscription(token_payload.data.id, isPlanExist) ;
             return res
                 .status(200)
                 .send(
@@ -126,7 +127,7 @@ export class SubscriptionController {
     subscriptionSuccess = async (req: Request, res: Response, next: NextFunction) => {
         console.log("subscription success", req.body);
         try {
-            await this.subscriptionService.subscriptionSuccess(req.body);
+            await this.subscriptionService.subscriptionSuccess(req.query.orderId as string);
             return res.redirect(getEnvVar("FRONTEND_URL") + "/home");
           
         } catch (error) {

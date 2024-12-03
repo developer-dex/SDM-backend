@@ -928,6 +928,33 @@ export class SuperAdminController {
         }
     };
 
+    // Analytics
+    getAnalytics = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { page, limit } = req.query as unknown as {
+                page: string;
+                limit: string;
+            };
+            const analytics = await this.superAdminService.getAnalytics(Number(page), Number(limit));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(true, StatusCodes.OK, "Analytics fetched successfully", analytics)
+                );
+        } catch (error) {
+            console.log("superAdmin getAnalytics ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                );
+        }
+    }
+
     exportCsv = async (
         req: Request & { token_payload?: any },
         res: Response,

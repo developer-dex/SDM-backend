@@ -233,4 +233,18 @@ AdminDashboardApi.get(
     websiteFrontImageController.getTrainingFiles
 );
 
+AdminDashboardApi.delete(
+    "/training-files/:fileId/delete",
+    websiteFrontImageController.deleteTrainingFiles
+);
+
+AdminDashboardApi.put(
+    "/training-files/:fileId/update",
+    fileUploadMiddleware.uploadTrainingFiles,
+    websiteFrontImageController.updateTrainingFiles
+);
+
+// Analytics
+AdminDashboardApi.get("/analytics", superAdminController.getAnalytics);
+
 export default AdminDashboardApi;

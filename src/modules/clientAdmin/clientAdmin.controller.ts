@@ -1,15 +1,17 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { ResponseService } from "../../helpers/response.service";
 import { ClientAdminService } from "./clientAdmin.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import { paginationRequeset } from "./clientAdmin.interface";
+import { SuperAdminService } from "../superAdmin/superAdmin.service";
 
 export class ClientAdminController {
     private responseService: ResponseService;
     private clientAdminService: ClientAdminService;
-
+    private superAdminService: SuperAdminService;
     constructor() {
         this.responseService = new ResponseService();
+        this.superAdminService = new SuperAdminService();
         this.clientAdminService = new ClientAdminService();
     }
 
@@ -306,6 +308,41 @@ export class ClientAdminController {
                 .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
+
+    // Support Ticket Management
+    // support ticket management
+    getAllSupportTicketTitles = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+           
+            const supportTicketTitles =
+                await this.superAdminService.getAllSupportTicketTitles();
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Support ticket titles fetched successfully",
+                        supportTicketTitles
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getAllSupportTicketTitles ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 
 }
 

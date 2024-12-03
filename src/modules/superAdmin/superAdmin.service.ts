@@ -839,6 +839,7 @@ const query2 = `
         const latestSupportTicketData = await executeQuery(latestSupportTicketDataQuery);
         const plansOverviewData = await executeQuery(plansOverviewQuery);
         const result = await executeQuery(query2);
+        
 
 
         // Return the counts in the final result
@@ -854,10 +855,10 @@ const query2 = `
 
     // Support Ticket Management
 
-    getAllSupportTicketTitles = async (page: number, limit: number) => {
-        const { offset, limit: limitData } = calculatePagination(page, limit);
+    getAllSupportTicketTitles = async (page?: number, limit?: number) => {
         let query = `SELECT * FROM SupportTicketTitles`;
         if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
@@ -884,6 +885,16 @@ const query2 = `
         const query = `UPDATE SupportTicketTitles SET title = '${requestData.title}' WHERE id = '${requestData.titleId}'`;
         return await executeQuery(query);
     };
+
+    // Analytics
+    getAnalytics = async (page: number, limit: number) => {
+        
+        const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
+        const listOfClients = await executeQuery(this.listOfClientsQuery(page, limit));
+        const totalCount = await executeQuery(this.listOfClientsCountQuery());
+        console.log(totalCount.rows[0]);
+        return {revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows, listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
+    }
 
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
@@ -991,5 +1002,177 @@ const query2 = `
         }
 
         return condition;
+    }
+
+    private revenueAndSubscriptionMatricesQuery = () => {
+        return `WITH SubscriptionData AS (
+            SELECT 
+                SH.userId,
+                P.price AS PlanPrice,
+                P.[plan_type],
+                SH.startDate,
+                SH.cancelledAt,
+                ISNULL(DATEDIFF(DAY, SH.startDate, ISNULL(SH.cancelledAt, GETDATE())), 0) AS LifetimeDays,
+                ROW_NUMBER() OVER (PARTITION BY SH.userId ORDER BY SH.startDate DESC) AS RowNum,
+                LAG(P.price) OVER (PARTITION BY SH.userId ORDER BY SH.startDate) AS PreviousPlanPrice
+            FROM 
+                SuperAdmin.dbo.SubscriptionHistory SH
+            JOIN 
+                SuperAdmin.dbo.Plans P ON SH.planId = P.id
+            WHERE 
+                SH.status IN ('active', 'expired', 'cancelled')
+        )
+        SELECT 
+         
+            SUM(SD.PlanPrice) AS TotalRevenue,
+        
+         
+            SUM(CASE WHEN SD.[plan_type] = 'monthly' THEN SD.PlanPrice ELSE SD.PlanPrice / 12 END) AS MonthlyRecurringRevenue,
+        
+         
+            SUM(CASE WHEN SD.[plan_type] = 'yearly' THEN SD.PlanPrice ELSE SD.PlanPrice * 12 END) AS AnnualRecurringRevenue,
+        
+         
+            SUM(SD.PlanPrice) / NULLIF(AVG(SD.LifetimeDays), 0) AS CustomerLifetimeValue,
+        
+         
+            COUNT(CASE 
+                    WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1
+                    ELSE NULL
+                 END) AS UpgradeCount,
+        
+            COUNT(CASE 
+                    WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1
+                    ELSE NULL
+                 END) AS DowngradeCount,
+        
+            COUNT(CASE 
+                    WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1
+                    ELSE NULL
+                 END) AS SamePlanCount,
+        
+            
+            CAST(COUNT(CASE 
+                       WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1
+                       ELSE NULL
+                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS UpgradePercentage,
+        
+        
+            CAST(COUNT(CASE 
+                       WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1
+                       ELSE NULL
+                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS DowngradePercentage,
+        
+            
+            CAST(COUNT(CASE 
+                       WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1
+                       ELSE NULL
+                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS SamePlanPercentage
+        FROM 
+            SubscriptionData SD;`;
+    }
+
+    private listOfClientsQuery = (page: number, limit: number) => {
+        let query = `WITH SubscriptionData AS (
+            SELECT 
+                CM.company_id,
+                CM.company_name,
+                P.plan_type,
+                SH.status AS plan_activation,
+                P.[plan_type] AS revenue_type,
+                P.price AS total_revenue,
+                ROW_NUMBER() OVER (PARTITION BY SH.userId ORDER BY SH.startDate DESC) AS RowNum,
+                LAG(P.price) OVER (PARTITION BY SH.userId ORDER BY SH.startDate) AS PreviousPlanPrice,
+                P.price AS CurrentPlanPrice
+            FROM 
+                SuperAdmin.dbo.SubscriptionHistory SH
+            JOIN 
+                SuperAdmin.dbo.Plans P ON SH.planId = P.id
+            JOIN 
+                SuperAdmin.dbo.ClientManagement CM ON SH.userId = CM.user_id
+            WHERE 
+                SH.status IN ('active', 'cancelled', 'expired')
+        ),
+        PlanChange AS (
+            SELECT 
+                company_id,
+                company_name,
+                plan_type,
+                plan_activation,
+                revenue_type,
+                total_revenue,
+                CASE 
+                    WHEN CurrentPlanPrice > PreviousPlanPrice THEN 'Upgrades'
+                    WHEN CurrentPlanPrice < PreviousPlanPrice THEN 'Downgrades'
+                    ELSE 'Existing'
+                END AS Rates
+            FROM 
+                SubscriptionData
+            WHERE 
+                RowNum = 1 
+        )
+        SELECT 
+            company_id,
+            company_name,
+            plan_type,
+            plan_activation,
+            revenue_type,
+            total_revenue,
+            Rates
+        FROM 
+            PlanChange`;
+
+        if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY company_id OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        return query;
+    }
+
+    private listOfClientsCountQuery = () => {
+        let query = `WITH SubscriptionData AS (
+            SELECT 
+                CM.company_id,
+                CM.company_name,
+                P.plan_type,
+                SH.status AS plan_activation,
+                P.[plan_type] AS revenue_type,
+                P.price AS total_revenue,
+                ROW_NUMBER() OVER (PARTITION BY SH.userId ORDER BY SH.startDate DESC) AS RowNum,
+                LAG(P.price) OVER (PARTITION BY SH.userId ORDER BY SH.startDate) AS PreviousPlanPrice,
+                P.price AS CurrentPlanPrice
+            FROM 
+                SuperAdmin.dbo.SubscriptionHistory SH
+            JOIN 
+                SuperAdmin.dbo.Plans P ON SH.planId = P.id
+            JOIN 
+                SuperAdmin.dbo.ClientManagement CM ON SH.userId = CM.user_id
+            WHERE 
+                SH.status IN ('active', 'cancelled', 'expired')
+        ),
+        PlanChange AS (
+            SELECT 
+                company_id,
+                company_name,
+                plan_type,
+                plan_activation,
+                revenue_type,
+                total_revenue,
+                CASE 
+                    WHEN CurrentPlanPrice > PreviousPlanPrice THEN 'Upgrades'
+                    WHEN CurrentPlanPrice < PreviousPlanPrice THEN 'Downgrades'
+                    ELSE 'Existing'
+                END AS Rates
+            FROM 
+                SubscriptionData
+            WHERE 
+                RowNum = 1 
+        )
+        SELECT 
+            *
+        FROM 
+            PlanChange`;
+
+        return query;
     }
 }

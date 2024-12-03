@@ -1,0 +1,3 @@
+company_name,company_address,gst,pan,industry_type,company_id,plan_type,cost,status,payment_method,created_at
+Company 1,India,G3378R45D54,JgfuKDAD,IT,2451455,monthly,149,active,cash,2024-11-23T13:26:38.083Z
+NC,India,22AAAAA0000A1Z5,AFZPK7190K,New,NC-22AAAAA0000A1Z5,monthly,4000,active,card,2024-11-23T11:33:51.753Z
