@@ -2,7 +2,6 @@ import { Model } from "mongoose";
 import SupportTicket from "../../models/SupportTicket";
 import {
     executeQuery,
-    executeSqlQuery,
     retrieveData,
 } from "../../config/databaseConfig";
 import { Actions } from "../../helpers/constants";
@@ -61,7 +60,14 @@ JOIN
         is_on_time?: string
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
-        let query = `SELECT * FROM SupportTickets`;
+        let query = `SELECT 
+        *,
+        CASE 
+            WHEN status = 'PENDING' AND DATEDIFF(HOUR, createdAt, GETDATE()) > 24 THEN 1 
+            ELSE 0 
+        END AS highPriority
+    FROM SupportTickets
+    order by highPriority DESC, createdAt DESC`;
         if (offset && limitData) {
             query += `ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }

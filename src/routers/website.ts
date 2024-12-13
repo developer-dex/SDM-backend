@@ -18,6 +18,8 @@ import { websiteFrontImageController } from "../modules/websitefrontImages/websi
 import { getFrontImageValidation } from "../modules/websitefrontImages/websiteFrontImage.validation";
 import AdminDashboardApi from "./adminDashboard";
 import { AuthMiddleware } from "../middlewares/auth.middleware";
+import Joi from "joi";
+import { subscriptionSuccessRequest } from "../modules/subscription/subscription.validation";
 
 const authMiddleware = new AuthMiddleware();
 
@@ -75,7 +77,9 @@ WebsiteApi.get(
 // Subscription Routes
 WebsiteApi.post("/subscription",authMiddleware.verifyjwtToken, subscriptionController.createSubscription);
 WebsiteApi.post("/webhook", subscriptionController.handleSubscriptionWebhook);
-WebsiteApi.get("/subscription-success", subscriptionController.subscriptionSuccess);
+WebsiteApi.post("/subscription-success", 
+    validator.query(subscriptionSuccessRequest),
+    subscriptionController.subscriptionSuccess);
 
 // Front Image Routes
 WebsiteApi.get(

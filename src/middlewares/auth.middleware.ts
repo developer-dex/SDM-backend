@@ -4,7 +4,7 @@ import { ResponseService } from "../helpers/response.service";
 import { ReasonMessage, StatusCodes } from "../common/responseStatusEnum";
 import getEnvVar from "../helpers/util";
 import User from "../models/User";
-import { executeSqlQuery, retrieveData } from "../config/databaseConfig";
+import { executeQuery, retrieveData } from "../config/databaseConfig";
 
 export class AuthMiddleware {
     constructor(private responseService = new ResponseService()) {}

@@ -729,6 +729,9 @@ export const initializeDatabase = () => {
         encrypt: true,
         port: Number(getEnvVar("SQLBASE_PORT")) || 1440,
         trustServerCertificate: true, // Allows self-signed certificates
+        connectTimeout: 30000000, // Set connection timeout (15 seconds)
+        requestTimeout: 30000000, // Set query execution timeout (15 seconds)
+       
 
       },
       authentication: {

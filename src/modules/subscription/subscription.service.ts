@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import SubscriptionHistory from "../../models/SubscriptionsHistory";
 import crypto from "crypto";
 import User from "../../models/User";
-import { executeQuery, executeSqlQuery, retrieveData } from "../../config/databaseConfig";
+import { executeQuery, retrieveData } from "../../config/databaseConfig";
 
 export class SubscriptionService {
     private razorpay: Razorpay;
@@ -42,37 +42,37 @@ export class SubscriptionService {
         console.log("subscription_DETAILS:::::", subscription);
 
         // Check if the subscription is already created
-        // const subscriptionQuery = `SELECT * FROM Subscription WHERE userId = '${userId}'`;
-        // const existingSubscription = await retrieveData(subscriptionQuery);
-        // if (existingSubscription[0]) {
-        //     // Update the existing subscription
-        //     existingSubscription[0].status = 'created';
-        //     existingSubscription[0].subscriptionId = subscription.id;
-        //     existingSubscription[0].planId = plan.id;
-        //     await existingSubscription[0].save();
-        //     return {
-        //         subscriptionId: subscription.id,
-        //         customerName: userInfo[0].full_name,
-        //         customerEmail: userInfo[0].email,
-        //         planType: plan.plan_type
-        //     };
-        // }
+        const subscriptionQuery = `SELECT * FROM Subscription WHERE userId = '${userId}'`;
+        const existingSubscription = await retrieveData(subscriptionQuery);
+        if (existingSubscription[0]) {
+            // Update the existing subscription
+            existingSubscription[0].status = 'created';
+            existingSubscription[0].subscriptionId = subscription.id;
+            existingSubscription[0].planId = plan.id;
+            await existingSubscription[0].save();
+            return {
+                subscriptionId: subscription.id,
+                customerName: userInfo[0].full_name,
+                customerEmail: userInfo[0].email,
+                planType: plan.plan_type
+            };
+        }
 
         // // create user subscription entry
-        // await Subscription.create({
-        //     userId: userId,
-        //     planId: plan._id,
-        //     subscriptionId: subscription.id.toString(),
-        //     status: 'created',
-        // });
+        await Subscription.create({
+            userId: userId,
+            planId: plan.id,
+            subscriptionId: subscription.id.toString(),
+            status: 'created',
+        });
 
-        // // Also make entry in subscription history
-        // await SubscriptionHistory.create({
-        //     userId: new mongoose.Types.ObjectId(userId),
-        //     planId: plan._id,
-        //     subscriptionId: subscription.id.toString(),
-        //     status: 'created',
-        // });
+        // Also make entry in subscription history
+        await SubscriptionHistory.create({
+            userId: new mongoose.Types.ObjectId(userId),
+            planId: plan.id,
+            subscriptionId: subscription.id.toString(),
+            status: 'created',
+        });
 
 
   
@@ -114,10 +114,10 @@ export class SubscriptionService {
     subscriptionSuccess = async (orderId: string) => {
         console.log("successData", orderId);
         const updateSubscriptionStatusQuery  = `UPDATE Subscription SET status = 'active' WHERE subscriptionId = '${orderId}'`;
-        await executeSqlQuery(updateSubscriptionStatusQuery);
+        await executeQuery(updateSubscriptionStatusQuery);
 
         const updateSubscriptionHistoryStatusQuery = `UPDATE SubscriptionHistory SET status = 'active' WHERE subscriptionId = '${orderId}'`;
-        await executeSqlQuery(updateSubscriptionHistoryStatusQuery);
+        await executeQuery(updateSubscriptionHistoryStatusQuery);
         // const {razorpay_payment_id, razorpay_subscription_id, razorpay_signature} = orderId
 
         // const webhookSecret = process.env.RAZORPAY_KEY_SECRET as string
@@ -145,11 +145,11 @@ export class SubscriptionService {
 
     updateSubscription = async (subscriptionId: string, status: string) => {
         const updateQuery = `UPDATE Subscriptions SET status = '${status}' WHERE subscriptionId = '${subscriptionId}'`;
-        await executeSqlQuery(updateQuery);
+        await executeQuery(updateQuery);
     }
 
     updateSubscriptionHistory = async (subscriptionId: string, status: string) => {
         const updateQuery = `UPDATE SubscriptionsHistory SET status = '${status}' WHERE subscriptionId = '${subscriptionId}'`;
-        await executeSqlQuery(updateQuery);
+        await executeQuery(updateQuery);
     }
 }

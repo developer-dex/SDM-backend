@@ -19,7 +19,7 @@ import {
     RESET_PASSWORD_FRONT_URL,
     } from "../../helpers/constants";
 import { Request, Response } from "express";
-import { executeSqlQuery, retrieveData } from "../../config/databaseConfig";
+import { executeQuery, retrieveData } from "../../config/databaseConfig";
 
 export class AuthService {
     private jwtService: JwtService;
@@ -33,13 +33,13 @@ export class AuthService {
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
         const createUserQuery = `INSERT INTO Users (full_name, email, password) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}')`;
-        await executeSqlQuery(createUserQuery);
+        await executeQuery(createUserQuery);
 
         const newUserDetailsQuery = `SELECT * FROM Users WHERE email = '${signUpReqPayload.email}'`;
-        const newUserDetails = await retrieveData(
+        const newUserDetails = await executeQuery(
                         newUserDetailsQuery
         );
-        return this.generateLogInSignUpResponse(newUserDetails[0].id);
+        return this.generateLogInSignUpResponse(newUserDetails.rows[0].id);
     };
 
     forgetPassword = async (
@@ -58,7 +58,7 @@ export class AuthService {
             Date.now() +
                 parseTimeInterval(mailConfig.passwordResetTokenExpire).ms
         )}')`;
-        await executeSqlQuery(createResetPasswordQuery);
+        await executeQuery(createResetPasswordQuery);
            
 
         const emailData = {
@@ -75,7 +75,7 @@ export class AuthService {
         email: string
     ) => {
         const updateUserPasswordQuery = `UPDATE Users SET password = '${bcryptjs.hashSync(resetPasswordReqPayload.new_password)}' WHERE email = '${email}'`;
-        await executeSqlQuery(updateUserPasswordQuery);
+        await executeQuery(updateUserPasswordQuery);
         await this.deleteResetPasswordRecord(email);
     };
 
@@ -105,7 +105,7 @@ export class AuthService {
 
     private deleteResetPasswordRecord = async (email: string) => {
         const deleteResetPasswordQuery = `DELETE FROM ResetPassword WHERE email = '${email}'`;
-        await executeSqlQuery(deleteResetPasswordQuery);
+        await executeQuery(deleteResetPasswordQuery);
         // return await ResetPassword.deleteOne({ email });
     };
 

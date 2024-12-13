@@ -103,3 +103,35 @@ export const updateSupportTicketTitleRequest = Joi.object({
 export const exportCsvRequest = Joi.object({
     email: Joi.string().required(),
 });
+
+export const createNotificationRequest = Joi.object({
+    title: Joi.string().required(),
+    message: Joi.string().required(),
+    type: Joi.string().required(),
+    expiry_date: Joi.string().required(),
+    user_ids: Joi.array().required(),
+});
+
+export const notificationIdRequest = Joi.object({
+    notificationId: Joi.number().required(),
+});
+
+export const createFaqRequest = Joi.object({
+    question: Joi.string().required(),
+    answer: Joi.string().required(),
+});
+
+export const updateFaqRequest = Joi.object({
+    question: Joi.string().required(),
+    answer: Joi.string().required(),
+    faqId: Joi.number().required(),
+});
+
+export const deleteFaqRequest = Joi.object({
+    faqId: Joi.number().required(),
+});
+
+export const clientDashboardRequest = Joi.object({
+    DBName: Joi.string().required(),
+    userId: Joi.number().required(),
+});

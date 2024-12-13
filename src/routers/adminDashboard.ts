@@ -15,18 +15,23 @@ import {
     addOrUpdateClientRequest,
     addSupportTicketTitleRequest,
     changeNotificationStatusRequest,
+    clientDashboardRequest,
     createClientRequest,
+    createFaqRequest,
     createLicenseRequest,
+    createNotificationRequest,
     deleteClientRequest,
+    deleteFaqRequest,
     deleteLicenseRequest,
     deleteSupportTicketTitleRequest,
     exportCsvRequest,
-    getAllClientsRequest,
-    getAllusersRequest,
+    notificationIdRequest,
+    updateFaqRequest,
     updateSupportTicketTitleRequest,
     updateUserRequest,
 } from "../modules/superAdmin/superAdmin.validation";
 import { getAllSupportTicketRequest } from "../modules/supportTicket/supportTicket.validation";
+import { pagination } from "../modules/clientAdmin/clientAdmin.validation";
 
 // TODO: admin.auth.middleware have to be added
 
@@ -54,15 +59,12 @@ AdminDashboardApi.post(
 AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 
 // Notification Module
-AdminDashboardApi.get(
-    "/notifications",
-    superAdminController.getAllNotifications
-);
-AdminDashboardApi.patch(
-    "/notification",
-    validator.body(changeNotificationStatusRequest),
-    superAdminController.changeNotificationStatus
-);
+
+// AdminDashboardApi.patch(
+//     "/notification",
+//     validator.body(changeNotificationStatusRequest),
+//     superAdminController.changeNotificationStatus
+// );
 
 AdminDashboardApi.patch(
     "/front-image",
@@ -243,6 +245,62 @@ AdminDashboardApi.put(
     fileUploadMiddleware.uploadTrainingFiles,
     websiteFrontImageController.updateTrainingFiles
 );
+
+// Notification
+AdminDashboardApi.post(
+    "/notification",
+    validator.body(createNotificationRequest),
+    superAdminController.createNotification
+);
+
+AdminDashboardApi.get(
+    "/notification",
+    validator.params(pagination),
+    superAdminController.getNotificationList
+);
+
+AdminDashboardApi.get(
+    "/notification/:notificationId",
+    validator.params(notificationIdRequest),
+    superAdminController.getNotification
+);
+
+AdminDashboardApi.delete(
+    "/notification/:notificationId/delete",
+    validator.params(notificationIdRequest),
+    superAdminController.deleteNotification
+);
+
+AdminDashboardApi.post(
+    "/send-notification",
+    validator.body(notificationIdRequest),
+    superAdminController.sendNotification
+);
+
+
+// FAQ
+AdminDashboardApi.get("/faq", superAdminController.getFaq);
+AdminDashboardApi.post(
+    "/faq",
+    validator.body(createFaqRequest),
+    superAdminController.createFaq
+);
+AdminDashboardApi.put(
+    "/faq",
+    validator.body(updateFaqRequest),
+    superAdminController.updateFaq
+);
+AdminDashboardApi.delete(
+    "/faq/:faqId/delete",
+    validator.params(deleteFaqRequest),
+    superAdminController.deleteFaq
+);
+
+
+// Client Dashboard
+AdminDashboardApi.post("/client-dashboard", 
+    validator.body(clientDashboardRequest),
+    superAdminController.getClientDashboard);
 
 // Analytics
 AdminDashboardApi.get("/analytics", superAdminController.getAnalytics);

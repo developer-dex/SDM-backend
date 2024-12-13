@@ -3,7 +3,7 @@ import { AuthMiddleware } from "../middlewares/auth.middleware";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { clientAdminController } from "../modules/clientAdmin/clientAdmin.controller";
 import { createValidator } from "express-joi-validation";
-import { createSupportTicketRequest, paginationRequest, updateSupportTicketRequest } from "../modules/clientAdmin/clientAdmin.validation";
+import { createSupportTicketRequest, paginationRequest, reportFromDashboardRequest, updateSupportTicketRequest } from "../modules/clientAdmin/clientAdmin.validation";
 import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
 
 const ClientDashboardApi: Router = Router();
@@ -95,6 +95,25 @@ ClientDashboardApi.get(
 ClientDashboardApi.get(
     "/ticket-manager",
     clientAdminController.getAllSupportTicketTitles
+);
+
+// Dashboard report
+ClientDashboardApi.post(
+    "/report-from-dashboard",
+    validator.body(reportFromDashboardRequest),
+    clientAdminController.getRepostFromDashboard
+);
+
+// Softwate Status
+ClientDashboardApi.get(
+    "/software-status",
+    clientAdminController.getSoftwareStatus
+);
+
+// Notification
+ClientDashboardApi.get(
+    "/notifications",
+    clientAdminController.getNotification
 );
 
 // Dashboard

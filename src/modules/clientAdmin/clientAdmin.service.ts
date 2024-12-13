@@ -1,11 +1,10 @@
 import {
     executeQuery,
-    executeSqlQuery,
     retrieveData,
 } from "../../config/databaseConfig";
 import { clientAdminPermissions } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
-import { calculatePagination } from "../../helpers/util";
+import getEnvVar, { calculatePagination, formateFrontImagePath, sleep } from "../../helpers/util";
 
 export class ClientAdminService {
     private jwtService: JwtService;
@@ -18,10 +17,8 @@ export class ClientAdminService {
         const findUserWithTokenResult = await executeQuery(
             findUserQithTokenQuery
         );
-        console.log(
-            "findUserWithTokenResult:::",
-            findUserWithTokenResult.rows[0]
-        );
+        
+        // client current subsc
         const responseData = this.generateLogInSignUpResponse(
             findUserWithTokenResult.rows[0].id,
             findUserWithTokenResult.rows[0].full_name,
@@ -31,12 +28,15 @@ export class ClientAdminService {
                 : "DEMODATA.dbo",
             "client"
         );
-
+        console.log("findUserWithTokenResult.rows[0].databaseName:::", findUserWithTokenResult.rows[0].databaseName);
+        const softwareStatus = await this.getSoftwareStatus(`${findUserWithTokenResult.rows[0].databaseName}.dbo`);
+        // softwareStatus.isActive = 1;
         return {
             ...findUserWithTokenResult.rows[0],
             ...responseData,
             role: "client",
             permissions: clientAdminPermissions,
+            softwareStatus: softwareStatus,
         };
     };
 
@@ -504,15 +504,98 @@ LEFT JOIN
     };
 
     // Dashboard
-    getDashboard = async (DBName: string) => {
+    getDashboard = async (DBName: string, userId: number) => {
         const jobStatusPieChartQuery = `SELECT 
-    COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) AS CompletedJobs,
-    COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) AS FailedJobs,
-    COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) AS PartialCompletedJobs
+    ROUND(COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) * 100.0 / COUNT(*), 2) AS CompletedJobsPercentage,
+    ROUND(COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*), 2) AS FailedJobsPercentage,
+    ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
         FROM 
             ${DBName}.JobFireEntries;`;
         const jobStatusPieChartResult = await executeQuery(jobStatusPieChartQuery);
-        return jobStatusPieChartResult.rows[0];
+        const jobStatusPieChart = jobStatusPieChartResult.rows[0];
+        // Total clients
+        const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.Users`;
+        const totalClientsResult = await executeQuery(totalClientsQuery);
+        const totalClients = totalClientsResult.rows[0].total_clients;
+
+        // online, offline, connected, jobs
+        const jobOnlineOfflineQuery = `SELECT 
+    COUNT(CASE WHEN PingStatus = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS success_count,
+    COUNT(CASE WHEN PingStatus = 'Failed' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS failed_count,
+        COUNT(CASE WHEN PingStatus = 'Success' AND Connection = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS connectedJobCount
+FROM 
+    ${DBName}.PingPathLogs;`
+        const jobOnlineOfflineResult = await executeQuery(jobOnlineOfflineQuery);
+        const jobOnlineOffline = jobOnlineOfflineResult.rows[0];
+
+        // lastcupporttickets
+        const latestSupportTicketDataQuery = `SELECT TOP 7
+    cm.company_name,
+    st.Topic AS support_subject,
+    st.createdAt AS date_time,
+    st.status AS status
+FROM 
+    ClientManagement cm
+JOIN 
+    SupportTickets st ON cm.user_id = st.userId WHERE st.userId = ${userId}
+ORDER BY 
+    st.createdAt DESC;`;
+        const latestSupportTicketDataResult = await executeQuery(latestSupportTicketDataQuery);
+        const latestSupportTicketData = latestSupportTicketDataResult.rows;
+
+        // supportTicket count
+        const query2 = `
+            WITH 
+            SupportTicketCounts AS (
+                SELECT 
+                    COUNT(*) AS total_tickets,
+                    COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_tickets,
+                    COUNT(CASE WHEN status = 'closed' THEN 1 END) AS closed_tickets,
+                    ROUND((COUNT(CASE WHEN is_on_time = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 2) AS response_on_time_percentage
+                FROM SupportTickets where userId = ${userId}
+            )
+            SELECT 
+                (SELECT total_tickets FROM SupportTicketCounts) AS totalTickets,
+                (SELECT open_tickets FROM SupportTicketCounts) AS openTickets,
+                (SELECT closed_tickets FROM SupportTicketCounts) AS closedTickets,
+                (SELECT response_on_time_percentage FROM SupportTicketCounts) AS responseOnTimePercentage
+        `;
+        const supportTicketCountResult = await executeQuery(query2);
+        const supportTicketCount = supportTicketCountResult.rows[0];
+
+        // Total data backup
+        const totalDataBackupQuery = `
+            SELECT 
+                SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
+                CASE 
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 2), ' TB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1073741824.0, 2), ' GB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1048576 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1048576.0, 2), ' MB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 2), ' MB')
+                    ELSE CONCAT(SUM(CAST(DataInKB AS NUMERIC)), ' KB')
+                END AS TotalDataInReadableFormat
+            FROM ${DBName}.JobFireEntries`;
+        const totalDataBackupResult = await executeQuery(totalDataBackupQuery);
+        const totalDataBackup = totalDataBackupResult.rows[0];
+
+        // user banner
+        const bannerQuery = `SELECT * FROM ClientWebsiteBanners WHERE user_id = ${userId}`;
+        const bannerResult = await executeQuery(bannerQuery);
+        const banner = bannerResult.rows;
+        // add path to banner
+        const relativePath = formateFrontImagePath(banner[0].imagePath);
+        console.log("relativePath: ", relativePath);
+        const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+
+
+        return { jobStatusPieChart, totalClients, jobOnlineOffline,supportTicketCount, latestSupportTicketData, totalDataBackup, banner: fullImagePath  };
+    }
+
+    getRepostFromDashboard = async (DBName: string, userId: number, reportType: string) => {
+        const query = `SELECT * FROM ${DBName}.${reportType}`;
+        const result = await executeQuery(query);
+        return result.rows;
+        
     }
 
     private generateLogInSignUpResponse = (
@@ -541,6 +624,32 @@ LEFT JOIN
         const query = `SELECT * FROM ${DBName}.CompanyProfile`;
         const result = await executeQuery(query);
         return result.rows[0];
+    }
+
+    // Software Status
+    getSoftwareStatus = async (DBName: string) => {
+        const query = `SELECT TOP 1
+    jfe.Status,
+    CASE 
+        WHEN jfe.StartTime >= DATEADD(HOUR, -24, GETDATE()) AND jfe.Status = 'Completed' THEN 1 
+        ELSE 0 
+    END AS isActive,
+    CASE 
+        WHEN jfe.StartTime >= DATEADD(HOUR, -24, GETDATE()) AND jfe.Status = 'Completed' THEN jfe.StartTime 
+        ELSE jfe.StartTime 
+    END AS lastOnlineDateAndTime
+FROM 
+    ${DBName}.JobFireEntries jfe
+ORDER BY 
+    jfe.StartTime DESC;`;
+        const result = await executeQuery(query);
+        return result.rows[0];
+    }
+
+    getMyNotifications = async (DBName: string, userId: number) => {
+        const query = `SELECT * FROM UsersNotifications LEFT JOIN Notifications ON UsersNotifications.NotificationId = Notifications.id WHERE UserId = ${userId}`;
+        const result = await executeQuery(query);
+        return result.rows;
     }
 
       // Function to convert special date strings to SQL date conditions

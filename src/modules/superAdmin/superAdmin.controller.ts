@@ -7,6 +7,7 @@ import {
     ICreateAuditLogRequest,
     ICreateClientRequest,
     ICreateLicenseRequest,
+    ICreateNotificationRequest,
     IGetAllUsersRequest,
     ISignInRequest,
     IUserRequest,
@@ -66,8 +67,20 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { limit, page, searchParameter, isExportToEmail, recipientEmail, full_name, email, phoneNo, role, permissions, password, created_at } =
-            req.query as unknown as IGetAllUsersRequest;
+        const {
+            limit,
+            page,
+            searchParameter,
+            isExportToEmail,
+            recipientEmail,
+            full_name,
+            email,
+            phoneNo,
+            role,
+            permissions,
+            password,
+            created_at,
+        } = req.query as unknown as IGetAllUsersRequest;
         try {
             const clients = await this.superAdminService.getAllUsers(
                 page,
@@ -226,39 +239,6 @@ export class SuperAdminController {
         return res.status(200).send(csv);
     };
 
-    // Notification Module
-    getAllNotifications = async (
-        req: Request & { token_payload?: any },
-        res: Response,
-        next: NextFunction
-    ) => {
-        try {
-            console.log("getAllNotifications:::ENTRY");
-            const notifications =
-                await this.superAdminService.getNotifications();
-            return res
-                .status(200)
-                .send(
-                    this.responseService.responseWithData(
-                        true,
-                        StatusCodes.OK,
-                        "Notifications fetched successfully",
-                        notifications
-                    )
-                );
-        } catch (error) {
-            return res
-                .status(200)
-                .send(
-                    this.responseService.responseWithoutData(
-                        false,
-                        StatusCodes.INTERNAL_SERVER_ERROR,
-                        "Internal server error"
-                    )
-                );
-        }
-    };
-
     changeNotificationStatus = async (
         req: Request & { token_payload?: any },
         res: Response,
@@ -311,7 +291,7 @@ export class SuperAdminController {
             gst,
             pan,
             industry_type,
-            cost
+            cost,
         } = req.query as unknown as IGetAllUsersRequest;
         try {
             const clients = await this.superAdminService.getAllClients(
@@ -481,22 +461,38 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         try {
-            const { page, limit, isExportToEmail, recipientEmail, searchParameter, issue_date, expiry_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan, user_email } = req.query as unknown as {
+            const {
+                page,
+                limit,
+                isExportToEmail,
+                recipientEmail,
+                searchParameter,
+                issue_date,
+                expiry_date,
+                expiration_date,
+                license_key,
+                license_type,
+                status,
+                company_id,
+                company_name,
+                company_pan,
+                user_email,
+            } = req.query as unknown as {
                 page: number;
                 limit: number;
                 isExportToEmail?: string;
                 recipientEmail?: string;
-                searchParameter?: string,
-                issue_date?: string,
-                expiry_date?: string,
-                expiration_date?: string,
-                license_key?: string,
-                license_type?: string,
-                status?: string,
-                company_id?: string,
-                company_name?: string,
-                company_pan?: string,
-                user_email?: string
+                searchParameter?: string;
+                issue_date?: string;
+                expiry_date?: string;
+                expiration_date?: string;
+                license_key?: string;
+                license_type?: string;
+                status?: string;
+                company_id?: string;
+                company_name?: string;
+                company_pan?: string;
+                user_email?: string;
             };
             const licenses = await this.superAdminService.getAllLicenses(
                 page,
@@ -618,7 +614,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
-            console.log("update license:::", error)
+            console.log("update license:::", error);
             return res
                 .status(200)
                 .send(
@@ -705,7 +701,22 @@ export class SuperAdminController {
         next: NextFunction
     ) => {
         try {
-            const { page, limit, isExportToEmail, recipientEmail, searchParameter, createdAt, username, role, module, action, loginTime, logoutTime, start_from, end_to } = req.query as unknown as {
+            const {
+                page,
+                limit,
+                isExportToEmail,
+                recipientEmail,
+                searchParameter,
+                createdAt,
+                username,
+                role,
+                module,
+                action,
+                loginTime,
+                logoutTime,
+                start_from,
+                end_to,
+            } = req.query as unknown as {
                 page: number;
                 limit: number;
                 isExportToEmail?: boolean;
@@ -940,21 +951,180 @@ export class SuperAdminController {
                 page: string;
                 limit: string;
             };
-            const analytics = await this.superAdminService.getAnalytics(Number(page), Number(limit));
+            const analytics = await this.superAdminService.getAnalytics(
+                Number(page),
+                Number(limit)
+            );
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithData(true, StatusCodes.OK, "Analytics fetched successfully", analytics)
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Analytics fetched successfully",
+                        analytics
+                    )
                 );
         } catch (error) {
             console.log("superAdmin getAnalytics ERROR", error);
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
                 );
         }
+    };
+
+    // Notification
+    createNotification = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData: ICreateNotificationRequest = req.body;
+        try {
+            await this.superAdminService.createNotification(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Notification created successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin createNotification ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    getNotification = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { notificationId } = req.params;
+        try {
+            const notification = await this.superAdminService.getNotifications(
+                Number(notificationId)
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Notification fetched successfully",
+                        notification
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getNotification ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    deleteNotification = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { notificationId } = req.params;
+        try {
+            await this.superAdminService.deleteNotification(Number(notificationId));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(true, StatusCodes.OK, "Notification deleted successfully")
+                );
+        } catch (error) {
+            console.log("superAdmin deleteNotification ERROR", error);
+            return res
+                .status(200)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
     }
+
+    sendNotification = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        try {
+            await this.superAdminService.sendNotification(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(true, StatusCodes.OK, "Notification sent successfully")
+                );
+        } catch (error) {
+            console.log("superAdmin sendNotification ERROR", error);
+            return res
+                .status(400)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    getNotificationList = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { page, limit } = req.query as unknown as {
+                page: number;
+                limit: number;
+            };
+            const notificationList =
+                await this.superAdminService.getNotificationList(
+                    Number(page),
+                    Number(limit)
+                );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Notification list fetched successfully",
+                        notificationList
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getNotificationList ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 
     exportCsv = async (
         req: Request & { token_payload?: any },
@@ -978,8 +1148,140 @@ export class SuperAdminController {
             return res
                 .status(200)
                 .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    // FAQ
+    getFaq = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const faq = await this.superAdminService.getFaq();
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "FAQ fetched successfully",
+                        faq
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getFaq ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    createFaq = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        try {
+            await this.superAdminService.createFaq(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "FAQ created successfully"
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin createFaq ERROR", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    }
+
+    updateFaq = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        try {
+            await this.superAdminService.updateFaq(requestData);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(true, StatusCodes.OK, "FAQ updated successfully")
+                );
+        } catch (error) {
+            console.log("superAdmin updateFaq ERROR", error);
+            return res
+                .status(400)
+                .send(
                     this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
                 );
+        }
+    }
+
+    deleteFaq = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { faqId } = req.params;
+        try {
+            await this.superAdminService.deleteFaq(Number(faqId));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(true, StatusCodes.OK, "FAQ deleted successfully")
+                );
+        } catch (error) {
+            console.log("superAdmin deleteFaq ERROR", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error")
+                );
+        }
+    }
+
+    // Client Dashboard
+    getClientDashboard = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { DBName, userId } = req.body as unknown as {
+            DBName: string;
+            userId: number;
+        };
+        try {
+            const result = await this.superAdminService.getClientDashboard(DBName, userId);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Client dashboard fetched successfully", result));
+        } catch (error) {
+            console.log("superAdmin getClientDashboard ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 }

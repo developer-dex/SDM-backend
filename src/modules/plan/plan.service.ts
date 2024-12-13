@@ -2,7 +2,7 @@ import Plan from "../../models/Plans";
 import Razorpay from "razorpay";
 import { EPlanStatus } from "./plan.interface";
 import getEnvVar from "../../helpers/util";
-import { retrieveData, executeSqlQuery, executeQuery } from "../../config/databaseConfig";
+import { retrieveData, executeQuery } from "../../config/databaseConfig";
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -78,7 +78,7 @@ export class PlanService {
                 ? EPlanStatus.INACTIVE
                 : EPlanStatus.ACTIVE;
         const updateQuery = `UPDATE Plans SET status = '${newPlanStatus}' WHERE product_id = '${planId}'`;
-        await executeSqlQuery(updateQuery);
+        await executeQuery(updateQuery);
 
         const plansQuery = `SELECT * FROM Plans`;
         return await retrieveData(plansQuery);

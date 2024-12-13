@@ -34,6 +34,7 @@ export class WebsiteFrontImageController {
                     )
                 );
         } catch (error) {
+            console.log("updateFrontImage error:::", error);
             return res
                 .status(200)
                 .send(

@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
@@ -6,6 +6,7 @@ import bodyParser from "body-parser";
 import { CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
+import WebsiteApi from "./routers/website";
 
 /**
  * Make express app
@@ -60,6 +61,12 @@ app.use(cors());
  */
 app.use("/", MainRoute);
 
+const dhruvin = Router();
+
+dhruvin.use("/", WebsiteApi);
+
+
+
 /**
  * Handle the error in middleware request validation error
  */
@@ -83,3 +90,4 @@ app.listen(AppConfig.port, () => {
 });
 
 export default app;
+export { dhruvin };

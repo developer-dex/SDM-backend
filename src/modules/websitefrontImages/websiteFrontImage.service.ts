@@ -1,6 +1,5 @@
 import {
     executeQuery,
-    executeSqlQuery,
     retrieveData,
 } from "../../config/databaseConfig";
 import { UPLOAD_PATH } from "../../helpers/constants";
@@ -18,20 +17,17 @@ export class WebsiteFrontImageService {
     updateWebsiteFrontImage = async (
         requestData: Record<string, any>,
         file: Express.Multer.File
-    ): Promise<void> => {
-        const query = `SELECT * FROM FrontImages WHERE category = '${requestData.category}'`;
-        const isExistImagePath = await retrieveData(query);
+    ) => {
+        const query = `SELECT * FROM FrontImage WHERE category = '${requestData.category}'`;
+        const isExistImagePath = await executeQuery(query);
 
-        if (isExistImagePath[0]) {
-            removeFile(isExistImagePath[0].imagePath);
-            const deleteQuery = `DELETE FROM FrontImages WHERE category = '${requestData.category}'`;
-            await executeSqlQuery(deleteQuery);
+        if (isExistImagePath.rows[0]) {
+            removeFile(isExistImagePath.rows[0].imagePath);
         }
 
-        await FrontImage.create({
-            imagePath: file.path,
-            category: requestData.category,
-        });
+       const updateNewFilePathQuery = `UPDATE FrontImage SET imagePath = '${file.path}' WHERE category = '${requestData.category}'`;
+       await executeQuery(updateNewFilePathQuery);
+        
     };
 
     getWebsiteFrontImageUrlByCategory = async (category: any) => {
@@ -70,7 +66,7 @@ export class WebsiteFrontImageService {
     ) => {
         // Insert into ClientWebsiteBanners table
         const query = `INSERT INTO ClientWebsiteBanners (user_id, imagePath) VALUES (${requestData.user_id}, '${file.path}')`;
-        await executeSqlQuery(query);
+        await executeQuery(query);
     };
 
     getClientWebsiteBanner = async (page?: number, limit?: number) => {

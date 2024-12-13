@@ -84,3 +84,16 @@ export interface ICreateAuditLogRequest {
    module: string;
    action: string;
 }
+
+
+export interface ICreateNotificationRequest {
+    title: string;
+    message: string;
+    type: string;
+    expiry_date: string;
+    user_ids: number[];
+}
+
+export interface IGetNotificationRequest {
+    notificationId: number;
+}

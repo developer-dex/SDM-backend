@@ -2,15 +2,15 @@ import { createAuditTrail } from "../../common/function";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import {
     executeQuery,
-    executeSqlQuery,
     retrieveData,
 } from "../../config/databaseConfig";
 import { Actions, Modules } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
 import { ResponseService } from "../../helpers/response.service";
-import {
+import getEnvVar, {
     calculatePagination,
     createCsvFile,
+    formateFrontImagePath,
     generateLicenseKey,
 } from "../../helpers/util";
 import {
@@ -18,6 +18,7 @@ import {
     ICreateAuditLogRequest,
     ICreateClientRequest,
     ICreateLicenseRequest,
+    ICreateNotificationRequest,
     ISignInRequest,
     IUserRequest,
 } from "./superAdmin.interface";
@@ -26,6 +27,7 @@ import nodemailer from "nodemailer";
 import fs from "fs";
 import sendMail from "../../helpers/sendMail";
 import sendCsvToMail from "../../helpers/sendMail";
+import moment from "moment";
 export class SuperAdminService {
     private jwtService: JwtService;
     private responseService: ResponseService;
@@ -165,7 +167,7 @@ export class SuperAdminService {
 
     deleteUser = async (clientId: number, token_payload: any) => {
         const query = `DELETE FROM Admin WHERE id = '${clientId}'`;
-        const clients = await executeSqlQuery(query);
+        const clients = await executeQuery(query);
         const data = {
             id: token_payload.id,
             username: token_payload.username,
@@ -201,7 +203,7 @@ export class SuperAdminService {
             action: Actions.USER_MANAGEMENT.UPDATE,
         };
         await createAuditTrail(data);
-        return await executeSqlQuery(query);
+        return await executeQuery(query);
     };
 
     addClient = async (requestData: any, token_payload: any) => {
@@ -217,14 +219,7 @@ export class SuperAdminService {
             action: Actions.USER_MANAGEMENT.CREATE,
         };
         await createAuditTrail(data);
-        return await executeSqlQuery(query);
-    };
-
-    getNotifications = async () => {
-        console.log("getNotifications:::");
-        const query = `SELECT * FROM Notifications`;
-        const data = await retrieveData(query);
-        return data.rows;
+        return await executeQuery(query);
     };
 
     changeNotificationStatus = async (
@@ -232,7 +227,7 @@ export class SuperAdminService {
     ) => {
         const { notificationId, status } = requestData;
         const query = `UPDATE Notifications SET status = ${status} WHERE id = ${notificationId}`;
-        return await executeSqlQuery(query);
+        return await executeQuery(query);
     };
 
     // Client Management
@@ -254,7 +249,7 @@ export class SuperAdminService {
         industry_type?: string,
         cost?: string
     ) => {
-        let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
+        let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id, u.databaseName  FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
 
         const filters = [];
         const searchFilters = [];
@@ -575,7 +570,7 @@ export class SuperAdminService {
             expiry_date
         );
         const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user.rows[0].plan_type}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user.rows[0].company_id}', company_name = '${user.rows[0].company_name}', company_pan = '${user.rows[0].pan}' WHERE id = '${license_id}'`;
-        return await executeSqlQuery(query);
+        return await executeQuery(query);
     };
 
     // Customer Management
@@ -928,6 +923,139 @@ const query2 = `
         return data.rows;
     };
 
+
+    // Notification
+    createNotification = async (requestData: ICreateNotificationRequest) => {
+        console.log("requestData:::", requestData);
+        const createNotification = `INSERT INTO Notifications (Title, MessageBody, NotificationType, ExpirationDate, DeliverySettings) VALUES ('${requestData.title}', '${requestData.message}', '${requestData.type}', '${requestData.expiry_date}', 'instant')`;
+        console.log("createNotification:::", createNotification);
+        const notification = await executeQuery(createNotification);
+
+        // extract last notification id
+        const latestNotificationIdQuery = `SELECT MAX(id) FROM Notifications`;
+        const latestNotificationId = await executeQuery(latestNotificationIdQuery);
+        const notificationId = latestNotificationId.rows[0]['']; // Access the value using the empty string key
+
+        console.log("latestNotificationId:::", latestNotificationId);
+
+             // Assuming requestData.user_ids is an array of user IDs
+             const userIds = requestData.user_ids.map(userId => `(${notificationId}, ${userId})`).join(", "); // Create a string of tuples
+             console.log("userIds:::", userIds);
+             const createNotificationLinedUsers = `INSERT INTO NotificationLinkedUsers (NotificationId, UserId) VALUES ${userIds}`;
+             console.log("createNotificationLinedUsers:::", createNotificationLinedUsers);
+        await executeQuery(createNotificationLinedUsers);
+    }
+
+    getNotifications = async (notificationId: number) => {
+        console.log("getNotifications:::");
+        const query = `SELECT 
+    Notifications.id AS NotificationId, 
+    Notifications.Title, 
+    Notifications.MessageBody, 
+    Notifications.NotificationType, 
+    Notifications.ExpirationDate, 
+    Notifications.DeliverySettings, 
+    Users.id AS UserId, 
+    Users.full_name AS username, 
+    Users.email
+FROM 
+    Notifications 
+LEFT JOIN 
+    NotificationLinkedUsers ON Notifications.id = NotificationLinkedUsers.NotificationId 
+LEFT JOIN 
+    Users ON NotificationLinkedUsers.UserId = Users.id 
+WHERE 
+    Notifications.id = '${notificationId}' AND Notifications.deletedAt is null`;
+        
+        const results = await executeQuery(query); // Assume this gets the flat result set
+        const notificationsMap = {};
+        
+        results.rows.forEach(row => {
+            const { NotificationId, Title, MessageBody, NotificationType, ExpirationDate, DeliverySettings, UserId, username, email, full_name, role } = row;
+        
+            if (!notificationsMap[NotificationId]) {
+                notificationsMap[NotificationId] = {
+                    NotificationId,
+                    Title,
+                    MessageBody,
+                    NotificationType,
+                    ExpirationDate,
+                    DeliverySettings,
+                    userData: []
+                };
+            }
+        
+            if (UserId) {
+                notificationsMap[NotificationId].userData.push({
+                    id: UserId,
+                    username,
+                    email
+                });
+            }
+        });
+        return {data: Object.values(notificationsMap)};
+    };
+
+    getNotificationList = async (page: number, limit: number) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM Notifications where deletedAt is null`;
+        // total count query
+        const totalCountQuery = `SELECT COUNT(*) FROM Notifications where deletedAt is null`;
+        const totalCountData = await executeQuery(totalCountQuery);
+        const totalCount = totalCountData.rows[0][''];
+        if (limit && page) {
+            query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        const data = await executeQuery(query);
+        return {
+            notifications: data.rows,
+            totalCount: totalCount
+        };
+    }
+
+    deleteNotification = async (notificationId: number) => {
+        // Update the deletedAt timestamp instead of deleting the notification
+        const query = `UPDATE Notifications SET deletedAt = GETDATE() WHERE id = '${notificationId}'`;
+        return await executeQuery(query);
+    }
+
+    sendNotification = async (requestData: any) => {
+        // First get the notification details from Notifications table usng requestData.notificationId
+        const notificationDetailsQuery = `SELECT 
+    n.id AS NotificationId,
+    n.Title,
+    n.MessageBody,
+    n.NotificationType,
+    n.ExpirationDate,
+    n.DeliverySettings,
+    STRING_AGG(nlu.UserId, ',') AS UserIds
+FROM 
+    Notifications n
+LEFT JOIN 
+    NotificationLinkedUsers nlu ON nlu.NotificationId = n.id where n.id = ${requestData.notificationId}
+GROUP BY 
+    n.id, n.Title, n.MessageBody, n.NotificationType, n.ExpirationDate, n.DeliverySettings;
+`
+      // Execute the query to get notification details
+const notificationDetails = await executeQuery(notificationDetailsQuery);
+const userIds = notificationDetails.rows[0]?.UserIds.split(',') || [];
+const expireDate = notificationDetails.rows[0]?.ExpirationDate;
+const formattedExpireDate = moment(expireDate).format('YYYY-MM-DD');
+
+
+console.log("userIds:::", userIds);
+console.log("formattedExpireDate:::", formattedExpireDate);
+
+// Construct a single insert query
+if (userIds.length > 0) {
+    const values = userIds.map(userId => `(${requestData.notificationId}, ${userId}, 0, GETDATE(), '${formattedExpireDate}')`).join(', ');
+    const insertQuery = `INSERT INTO SuperAdmin.dbo.UsersNotifications (NotificationId, UserId, IsRead, SentAt, ExpireDate) 
+                         VALUES ${values}`;
+    await executeQuery(insertQuery);
+}
+
+    }
+
     private generateLogInSignUpResponse = (
         userId: number,
         userName?: string,
@@ -1179,5 +1307,116 @@ const query2 = `
             PlanChange`;
 
         return query;
+    }
+
+    getFaq = async () => {
+        const query = `SELECT * FROM FAQ order by createdAt desc`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    createFaq = async (requestData: any) => {
+        const query = `INSERT INTO FAQ (Question, Answer) VALUES (${requestData.question}, ${requestData.answer})`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    updateFaq = async (requestData: any) => {
+        const query = `UPDATE FAQ SET Question = ${requestData.question}, Answer = ${requestData.answer} WHERE id = ${requestData.faqId}`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    deleteFaq = async (faqId: number) => {
+        const query = `DELETE FROM FAQ WHERE id = ${faqId}`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    getClientDashboard = async (DBName: string, userId: number) => {
+        const jobStatusPieChartQuery = `SELECT 
+    ROUND(COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) * 100.0 / COUNT(*), 2) AS CompletedJobsPercentage,
+    ROUND(COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*), 2) AS FailedJobsPercentage,
+    ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
+        FROM 
+            ${DBName}.dbo.JobFireEntries;`;
+        const jobStatusPieChartResult = await executeQuery(jobStatusPieChartQuery);
+        const jobStatusPieChart = jobStatusPieChartResult.rows[0];
+        // Total clients
+        const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.dbo.Users`;
+        const totalClientsResult = await executeQuery(totalClientsQuery);
+        const totalClients = totalClientsResult.rows[0].total_clients;
+
+        // online, offline, connected, jobs
+        const jobOnlineOfflineQuery = `SELECT 
+    COUNT(CASE WHEN PingStatus = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS success_count,
+    COUNT(CASE WHEN PingStatus = 'Failed' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS failed_count,
+        COUNT(CASE WHEN PingStatus = 'Success' AND Connection = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS connectedJobCount
+FROM 
+    ${DBName}.dbo.PingPathLogs;`
+        const jobOnlineOfflineResult = await executeQuery(jobOnlineOfflineQuery);
+        const jobOnlineOffline = jobOnlineOfflineResult.rows[0];
+
+        // lastcupporttickets
+        const latestSupportTicketDataQuery = `SELECT TOP 7
+    cm.company_name,
+    st.Topic AS support_subject,
+    st.createdAt AS date_time,
+    st.status AS status
+FROM 
+    ClientManagement cm
+JOIN 
+    SupportTickets st ON cm.user_id = st.userId WHERE st.userId = ${userId}
+ORDER BY 
+    st.createdAt DESC;`;
+        const latestSupportTicketDataResult = await executeQuery(latestSupportTicketDataQuery);
+        const latestSupportTicketData = latestSupportTicketDataResult.rows;
+
+        // supportTicket count
+        const query2 = `
+            WITH 
+            SupportTicketCounts AS (
+                SELECT 
+                    COUNT(*) AS total_tickets,
+                    COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_tickets,
+                    COUNT(CASE WHEN status = 'closed' THEN 1 END) AS closed_tickets,
+                    ROUND((COUNT(CASE WHEN is_on_time = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 2) AS response_on_time_percentage
+                FROM SupportTickets where userId = ${userId}
+            )
+            SELECT 
+                (SELECT total_tickets FROM SupportTicketCounts) AS totalTickets,
+                (SELECT open_tickets FROM SupportTicketCounts) AS openTickets,
+                (SELECT closed_tickets FROM SupportTicketCounts) AS closedTickets,
+                (SELECT response_on_time_percentage FROM SupportTicketCounts) AS responseOnTimePercentage
+        `;
+        const supportTicketCountResult = await executeQuery(query2);
+        const supportTicketCount = supportTicketCountResult.rows[0];
+
+        // Total data backup
+        const totalDataBackupQuery = `
+            SELECT 
+                SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
+                CASE 
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 2), ' TB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1073741824.0, 2), ' GB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1048576 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1048576.0, 2), ' MB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 2), ' MB')
+                    ELSE CONCAT(SUM(CAST(DataInKB AS NUMERIC)), ' KB')
+                END AS TotalDataInReadableFormat
+            FROM ${DBName}.dbo.JobFireEntries`;
+        const totalDataBackupResult = await executeQuery(totalDataBackupQuery);
+        const totalDataBackup = totalDataBackupResult.rows[0];
+
+        // user banner
+        const bannerQuery = `SELECT * FROM ClientWebsiteBanners WHERE user_id = ${userId}`;
+        const bannerResult = await executeQuery(bannerQuery);
+        const banner = bannerResult.rows;
+        // add path to banner
+        const relativePath = formateFrontImagePath(banner[0].imagePath);
+        console.log("relativePath: ", relativePath);
+        const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets/clientWebsiteBanners${relativePath}`;
+
+
+        return { jobStatusPieChart, totalClients, jobOnlineOffline,supportTicketCount, latestSupportTicketData, totalDataBackup, banner: null  };
     }
 }

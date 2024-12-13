@@ -17,16 +17,32 @@ export class ClientAdminController {
 
     loginInternal = async (req: Request, res: Response) => {
         try {
-            const result = await this.clientAdminService.loginInternal(req.body);
+            const result = await this.clientAdminService.loginInternal(
+                req.body
+            );
             return res
                 .status(StatusCodes.OK)
-                .send(this.responseService.responseWithData(false, StatusCodes.OK, "Internal login successful", result));
+                .send(
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Internal login successful",
+                        result
+                    )
+                );
         } catch (error) {
+            console.log("clientAdminController:::loginInternal:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     getBackupSS = async (
         req: Request & { token_payload?: any },
@@ -34,7 +50,19 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, jobName, ClientFolderName, ClientData, BaseFolderName, BaseFolderData, Difference, Status, EntryDateTime } = req.query as unknown as paginationRequeset;
+            const {
+                limit,
+                page,
+                searchParameter,
+                jobName,
+                ClientFolderName,
+                ClientData,
+                BaseFolderName,
+                BaseFolderData,
+                Difference,
+                Status,
+                EntryDateTime,
+            } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getBackupSS(
                 tokenPayload?.data.databaseName,
                 Number(page),
@@ -85,13 +113,25 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Backup ss counts fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Backup ss counts fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     getPingAndpath = async (
         req: Request & { token_payload?: any },
@@ -99,7 +139,18 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, jobName, ipMachine, sharedPath, pingStatus, connection, errors, entryDateTime } = req.query as unknown as paginationRequeset;
+            const {
+                limit,
+                page,
+                searchParameter,
+                jobName,
+                ipMachine,
+                sharedPath,
+                pingStatus,
+                connection,
+                errors,
+                entryDateTime,
+            } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getPingAndPath(
                 tokenPayload?.data.databaseName,
                 Number(page),
@@ -149,14 +200,25 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Ping and path counts fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Ping and path counts fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
-                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     getAuditTrailLog = async (
         req: Request & { token_payload?: any },
@@ -164,7 +226,19 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, Username, UserRole, JobName, Module, Action, DateTimeStamp, LoginTime, LogoutTime } = req.query as unknown as paginationRequeset;
+            const {
+                limit,
+                page,
+                searchParameter,
+                Username,
+                UserRole,
+                JobName,
+                Module,
+                Action,
+                DateTimeStamp,
+                LoginTime,
+                LogoutTime,
+            } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getAuditTrailLog(
                 tokenPayload?.data.databaseName,
                 Number(page),
@@ -193,19 +267,37 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
-                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     getJobFireStatistics = async (
         req: Request & { token_payload?: any },
         res: Response
     ) => {
-
-        console.log("clientAdminController:::getJobFireStatistics:::", req.query);
+        console.log(
+            "clientAdminController:::getJobFireStatistics:::",
+            req.query
+        );
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, jobName, jobGroup, sourceIp, sourceFolder, destinationFolder, status, startTime } = req.query as unknown as paginationRequeset;
+            const {
+                limit,
+                page,
+                searchParameter,
+                jobName,
+                jobGroup,
+                sourceIp,
+                sourceFolder,
+                destinationFolder,
+                status,
+                startTime,
+            } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getJobFireStatistics(
                 tokenPayload?.data.databaseName,
                 Number(page),
@@ -222,14 +314,26 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Job fire statistics fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Job fire statistics fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("clientAdminController:::jobFireStatistics:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     // User management
     getUsersList = async (
@@ -238,7 +342,18 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { limit, page, searchParameter, username, email, role, phone, entryDate, moduleNames, password } = req.query as unknown as paginationRequeset;
+            const {
+                limit,
+                page,
+                searchParameter,
+                username,
+                email,
+                role,
+                phone,
+                entryDate,
+                moduleNames,
+                password,
+            } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getUsersList(
                 tokenPayload?.data.databaseName,
                 Number(page),
@@ -255,15 +370,26 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Users list fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Users list fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("clientAdminController:::getUsersList:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
                 .send(
-                    this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     // Setting
     getSetting = async (
@@ -278,14 +404,26 @@ export class ClientAdminController {
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Setting fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Setting fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("clientAdminController:::getSetting:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     // Dashboard
     getDashboard = async (
@@ -295,19 +433,71 @@ export class ClientAdminController {
         try {
             const tokenPayload = req.token_payload;
             const result = await this.clientAdminService.getDashboard(
-                tokenPayload?.data.databaseName
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id
             );
             return res
                 .status(StatusCodes.OK)
                 .send(
-                    this.responseService.responseWithData(false, StatusCodes.OK, "Dashboard fetched successfully", result));
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Dashboard fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("clientAdminController:::getDashboard:::", error);
             return res
                 .status(StatusCodes.INTERNAL_SERVER_ERROR)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
+
+    getRepostFromDashboard = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        try {
+            const tokenPayload = req.token_payload;
+            const { reportType } = req.body;
+            const result = await this.clientAdminService.getRepostFromDashboard(
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id,
+                reportType
+            );
+            return res
+                .status(StatusCodes.OK)
+                .send(
+                    this.responseService.responseWithData(
+                        false,
+                        StatusCodes.OK,
+                        "Dashboard report fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::getRepostFromDashboard:::",
+                error
+            );
+            return res
+                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 
     // Support Ticket Management
     // support ticket management
@@ -317,7 +507,6 @@ export class ClientAdminController {
         next: NextFunction
     ) => {
         try {
-           
             const supportTicketTitles =
                 await this.superAdminService.getAllSupportTicketTitles();
             return res
@@ -344,6 +533,73 @@ export class ClientAdminController {
         }
     };
 
+    getSoftwareStatus = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getSoftwareStatus(
+                tokenPayload?.data.databaseName
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Software status fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log("clientAdminController:::getSoftwareStatus:::", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    // Notification
+    getNotification = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getMyNotifications(
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Notification fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log("clientAdminController:::getNotification:::", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 }
 
 export const clientAdminController = new ClientAdminController();

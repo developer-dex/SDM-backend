@@ -4,7 +4,7 @@ export const CLIENT_WEBSITE_BANNER_PATH = "src/assets/clientWebsiteBanners";
 export const TRAINING_FILES_PATH = "src/assets/trainingFiles";
 export const RESET_PASSWORD_FRONT_URL = getEnvVar('FRONTEND_URL') + "/reset-password";
 
-export const clientAdminPermissions = 'client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket'
+export const clientAdminPermissions = 'client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket,client-faq'
 
 
 export const SUPER_ADMIN_DATABASE = "SuperAdmin";

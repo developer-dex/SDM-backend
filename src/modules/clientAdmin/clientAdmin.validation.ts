@@ -1,4 +1,3 @@
-
 import Joi from "joi";
 
 
@@ -58,4 +57,8 @@ export const pagination = Joi.object({
 export const updateSupportTicketRequest = Joi.object({
     id: Joi.number().required(),
     status: Joi.string().required(),
+});
+
+export const reportFromDashboardRequest = Joi.object({
+    reportType: Joi.string().valid('Clients', 'BackupSSLogs', 'AuditTrail', 'PingPathLogs', 'JobFireEntries').required(),
 });
