@@ -96,6 +96,7 @@ export class PlanController {
                     )
                 );
         } catch (error) {
+            console.log("listing error:::", error);
             return res
                 .status(200)
                 .send(

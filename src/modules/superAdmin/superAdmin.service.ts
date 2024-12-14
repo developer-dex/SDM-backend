@@ -52,6 +52,8 @@ export class SuperAdminService {
             result.rows[0].role
         );
 
+        const profilePhoto = formateFrontImagePath(result.rows[0].profilePhoto);
+
         const data = {
             id: result.rows[0].id,
             username: result.rows[0].full_name,
@@ -63,6 +65,7 @@ export class SuperAdminService {
         await createAuditTrail(data);
         return {
             ...result.rows[0],
+            profilePhoto: `${getEnvVar("LOCAL_URL")}/assets${profilePhoto}`,
             ...responseData,
             role: result.rows[0].role,
         };
@@ -1310,19 +1313,19 @@ if (userIds.length > 0) {
     }
 
     getFaq = async () => {
-        const query = `SELECT * FROM FAQ order by createdAt desc`;
+        const query = `SELECT * FROM FAQ order by CreatedDate desc`;
         const data = await executeQuery(query);
         return data.rows;
     }
 
-    createFaq = async (requestData: any) => {
-        const query = `INSERT INTO FAQ (Question, Answer) VALUES (${requestData.question}, ${requestData.answer})`;
+    createFaq = async (question: string, answer: string) => {
+        const query = `INSERT INTO FAQ (Question, Answer) VALUES ('${question}', '${answer}')`;
         const data = await executeQuery(query);
         return data.rows;
     }
 
     updateFaq = async (requestData: any) => {
-        const query = `UPDATE FAQ SET Question = ${requestData.question}, Answer = ${requestData.answer} WHERE id = ${requestData.faqId}`;
+        const query = `UPDATE FAQ SET Question = '${requestData.question}', Answer = '${requestData.answer}' WHERE id = ${requestData.faqId}`;
         const data = await executeQuery(query);
         return data.rows;
     }
@@ -1418,5 +1421,15 @@ ORDER BY
 
 
         return { jobStatusPieChart, totalClients, jobOnlineOffline,supportTicketCount, latestSupportTicketData, totalDataBackup, banner: null  };
+    }
+
+    updateAdminProfile = async (adminId: number,file: Express.Multer.File) => {
+        console.log("file:::", file.path);
+        console.log("adminId:::", adminId);
+        const query = `UPDATE Admin SET profilePhoto = '${file.path}' WHERE id = ${adminId}`;
+        const data = await executeQuery(query); 
+
+        const profilePhoto = formateFrontImagePath(file.path);
+        return { profilePhoto: `${getEnvVar("LOCAL_URL")}/assets${profilePhoto}` };
     }
 }

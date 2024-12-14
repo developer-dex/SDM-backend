@@ -6,6 +6,7 @@ import SubscriptionHistory from "../../models/SubscriptionsHistory";
 import crypto from "crypto";
 import User from "../../models/User";
 import { executeQuery, retrieveData } from "../../config/databaseConfig";
+import getEnvVar from "../../helpers/util";
 
 export class SubscriptionService {
     private razorpay: Razorpay;
@@ -17,139 +18,125 @@ export class SubscriptionService {
     }
 
     createSubscription = async (userId: string, plan: any) => {
-        console.log("userId", plan);
-        const userQuery = `SELECT * FROM Users WHERE id = '${userId}'`; 
-        const userInfo = await retrieveData(userQuery);
+        console.log("userId", userId);
+        console.log("plan", plan);
+        const userQuery = `SELECT * FROM Users WHERE id = '${userId}'`;
+        const userInfo = await executeQuery(userQuery);
 
-        // const subscription = await this.razorpay.subscriptions.create({
-        //     plan_id: plan.product_id,
-        //     customer_notify: 1,
-        //     total_count: 12,
-        //     notes: {
-        //         userId: userId.toString()
-        //     },
-        // });
-
-        // Create an order for a one-time payment
         const subscription = await this.razorpay.orders.create({
-            amount: 100, // Amount in paise
+            amount: plan[0].price*100, // Amount in paise
             currency: "INR", // Currency code
             receipt: `receipt#${userId}`, // Unique receipt ID
             notes: {
-                userId: userId.toString()
+                userId: userId.toString(),
             },
         });
         console.log("subscription_DETAILS:::::", subscription);
 
         // Check if the subscription is already created
         const subscriptionQuery = `SELECT * FROM Subscription WHERE userId = '${userId}'`;
-        const existingSubscription = await retrieveData(subscriptionQuery);
-        if (existingSubscription[0]) {
-            // Update the existing subscription
-            existingSubscription[0].status = 'created';
-            existingSubscription[0].subscriptionId = subscription.id;
-            existingSubscription[0].planId = plan.id;
-            await existingSubscription[0].save();
+        const existingSubscription = await executeQuery(subscriptionQuery);
+        if (existingSubscription.rows[0]) {
+            console.log("existingSubscription____________", existingSubscription.rows[0]);
+            // UPDATE THE EXISTING SUBSCRIPTION QUERY
+            const updateSubscriptionQuery = `UPDATE Subscription SET subscriptionId = '${subscription.id}' WHERE userId = '${userId}'`;
+            await executeQuery(updateSubscriptionQuery);
+
             return {
                 subscriptionId: subscription.id,
-                customerName: userInfo[0].full_name,
-                customerEmail: userInfo[0].email,
-                planType: plan.plan_type
+                customerName: userInfo.rows[0].full_name,
+                customerEmail: userInfo.rows[0].email,
+                planType: plan[0].plan_type,
+                razorpayKey: getEnvVar("RAZORPAY_KEY_ID"),
+                planId: plan[0].id,
+                userId: userId
             };
+        } else {
+            // INSERT INTO SUBSCRIPTION
+            const insertSubscriptionQuery = `INSERT INTO Subscription (userId, planId, subscriptionId, status) VALUES ('${userId}', '${plan[0].id}', '${subscription.id.toString()}', 'created')`;
+            await executeQuery(insertSubscriptionQuery);
+
+            // INSERT INTO SUBSCRIPTION HISTORY
+            const subscriptionHistoryQuery = `INSERT INTO SubscriptionHistory (userId, planId, subscriptionId, status) VALUES ('${userId}', '${plan[0].id}', '${subscription.id.toString()}', 'created')`;
+            await executeQuery(subscriptionHistoryQuery);
         }
-
-        // // create user subscription entry
-        await Subscription.create({
-            userId: userId,
-            planId: plan.id,
-            subscriptionId: subscription.id.toString(),
-            status: 'created',
-        });
-
-        // Also make entry in subscription history
-        await SubscriptionHistory.create({
-            userId: new mongoose.Types.ObjectId(userId),
-            planId: plan.id,
-            subscriptionId: subscription.id.toString(),
-            status: 'created',
-        });
-
-
-  
-        // Razorpay integration should be handled on the client-side
-        // Remove the Razorpay initialization and opening here
-
-        console.log("Plan:::::", plan);
-        console.log("subscription", JSON.stringify(subscription));
         return {
             subscriptionId: subscription.id,
             customerName: "Dhruvin",
-            customerEmail: 'dhruvin@gmail.com',
-            planType: plan[0].plan_type
+            customerEmail: "dhruvin@gmail.com",
+            planType: plan[0].plan_type,
+            razorpayKey: getEnvVar("RAZORPAY_KEY_ID"),
+            planId: plan[0].id,
+            userId: userId
         };
     };
 
     handleSubscriptionWebhook = async (webhookData: any) => {
         console.log("webhookData", webhookData);
 
-        const status = webhookData.payload.payment.entity.status
+        const status = webhookData.payload.payment.entity.status;
 
         // Update the subscription status
         const subscriptionQuery = `SELECT * FROM Subscriptions WHERE subscriptionId = '${webhookData.payload.payment.entity.id}'`;
         const subscription = await retrieveData(subscriptionQuery);
-        if (subscription[0] && status.includes(["active", "expired", "cancelled"])) {
+        if (
+            subscription[0] &&
+            status.includes(["active", "expired", "cancelled"])
+        ) {
             subscription[0].status = webhookData.payload.payment.entity.status;
-            await this.updateSubscription(webhookData.payload.payment.entity.id, webhookData.payload.payment.entity.status);
+            await this.updateSubscription(
+                webhookData.payload.payment.entity.id,
+                webhookData.payload.payment.entity.status
+            );
         }
 
         // Update the subscription history
         const subscriptionHistoryQuery = `SELECT * FROM SubscriptionsHistory WHERE subscriptionId = '${webhookData.payload.payment.entity.id}'`;
-        const subscriptionHistory = await retrieveData(subscriptionHistoryQuery);
-        if (subscriptionHistory[0] && status.includes(["active", "expired", "cancelled"])) {
-            subscriptionHistory[0].status = webhookData.payload.payment.entity.status;
-            await this.updateSubscriptionHistory(webhookData.payload.payment.entity.id, webhookData.payload.payment.entity.status);
+        const subscriptionHistory = await retrieveData(
+            subscriptionHistoryQuery
+        );
+        if (
+            subscriptionHistory[0] &&
+            status.includes(["active", "expired", "cancelled"])
+        ) {
+            subscriptionHistory[0].status =
+                webhookData.payload.payment.entity.status;
+            await this.updateSubscriptionHistory(
+                webhookData.payload.payment.entity.id,
+                webhookData.payload.payment.entity.status
+            );
         }
-    }
+    };
 
-    subscriptionSuccess = async (orderId: string) => {
-        console.log("successData", orderId);
-        const updateSubscriptionStatusQuery  = `UPDATE Subscription SET status = 'active' WHERE subscriptionId = '${orderId}'`;
+    subscriptionSuccess = async (planData: any, data: any) => {
+        console.log("data", data);
+        console.log("successData", planData.orderId);
+        const updateSubscriptionStatusQuery = `UPDATE Subscription SET status = 'active', planId = '${planData.planId}' WHERE subscriptionId = '${planData.orderId}'`;
         await executeQuery(updateSubscriptionStatusQuery);
 
-        const updateSubscriptionHistoryStatusQuery = `UPDATE SubscriptionHistory SET status = 'active' WHERE subscriptionId = '${orderId}'`;
-        await executeQuery(updateSubscriptionHistoryStatusQuery);
-        // const {razorpay_payment_id, razorpay_subscription_id, razorpay_signature} = orderId
-
-        // const webhookSecret = process.env.RAZORPAY_KEY_SECRET as string
-
-        // const hmac = crypto.createHmac('sha256', webhookSecret);
-        // hmac.update(`${razorpay_payment_id}|${razorpay_subscription_id}`);
-        // const expectedSignature = hmac.digest('hex');
-
-        // if (razorpay_signature === expectedSignature) {
-        //     console.log("Signature is valid");
-
-           
-        // } else {
-        //     console.log("Signature is invalid");
-        // }
-    }
-
+       // INSERT INTO SUBSCRIPTION HISTORY
+       const subscriptionHistoryQuery = `INSERT INTO SubscriptionHistory (userId, planId, subscriptionId, status) VALUES ('${planData.userId}', '${planData.planId}', '${planData.orderId}', 'created')`;
+       await executeQuery(subscriptionHistoryQuery);
+       
+    };
 
     existPlan = async (planId: string) => {
         const query = `SELECT * FROM Plans WHERE product_id = '${planId}'`;
         const plan = await executeQuery(query);
         console.log("plan", plan.rows);
-        return plan.rows
-    }
+        return plan.rows;
+    };
 
     updateSubscription = async (subscriptionId: string, status: string) => {
         const updateQuery = `UPDATE Subscriptions SET status = '${status}' WHERE subscriptionId = '${subscriptionId}'`;
         await executeQuery(updateQuery);
-    }
+    };
 
-    updateSubscriptionHistory = async (subscriptionId: string, status: string) => {
+    updateSubscriptionHistory = async (
+        subscriptionId: string,
+        status: string
+    ) => {
         const updateQuery = `UPDATE SubscriptionsHistory SET status = '${status}' WHERE subscriptionId = '${subscriptionId}'`;
         await executeQuery(updateQuery);
-    }
+    };
 }

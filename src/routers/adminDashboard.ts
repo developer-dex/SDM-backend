@@ -305,4 +305,9 @@ AdminDashboardApi.post("/client-dashboard",
 // Analytics
 AdminDashboardApi.get("/analytics", superAdminController.getAnalytics);
 
+// Admin Profile
+AdminDashboardApi.patch("/admin-profile", 
+    fileUploadMiddleware.uploadAdminProfile,
+    superAdminController.updateAdminProfile);
+
 export default AdminDashboardApi;

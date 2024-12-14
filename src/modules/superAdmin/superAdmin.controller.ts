@@ -1196,7 +1196,7 @@ export class SuperAdminController {
     ) => {
         const requestData = req.body;
         try {
-            await this.superAdminService.createFaq(requestData);
+            await this.superAdminService.createFaq(requestData.question, requestData.answer);
             return res
                 .status(200)
                 .send(
@@ -1284,6 +1284,41 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
+
+    // Admin Profile
+    updateAdminProfile = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const tokenPayload = req.token_payload;
+        const bannerImage = req.file;
+        console.log("bannerImage:::", bannerImage);
+        try {
+            const data = await this.superAdminService.updateAdminProfile(tokenPayload.data.id, bannerImage);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Admin profile updated successfully",
+                        data
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin updateAdminProfile ERROR", error);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 }
 
 export const superAdminController = new SuperAdminController();

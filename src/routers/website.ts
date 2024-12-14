@@ -27,6 +27,13 @@ const validator = createValidator({ passError: true });
 // AdminDashboardApi.use(authMiddleware.verifyjwtToken);
 const WebsiteApi: Router = Router();
 
+// Front Image Routes
+WebsiteApi.get(
+    "/front-image",
+    validator.query(getFrontImageValidation),
+    websiteFrontImageController.getFrontImage
+);
+
 WebsiteApi.post(
     "/schedule-demo-request",
     validator.body(scheduleDemoRequest),
@@ -75,17 +82,21 @@ WebsiteApi.get(
 );
 
 // Subscription Routes
-WebsiteApi.post("/subscription",authMiddleware.verifyjwtToken, subscriptionController.createSubscription);
+WebsiteApi.post(
+    "/subscription",
+    authMiddleware.verifyjwtToken,
+    subscriptionController.createSubscription
+);
 WebsiteApi.post("/webhook", subscriptionController.handleSubscriptionWebhook);
-WebsiteApi.post("/subscription-success", 
+WebsiteApi.post(
+    "/subscription-success",
     validator.query(subscriptionSuccessRequest),
-    subscriptionController.subscriptionSuccess);
-
-// Front Image Routes
-WebsiteApi.get(
-    "/front-image",
-    validator.query(getFrontImageValidation),
-    websiteFrontImageController.getFrontImage
+    subscriptionController.subscriptionSuccess
+);
+WebsiteApi.post(
+    "/subscription-success-client-admin",
+    validator.query(subscriptionSuccessRequest),
+    subscriptionController.subscriptionSuccessForClientAdmin
 );
 
 export default WebsiteApi;

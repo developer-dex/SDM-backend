@@ -5,6 +5,7 @@ import {
 import { clientAdminPermissions } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
 import getEnvVar, { calculatePagination, formateFrontImagePath, sleep } from "../../helpers/util";
+import { EPlanStatus } from "../plan/plan.interface";
 
 export class ClientAdminService {
     private jwtService: JwtService;
@@ -17,6 +18,8 @@ export class ClientAdminService {
         const findUserWithTokenResult = await executeQuery(
             findUserQithTokenQuery
         );
+
+        // client 
         
         // client current subsc
         const responseData = this.generateLogInSignUpResponse(
@@ -647,7 +650,32 @@ ORDER BY
     }
 
     getMyNotifications = async (DBName: string, userId: number) => {
-        const query = `SELECT * FROM UsersNotifications LEFT JOIN Notifications ON UsersNotifications.NotificationId = Notifications.id WHERE UserId = ${userId}`;
+        const query = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt asnotificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by n.CreatedAt DESC`;
+        const result = await executeQuery(query);
+        return result.rows;
+    }
+
+    markAllRead = async (userId: number) => {
+        const query = `UPDATE UsersNotifications SET IsRead = 1 WHERE UserId = ${userId}`;
+        const result = await executeQuery(query);
+        return result.rows;
+    }
+
+    // Plan listing
+    getPlanListing = async (userId: number) => {
+        let query = `SELECT * FROM Plans WHERE status = '${EPlanStatus.ACTIVE}'`;
+
+        // Currrent user subscription plan
+        const currentUserSubscriptionPlanQuery = `SELECT * FROM Subscription WHERE userId = ${userId}`;
+        const currentUserSubscriptionPlanResult = await executeQuery(currentUserSubscriptionPlanQuery);
+        const currentUserSubscriptionPlan = currentUserSubscriptionPlanResult.rows[0];
+        
+        const plans = await executeQuery(query);
+        return {plans: plans.rows, currentUserSubscriptionPlan};
+    }
+
+    getFaq = async () => {
+        const query = `SELECT * FROM FAQ`;
         const result = await executeQuery(query);
         return result.rows;
     }

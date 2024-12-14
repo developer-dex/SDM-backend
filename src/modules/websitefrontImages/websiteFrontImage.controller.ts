@@ -54,6 +54,7 @@ export class WebsiteFrontImageController {
                 await this.websiteFrontImageService.getWebsiteFrontImageUrlByCategory(
                     pageType
                 );
+                console.log("frontImage:::", frontImage);
             return res
                 .status(200)
                 .send(
@@ -65,6 +66,7 @@ export class WebsiteFrontImageController {
                     )
                 );
         } catch (error) {
+            console.log("getFrontImage error:::", error);
             return res
                 .status(200)
                 .send(

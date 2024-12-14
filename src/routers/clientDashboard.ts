@@ -116,6 +116,16 @@ ClientDashboardApi.get(
     clientAdminController.getNotification
 );
 
+ClientDashboardApi.post(
+    "/mark-all-read",
+    clientAdminController.markAllRead
+);
+
+
+// Get FAQ
+ClientDashboardApi.get("/faq", clientAdminController.getFaq);
+
+ClientDashboardApi.get("/plans", clientAdminController.getPlanListing);
 // Dashboard
 // ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 export default ClientDashboardApi;

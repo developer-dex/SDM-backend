@@ -31,12 +31,13 @@ export class WebsiteFrontImageService {
     };
 
     getWebsiteFrontImageUrlByCategory = async (category: any) => {
-        const query = `SELECT * FROM FrontImages WHERE category = '${category}'`;
-        const frontImage = await retrieveData(query);
+        const query = `SELECT * FROM FrontImage WHERE category = '${category}'`;
+        const frontImage = await executeQuery(query);
+        console.log("frontImage:::", frontImage.rows[0]);
 
-        if (frontImage[0]) {
+        if (frontImage.rows[0]) {
             // Construct the full URL using the base URL from config and the image path
-            const relativePath = formateFrontImagePath(frontImage[0].imagePath);
+            const relativePath = formateFrontImagePath(frontImage.rows[0].imagePath);
 
             return {
                 image_url: `${getEnvVar("LOCAL_URL")}/assets${relativePath}`,

@@ -29,6 +29,7 @@ export class SubscriptionController {
             }
             const subscriptionData =
                 await this.subscriptionService.createSubscription(token_payload.data.id, isPlanExist) ;
+                // console.log("subscriptionData________", subscriptionData);
             return res
                 .status(200)
                 .send(
@@ -127,8 +128,20 @@ export class SubscriptionController {
     subscriptionSuccess = async (req: Request, res: Response, next: NextFunction) => {
         console.log("subscription success", req.body);
         try {
-            await this.subscriptionService.subscriptionSuccess(req.query.orderId as string);
+            await this.subscriptionService.subscriptionSuccess(req.query, req.body);
             return res.redirect(getEnvVar("FRONTEND_URL") + "/home");
+          
+        } catch (error) {
+            console.log("subscription success", error);
+            return res.status(200).send("subscription success");
+        }
+    }
+
+    subscriptionSuccessForClientAdmin = async (req: Request, res: Response, next: NextFunction) => {
+        console.log("subscription success", req.body);
+        try {
+            await this.subscriptionService.subscriptionSuccess(req.query, req.body);
+            return res.redirect(getEnvVar("FRONTEND_URL") + "/client/pricing-client");
           
         } catch (error) {
             console.log("subscription success", error);

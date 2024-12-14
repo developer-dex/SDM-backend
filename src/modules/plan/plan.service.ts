@@ -63,7 +63,7 @@ export class PlanService {
 
         console.log("query: ", query);
         const plans = await executeQuery(query);
-        return plans;
+        return plans.rows;
     };
 
     changePlanStatus = async (planId: string, status: string) => {

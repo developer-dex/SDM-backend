@@ -32,7 +32,7 @@ export class AuthService {
     };
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
-        const createUserQuery = `INSERT INTO Users (full_name, email, password) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}')`;
+        const createUserQuery = `INSERT INTO Users (full_name, email, password, databaseName) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}', 'DEMODATA')`;
         await executeQuery(createUserQuery);
 
         const newUserDetailsQuery = `SELECT * FROM Users WHERE email = '${signUpReqPayload.email}'`;

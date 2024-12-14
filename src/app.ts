@@ -3,7 +3,7 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import { CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
+import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
@@ -21,6 +21,7 @@ app.set("view engine", "ejs");
 app.use("/assets", express.static(UPLOAD_PATH));
 app.use("/assets", express.static(CLIENT_WEBSITE_BANNER_PATH));
 app.use("/assets", express.static(TRAINING_FILES_PATH));
+app.use("/assets", express.static(ADMIN_PROFILE_PATH));
 
 /**
  * Website Database Connection
@@ -61,11 +62,6 @@ app.use(cors());
  */
 app.use("/", MainRoute);
 
-const dhruvin = Router();
-
-dhruvin.use("/", WebsiteApi);
-
-
 
 /**
  * Handle the error in middleware request validation error
@@ -88,6 +84,3 @@ app.use((err, req, res, next) => {
 app.listen(AppConfig.port, () => {
     console.log(`Application is running on PORT ${Number(AppConfig.port)}`);
 });
-
-export default app;
-export { dhruvin };

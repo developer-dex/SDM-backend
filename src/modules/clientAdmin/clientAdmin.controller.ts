@@ -533,7 +533,7 @@ export class ClientAdminController {
         }
     };
 
-    getSoftwareStatus = async (
+        getSoftwareStatus = async (
         req: Request & { token_payload?: any },
         res: Response
     ) => {
@@ -600,6 +600,74 @@ export class ClientAdminController {
                 );
         }
     };
+
+    markAllRead = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.markAllRead(
+                tokenPayload?.data.id
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "All notifications marked as read",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log("clientAdminController:::markAllRead:::", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    }
+
+    getFaq = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getFaq();
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "FAQ fetched successfully", result));
+        } catch (error) {
+            console.log("clientAdminController:::getFaq:::", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // Pkan listing
+    getPlanListing = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getPlanListing(tokenPayload?.data.id);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(true, StatusCodes.OK, "Plan listing fetched successfully", result)
+                );
+        } catch (error) {
+            console.log("clientAdminController:::getPlanListing:::", error);
+            return res
+                .status(400)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
 }
 
 export const clientAdminController = new ClientAdminController();

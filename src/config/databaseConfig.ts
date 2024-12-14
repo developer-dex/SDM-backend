@@ -790,32 +790,67 @@ export const initializeDatabase = () => {
     rows: any[];
   }
   
-  // Query execution function
-  export const executeQuery = (query: string): Promise<QueryResult> => {
-    return new Promise((resolve, reject) => {
-      const request = new Request(query, (err, rowCount) => {
-        if (err) {
-          reject(err);
-        }
-      });
+//   // Query execution function
+//   export const executeQuery = (query: string): Promise<QueryResult> => {
+//     return new Promise((resolve, reject) => {
+//       const request = new Request(query, (err, rowCount) => {
+//         if (err) {
+//           reject(err);
+//         }
+//       });
   
-      const rows: any[] = [];
-      request.on("row", (columns) => {
-        const row: any = {};
-        columns.forEach((column) => {
-          row[column.metadata.colName] = column.value;
-        });
-        rows.push(row);
-      });
+//       const rows: any[] = [];
+//       request.on("row", (columns) => {
+//         const row: any = {};
+//         columns.forEach((column) => {
+//           row[column.metadata.colName] = column.value;
+//         });
+//         rows.push(row);
+//       });
   
-      request.on("requestCompleted", () => {
-        resolve({ rows });
-      });
+//       request.on("requestCompleted", () => {
+//         resolve({ rows });
+//       });
   
-      testConnection.execSql(request);
-    });
-  };
+//       testConnection.execSql(request);
+//     });
+//   };
 
+let isQueryInProgress = false; // Flag to track query execution state
+
+// Query execution function
+export const executeQuery = async (query: string): Promise<QueryResult> => {
+    // Wait until the previous query is completed
+    while (isQueryInProgress) {
+        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100ms
+    }
+
+    isQueryInProgress = true; // Set the flag to indicate a query is in progress
+
+    return new Promise((resolve, reject) => {
+        const request = new Request(query, (err, rowCount) => {
+            isQueryInProgress = false; // Reset the flag when the request is done
+            if (err) {
+                reject(err);
+            }
+        });
+
+        const rows: any[] = [];
+        request.on("row", (columns) => {
+            const row: any = {};
+            columns.forEach((column) => {
+                row[column.metadata.colName] = column.value;
+            });
+            rows.push(row);
+        });
+
+        request.on("requestCompleted", () => {
+            resolve({ rows });
+        });
+
+        testConnection.execSql(request);
+    });
+};
 
   export const executeQueryClient = (query: string): Promise<QueryResult> => {
     return new Promise((resolve, reject) => {
