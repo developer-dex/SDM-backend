@@ -27,12 +27,15 @@ export class AuthService {
         this.jwtService = new JwtService();
     }
 
-    login = async (userId: number, databaseName: string): Promise<ILoginResponse> => {
+    login = async (userId: number, databaseName: string, ipAddress: string): Promise<ILoginResponse> => {
+        // Update the ipAddress in the Users table
+        const updateIpAddressQuery = `UPDATE Users SET ipAddress = '${ipAddress}' WHERE id = '${userId}'`;
+        await executeQuery(updateIpAddressQuery);
         return this.generateLogInSignUpResponse(userId, databaseName);
     };
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
-        const createUserQuery = `INSERT INTO Users (full_name, email, password, databaseName) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}', 'DEMODATA')`;
+        const createUserQuery = `INSERT INTO Users (full_name, email, password, databaseName, ipAddress) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}', 'DEMODATA', '${signUpReqPayload.ipAddress}')`;
         await executeQuery(createUserQuery);
 
         const newUserDetailsQuery = `SELECT * FROM Users WHERE email = '${signUpReqPayload.email}'`;

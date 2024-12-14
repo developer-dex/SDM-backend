@@ -8,6 +8,7 @@ import {
 import { AuthService } from "./auth.service";
 import { ResponseService } from "../../helpers/response.service";
 import { StatusCodes } from "../../common/responseStatusEnum";
+import { getIpAddressFromRequest } from "../../helpers/util";
 
 export class AuthController {
     private authService: AuthService;
@@ -51,8 +52,9 @@ export class AuthController {
             //             )
             //         );
             // }
+            const ipAddress = getIpAddressFromRequest(req);
             const responseData = await this.authService.login(
-                isExistUser.rows[0].id, isExistUser.rows[0].databaseName
+                isExistUser.rows[0].id, isExistUser.rows[0].databaseName, ipAddress
             );
             return res
                 .status(200)
@@ -80,6 +82,7 @@ export class AuthController {
     signup = async (req: Request, res: Response, next: NextFunction) => {
         const requestData: ISignUpRequest = req.body;
         try {
+            const ipAddress = getIpAddressFromRequest(req);
             const isExistUser = await this.authService.isExistUser(
                 requestData.email
             );
@@ -94,6 +97,7 @@ export class AuthController {
             //             )
             //         );
             // }
+            requestData.ipAddress = ipAddress;
             const signUpToken = await this.authService.signUp(requestData);
             return res
                 .status(200)

@@ -52,7 +52,9 @@ export class WebsiteFrontImageController {
         try {
             const frontImage =
                 await this.websiteFrontImageService.getWebsiteFrontImageUrlByCategory(
-                    pageType
+                    pageType,
+                    req,
+                    res
                 );
                 console.log("frontImage:::", frontImage);
             return res

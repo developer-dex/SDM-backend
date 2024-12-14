@@ -7,6 +7,8 @@ import { ICreateAuditLogRequest } from "../modules/superAdmin/superAdmin.interfa
 import { executeQuery } from "../config/databaseConfig";
 import { Actions } from "./constants";
 import { createObjectCsvWriter } from "csv-writer";
+import satelize from "satelize";
+
 export default function getEnvVar(envVarName: string | number): string {
     const value = process.env[envVarName];
 
@@ -186,3 +188,42 @@ export const createCsvFile = async (data: any[], header: any[]) => {
 
 
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+export const currentLocation = (ipAddress: string) => {
+satelize.satelize({ip:ipAddress}, function(err, payload) {
+    if(payload){
+        const location = payload?.continent?.en
+        return location;
+    }
+    return null;
+  });
+};
+
+
+export const getIpAddressFromRequest = (req: any) => {
+    let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    ipAddress = req.ip.includes('::ffff:') ? req.ip.split('::ffff:')[1] : req.ip;
+    return ipAddress;
+}
+
+export const getThePageNameFromCategory = (category: string) => {
+    switch (category) {
+        case "home":
+            return "Home";
+        case "contact_us":
+            return "Contact Us";
+        case "schedule_demo":
+            return "Schedule Demo";
+        case "about_us":
+            return "About Us";
+        case "privacy_policy":
+            return "Privacy Policy";
+        case "login":
+            return "Login";
+        case "pricing":
+            return "Pricing";
+        case "features":
+            return "Features";
+    }
+}

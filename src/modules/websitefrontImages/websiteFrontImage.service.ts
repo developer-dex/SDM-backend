@@ -5,11 +5,15 @@ import {
 import { UPLOAD_PATH } from "../../helpers/constants";
 import getEnvVar, {
     calculatePagination,
+    currentLocation,
     formateFrontImagePath,
     getFileName,
+    getIpAddressFromRequest,
+    getThePageNameFromCategory,
     removeFile,
 } from "../../helpers/util";
 import FrontImage from "../../models/FrontImage";
+import geoip from 'geoip-lite';
 
 export class WebsiteFrontImageService {
     constructor() {}
@@ -30,10 +34,10 @@ export class WebsiteFrontImageService {
         
     };
 
-    getWebsiteFrontImageUrlByCategory = async (category: any) => {
+    getWebsiteFrontImageUrlByCategory = async (category: any, req: any, res: any) => {
         const query = `SELECT * FROM FrontImage WHERE category = '${category}'`;
         const frontImage = await executeQuery(query);
-        console.log("frontImage:::", frontImage.rows[0]);
+        this.logPageVisit(req, res, category);
 
         if (frontImage.rows[0]) {
             // Construct the full URL using the base URL from config and the image path
@@ -44,6 +48,30 @@ export class WebsiteFrontImageService {
             };
         }
         return null;
+    };
+
+    logPageVisit = async (req: any, res: Response, category: string) => {
+        let ipAddress = getIpAddressFromRequest(req);
+
+        let userType = 'guest';  
+        // Check if the IP address exists in the User table
+        const existIpAddressQuery = `SELECT * FROM Users WHERE ipAddress = '${ipAddress}'`;
+        const existIpAddress = await executeQuery(existIpAddressQuery);
+    
+        if (existIpAddress.rows[0]) {
+            userType = existIpAddress.rows[0].full_name; // Set user type to existUser if found
+        }
+
+        const location = currentLocation(ipAddress);
+        const pageVisit = getThePageNameFromCategory(category);
+
+        console.log("ipAddress:::", ipAddress);
+        console.log("location:::", location);
+        console.log("userType:::", userType);
+        console.log("pageVisit:::", pageVisit);
+        const insertAnalyticsQuery = `INSERT INTO Analytics (IpAddress, Location, UserType, PageVisit) VALUES ('${ipAddress}', '${location}', '${userType}', '${pageVisit}')`;
+        console.log("insertAnalyticsQuery:::", insertAnalyticsQuery);
+        await executeQuery(insertAnalyticsQuery);
     };
 
     getAllWebsiteFrontImages = async () => {

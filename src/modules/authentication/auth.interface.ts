@@ -7,6 +7,7 @@ export interface ISignUpRequest {
     email: string;
     password: string;
     full_name: string;
+    ipAddress?: string;
 }
 
 export interface ILoginResponse {
