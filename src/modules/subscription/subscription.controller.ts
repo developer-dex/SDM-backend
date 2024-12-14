@@ -141,7 +141,7 @@ export class SubscriptionController {
         console.log("subscription success", req.body);
         try {
             await this.subscriptionService.subscriptionSuccess(req.query, req.body);
-            return res.redirect(getEnvVar("FRONTEND_URL") + "/client/pricing-client");
+            return res.redirect(getEnvVar("ADMIN_FRONTEND_URL") + "/client/pricing-client");
           
         } catch (error) {
             console.log("subscription success", error);
