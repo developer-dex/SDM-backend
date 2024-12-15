@@ -910,12 +910,11 @@ let isQueryInProgress = false; // Flag to track query execution state
 import { ConnectionPool } from "mssql";
 let pool: ConnectionPool;
 export const executeQuery = async (query: string): Promise<QueryResult> => {
-    // let pool: ConnectionPool;
-    console.log("Executing query:", query);
     return new Promise((resolve, reject) => {
         pool.request() // Create a new request from the pool
             .query(query, (err, result) => {
                 if (err) {
+                    console.log("Error in executeQuery", err);
                     return reject(err);
                 }
                 console.log("Query executed successfully.");

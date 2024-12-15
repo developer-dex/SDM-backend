@@ -109,13 +109,19 @@ export class SubscriptionService {
     };
 
     subscriptionSuccess = async (planData: any, data: any) => {
-        console.log("data", data);
-        console.log("successData", planData.orderId);
-        const updateSubscriptionStatusQuery = `UPDATE Subscription SET status = 'active', planId = '${planData.planId}' WHERE subscriptionId = '${planData.orderId}'`;
+       const planDetails = `SELECT * FROM Plans WHERE id = '${data.planId}'`;
+       const plan = await executeQuery(planDetails);
+       // If planDetails.plan_type = monthly then update the plan_expired_at to 30 days from now and it yearly then update the plan_expired_at to 365 days from now
+       const planExpiredAt = plan.rows[0].plan_type === "monthly" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+       const updateSubscriptionStatusQuery = `UPDATE Subscription SET status = 'active', planId = '${planData.planId}', plan_expired_at = '${planExpiredAt}' WHERE subscriptionId = '${planData.orderId}'`;
         await executeQuery(updateSubscriptionStatusQuery);
 
+        // Update old subscriptionHistory status to expired
+        const updateOldSubscriptionHistoryStatusQuery = `UPDATE SubscriptionHistory SET status = 'expired' WHERE userId = '${planData.userId}'`;
+        await executeQuery(updateOldSubscriptionHistoryStatusQuery);
+
        // INSERT INTO SUBSCRIPTION HISTORY
-       const subscriptionHistoryQuery = `INSERT INTO SubscriptionHistory (userId, planId, subscriptionId, status) VALUES ('${planData.userId}', '${planData.planId}', '${planData.orderId}', 'created')`;
+       const subscriptionHistoryQuery = `INSERT INTO SubscriptionHistory (userId, planId, subscriptionId, status, plan_expired_at) VALUES ('${planData.userId}', '${planData.planId}', '${planData.orderId}', 'created', '${planExpiredAt}')`;
        await executeQuery(subscriptionHistoryQuery);
        
     };

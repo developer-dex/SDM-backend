@@ -141,10 +141,11 @@ export const generateLicenseKey = (
     plan: string,
     pan: string,
     issueDate: string,
-    expirationDate: string
+    expirationDate: string,
+    userCount?: number
 ) => {
     // Extracting components from the inputs
-    const planCode = plan.toUpperCase(); // Plan code in uppercase
+    const planCode = plan.substring(0, 3).toUpperCase(); // First 3 letters of plan code
     const firstTwoLetters = pan.substring(0, 2).toUpperCase(); // First 2 letters of PAN
     const thirdToSeventhLetters = pan.substring(2, 7).toUpperCase(); // 3rd to 7th letters of PAN
     const eighthToTenthLetters = pan.substring(7, 10).toUpperCase(); // 8th to 10th letters of PAN
@@ -163,8 +164,12 @@ export const generateLicenseKey = (
         String(expirationDateObj.getMonth() + 1).padStart(2, "0") +
         String(expirationDateObj.getFullYear()).slice(-2); // MMYY
 
+         // Formatting userCount to 5 digits
+    const formattedUserCount = String(userCount || 0).padStart(5, "0"); // Format userCount to 5 digits
+
+
     // Constructing the license key
-    const licenseKey = `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${dayOfExpiry}-${expiryDateMMYY}`;
+    const licenseKey = `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${dayOfExpiry}-${expiryDateMMYY}-${formattedUserCount}`;
 
     return licenseKey;
 };

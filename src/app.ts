@@ -7,6 +7,8 @@ import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, INTEGRATION_IMAGES_PATH
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, initializeDatabasePool, initializeDatabasePool2, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
+import cron from "node-cron";
+import { expiredLicenseCron, deleteExpiredNotification, expiredSubscription } from "./crons";
 
 /**
  * Make express app
@@ -64,6 +66,12 @@ app.use(cors());
  */
 app.use("/", MainRoute);
 
+/**
+ * Cron Jobs every 5 seconds
+ */
+// cron.schedule("*/5 * * * * *", expiredLicenseCron);
+// cron.schedule("*/5 * * * * *", deleteExpiredNotification);
+// cron.schedule("*/5 * * * * *", expiredSubscription);
 
 /**
  * Handle the error in middleware request validation error
