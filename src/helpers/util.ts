@@ -29,8 +29,11 @@ export const generateOtp = (digit: number) => {
 
 export const createMulterMiddleware = (uploadPath: string) => {
     if (!fs.existsSync(uploadPath)) {
+        console.log("INNN_____uploadPath:::", uploadPath);
         fs.mkdirSync(uploadPath, { recursive: true });
     }
+
+    console.log("OUT____uploadPath:::", uploadPath);
 
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
