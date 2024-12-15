@@ -190,14 +190,17 @@ export const createCsvFile = async (data: any[], header: any[]) => {
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 
-export const currentLocation = (ipAddress: string) => {
-satelize.satelize({ip:ipAddress}, function(err, payload) {
-    if(payload){
-        const location = payload?.continent?.en
-        return location;
-    }
-    return "India";
-  });
+export const currentLocation = (ipAddress: string): Promise<string> => {
+    return new Promise((resolve) => {
+        satelize.satelize({ ip: ipAddress }, function (err, payload) {
+            if (payload) {
+                console.log("payload:::", payload);
+                const location = payload?.continent?.en;
+                resolve(location);
+            }
+            resolve("India");
+        });
+    });
 };
 
 

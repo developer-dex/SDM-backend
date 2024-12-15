@@ -67,15 +67,9 @@ export class WebsiteFrontImageService {
             userType = existIpAddress.rows[0].full_name; // Set user type to existUser if found
         }
 
-        const location = currentLocation(ipAddress);
+        const location = await currentLocation(ipAddress);
         const pageVisit = getThePageNameFromCategory(category);
-
-        console.log("ipAddress:::", ipAddress);
-        console.log("location:::", location);
-        console.log("userType:::", userType);
-        console.log("pageVisit:::", pageVisit);
         const insertAnalyticsQuery = `INSERT INTO Analytics (IpAddress, Location, UserType, PageVisit) VALUES ('${ipAddress}', '${location}', '${userType}', '${pageVisit}')`;
-        console.log("insertAnalyticsQuery:::", insertAnalyticsQuery);
         await executeQuery(insertAnalyticsQuery);
     };
 
