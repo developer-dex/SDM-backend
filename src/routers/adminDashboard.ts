@@ -158,7 +158,7 @@ AdminDashboardApi.post(
     superAdminController.createLicense
 );
 AdminDashboardApi.delete(
-    "/license/:licenseId/delete",
+    "/licenses/:licenseId/delete",
     validator.params(deleteLicenseRequest),
     superAdminController.deleteLicense
 );
