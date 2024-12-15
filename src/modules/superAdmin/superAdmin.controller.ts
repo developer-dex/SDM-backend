@@ -573,7 +573,7 @@ export class SuperAdminController {
     ) => {
         const { licenseId } = req.params;
         try {
-            await this.superAdminService.deleteLicense(Number(licenseId));
+            await this.superAdminService.deleteLicense(licenseId);
             return res
                 .status(200)
                 .send(
@@ -584,6 +584,7 @@ export class SuperAdminController {
                     )
                 );
         } catch (error) {
+            console.log("superAdmin deleteLicense ERROR", error);
             return res
                 .status(200)
                 .send(

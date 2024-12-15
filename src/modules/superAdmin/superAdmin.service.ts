@@ -545,8 +545,8 @@ export class SuperAdminService {
         return await executeQuery(query);
     };
 
-    deleteLicense = async (licenseId: number) => {
-        const query = `DELETE FROM Licenses WHERE id = '${licenseId}'`;
+    deleteLicense = async (licenseId: string) => {
+        const query = `DELETE FROM Licenses WHERE company_id = '${licenseId}'`;
         return await executeQuery(query);
     };
 
