@@ -3,7 +3,7 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
+import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, INTEGRATION_IMAGES_PATH, SUPER_ADMIN_DATABASE, TESTIMONIAL_IMAGE_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, initializeDatabasePool, initializeDatabasePool2, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
@@ -22,7 +22,8 @@ app.use("/assets", express.static(UPLOAD_PATH));
 app.use("/assets", express.static(CLIENT_WEBSITE_BANNER_PATH));
 app.use("/assets", express.static(TRAINING_FILES_PATH));
 app.use("/assets", express.static(ADMIN_PROFILE_PATH));
-
+app.use("/assets", express.static(TESTIMONIAL_IMAGE_PATH));
+app.use("/assets", express.static(INTEGRATION_IMAGES_PATH));
 /**
  * Website Database Connection
  */

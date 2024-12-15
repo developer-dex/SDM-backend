@@ -61,4 +61,6 @@ export const updateSupportTicketRequest = Joi.object({
 
 export const reportFromDashboardRequest = Joi.object({
     reportType: Joi.string().valid('Clients', 'BackupSSLogs', 'AuditTrail', 'PingPathLogs', 'JobFireEntries').required(),
+    from_date: Joi.string().required(),
+    to_date: Joi.string().required()
 });

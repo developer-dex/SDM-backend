@@ -399,7 +399,8 @@ export class ClientAdminController {
         try {
             const tokenPayload = req.token_payload;
             const result = await this.clientAdminService.getSetting(
-                tokenPayload?.data.databaseName
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id
             );
             return res
                 .status(StatusCodes.OK)
@@ -466,11 +467,13 @@ export class ClientAdminController {
     ) => {
         try {
             const tokenPayload = req.token_payload;
-            const { reportType } = req.body;
+            const { reportType, from_date, to_date } = req.body;
             const result = await this.clientAdminService.getRepostFromDashboard(
                 tokenPayload?.data.databaseName,
                 tokenPayload?.data.id,
-                reportType
+                reportType,
+                from_date,
+                to_date
             );
             return res
                 .status(StatusCodes.OK)

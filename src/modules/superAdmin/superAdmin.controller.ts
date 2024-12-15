@@ -342,6 +342,10 @@ export class SuperAdminController {
     ) => {
         const requestData: ICreateClientRequest = req.body;
         try {
+            const alreadyExistInClientManagement = await this.superAdminService.alreadyExistInClientManagement(requestData.user_id);
+            if(alreadyExistInClientManagement) {
+                return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "User already exist in client management"));
+            }
             await this.superAdminService.createClient(requestData);
             return res
                 .status(200)
@@ -1344,6 +1348,116 @@ export class SuperAdminController {
                 );
         }
     };
+
+    // Contact Us listing
+    getContactUs = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { page, limit, name, phoneNo, email, subject, message, createdAt } = req.query as unknown as {   
+                page: number;
+                limit: number;
+                name?: string;
+                phoneNo?: string;
+                email?: string;
+                subject?: string;
+                message?: string;
+                createdAt?: string;
+            };
+            const contactUs = await this.superAdminService.getContactUs(page, limit, name, phoneNo, email, subject, message, createdAt);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Contact Us fetched successfully", contactUs));
+        } catch (error) {
+            console.log("superAdmin getContactUs ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // Signup user listing
+    getSignupUsers = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { page, limit } = req.query as unknown as {
+            page: number;
+            limit: number;
+        };
+        try {
+            const signupUsers = await this.superAdminService.getSignupUsers(page, limit);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Signup users fetched successfully", signupUsers));
+        } catch (error) {
+            console.log("superAdmin getSignupUsers ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // Testimonial Module
+    getTestimonial = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { page, limit } = req.query as unknown as {
+            page?: string;
+            limit?: string;
+        };
+        try {
+            const testimonial = await this.superAdminService.getTestimonial(Number(page), Number(limit));
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Testimonial fetched successfully", testimonial));
+        } catch (error) {
+            console.log("superAdmin getTestimonial ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    createTestimonial = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        const image = req.file;
+        try {
+            await this.superAdminService.addTestimonial(requestData, image);
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial created successfully"));
+        } catch (error) {
+            console.log("superAdmin createTestimonial ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    deleteTestimonial = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { testimonialId } = req.params;
+        try {
+            await this.superAdminService.deleteTestimonial(Number(testimonialId));
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial deleted successfully"));
+        } catch (error) {
+            console.log("superAdmin deleteTestimonial ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    // Integration images
+    createIntegrationImages = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const image = req.file;
+        try {
+            await this.superAdminService.addIntegrationImages(image);
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Integration images created successfully"));
+        } catch (error) {
+            console.log("superAdmin createIntegrationImages ERROR", error);
+            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
 }
 
 export const superAdminController = new SuperAdminController();

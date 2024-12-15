@@ -121,18 +121,18 @@ export class WebsiteFrontImageController {
         const requestData = req.body;
         const bannerImage = req.file;
         try {
-            const isExist = await this.websiteFrontImageService.isExistClientWebsiteBanner(requestData.user_id);
-            if (isExist) {
-                return res
-                    .status(400)
-                    .send(
-                        this.responseService.responseWithoutData(
-                            false,
-                            StatusCodes.BAD_REQUEST,
-                            "Banner already exists in this user. Please update the existing banner."
-                        )
-                    );
-            }
+            // const isExist = await this.websiteFrontImageService.isExistClientWebsiteBanner(requestData);
+            // if (isExist) {
+            //     return res
+            //         .status(400)
+            //         .send(
+            //             this.responseService.responseWithoutData(
+            //                 false,
+            //                 StatusCodes.BAD_REQUEST,
+            //                 "Banner already exists in this user. Please update the existing banner."
+            //             )
+            //         );
+            // }
             await this.websiteFrontImageService.uploadClientWebsiteBanner(
                 requestData,
                 bannerImage
@@ -149,7 +149,7 @@ export class WebsiteFrontImageController {
         } catch (error) {
             console.log("add website banner error::", error)
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,

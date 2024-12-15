@@ -89,12 +89,24 @@ export class WebsiteFrontImageService {
     };
 
     uploadClientWebsiteBanner = async (
-        requestData: Record<string, any>,
+        requestData: any,
         file: Express.Multer.File
     ) => {
-        // Insert into ClientWebsiteBanners table
-        const query = `INSERT INTO ClientWebsiteBanners (user_id, imagePath) VALUES (${requestData.user_id}, '${file.path}')`;
-        await executeQuery(query);
+
+        console.log("requestData", requestData);
+
+        // Split the user IDs from the requestData
+        const userIds = requestData.user_id.split(',').map(id => id.trim());
+        console.log("userIds", userIds);
+
+        // Delete existing records for the user IDs
+        const deleteQuery = `DELETE FROM ClientWebsiteBanners WHERE user_id IN (${userIds.join(',')})`;
+        await executeQuery(deleteQuery);
+
+        // Prepare a single query to insert the data for each user
+        const insertValues = userIds.map(id => `(${id}, '${file.path}')`).join(',');
+        const insertQuery = `INSERT INTO ClientWebsiteBanners (user_id, imagePath) VALUES ${insertValues}`;
+        await executeQuery(insertQuery);
     };
 
     getClientWebsiteBanner = async (page?: number, limit?: number) => {
@@ -118,7 +130,7 @@ export class WebsiteFrontImageService {
         return resultWithFullUrl;
     };
 
-    isExistClientWebsiteBanner = async (user_id: number) => {
+    isExistClientWebsiteBanner = async (user_id: string) => {
         const query = `SELECT * FROM ClientWebsiteBanners WHERE user_id = ${user_id}`;
         const result = await executeQuery(query);
         return result.rows[0];

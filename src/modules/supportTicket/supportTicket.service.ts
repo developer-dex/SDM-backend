@@ -25,25 +25,25 @@ export class SupportTicketService {
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT 
-    st.*, 
-    u.full_name, 
-    u.email
-FROM 
-    SuperAdmin.dbo.SupportTickets st
-JOIN 
-    SuperAdmin.dbo.Users u ON st.userId = u.id `;
-        if (userId) {
-            query += `WHERE st.userId = ${userId}`;
-        }
-        const totalCount = await executeQuery(query);
+        *,
+        CASE 
+            WHEN status = 'PENDING' AND DATEDIFF(HOUR, createdAt, GETDATE()) > 24 THEN 1 
+            ELSE 0 
+        END AS highPriority
+    FROM SupportTickets
+    where userId = ${userId}
+    order by highPriority DESC, createdAt DESC`;
         if (offset && limitData) {
             query += `ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
+        // const totalCountQuery = `SELECT COUNT(*) FROM SupportTickets`;
 
-        const supportTicketData = await executeQuery(query);
+        let totalCountQuery = `SELECT COUNT(*) as count FROM SupportTickets where userId = ${userId}`;
+        const totalCountData = await executeQuery(totalCountQuery);
+        const data = await executeQuery(query);
         return {
-            totalCount: totalCount.rows.length,
-            supportTickets: supportTicketData.rows,
+            supportTickets: data.rows,
+            totalCount: totalCountData.rows[0].count,
         };
     };
 

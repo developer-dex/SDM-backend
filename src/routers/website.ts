@@ -20,6 +20,10 @@ import AdminDashboardApi from "./adminDashboard";
 import { AuthMiddleware } from "../middlewares/auth.middleware";
 import Joi from "joi";
 import { subscriptionSuccessRequest } from "../modules/subscription/subscription.validation";
+import { superAdminController } from "../modules/superAdmin/superAdmin.controller";
+import { SuperAdminService } from "../modules/superAdmin/superAdmin.service";
+
+const superAdminService = new SuperAdminService();
 
 const authMiddleware = new AuthMiddleware();
 
@@ -32,6 +36,12 @@ WebsiteApi.get(
     "/front-image",
     validator.query(getFrontImageValidation),
     websiteFrontImageController.getFrontImage
+);
+
+// Testimonial Routes
+WebsiteApi.get(
+    "/testimonial", 
+    superAdminController.getTestimonial
 );
 
 WebsiteApi.post(

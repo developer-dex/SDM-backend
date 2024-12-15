@@ -582,7 +582,7 @@ export class SuperAdminService {
 
     getAllCustomers = async () => {
         // const { offset, limit: limitData } = calculatePagination(page, limit);
-        let query = `SELECT * FROM Users`;
+        let query = `SELECT * FROM Users WHERE id NOT IN (SELECT user_id FROM ClientManagement)`;
         // if(limit && page) {
         //     query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         // }
@@ -591,6 +591,12 @@ export class SuperAdminService {
             customers: data.rows,
         };
     };
+
+    alreadyExistInClientManagement = async (userId: string) => {
+        const query = `SELECT * FROM ClientManagement WHERE user_id = '${userId}'`;
+        const data = await executeQuery(query);
+        return data.rows.length > 0;
+    }
 
     // Audit Logs
 
@@ -1486,5 +1492,111 @@ if (userIds.length > 0) {
 
         const profilePhoto = formateFrontImagePath(file.path);
         return { profilePhoto: `${getEnvVar("LOCAL_URL")}/assets${profilePhoto}` };
+    }
+
+    getContactUs = async (page: number, limit: number, name?: string, phoneNo?: string, email?: string, subject?: string, message?: string, createdAt?: string) => {
+        
+        let query = `SELECT * FROM ContactUs`;
+
+        const filters = [];
+        if (name) {
+            filters.push(`Name = '${name}'`);
+        }
+        if (phoneNo) {
+            filters.push(`PhoneNo = '${phoneNo}'`);
+        }
+        if (email) {
+            filters.push(`Email = '${email}'`);
+        }
+        if (subject) {
+            filters.push(`Subject = '${subject}'`);
+        }
+        if (message) {
+            filters.push(`Message = '${message}'`);
+        }
+        if (createdAt) {
+            filters.push(this.getDateCondition(
+                createdAt,
+                "createdAt"
+            ))
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+
+        if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        const totalCountQuery = `SELECT COUNT(*) FROM ContactUs`;
+        const totalCount = await executeQuery(totalCountQuery);
+        const data = await executeQuery(query);
+        return { totalCount: totalCount.rows[0][''], data: data.rows };
+    }
+
+    getSignupUsers = async (page: number, limit: number) => {
+        let query = `SELECT * FROM Users`;
+        if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        const totalCountQuery = `SELECT COUNT(*) FROM Users`;
+        const totalCount = await executeQuery(totalCountQuery);
+        const data = await executeQuery(query);
+        return { totalCount: totalCount.rows[0][''], data: data.rows };
+    }
+
+    getTestimonial = async (page?: number, limit?: number) => {
+        let query = `SELECT * FROM Testimonials`;
+        if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+
+        // Add the base URL IN the image path
+        const baseUrl = getEnvVar("LOCAL_URL");
+        const data = await executeQuery(query);
+        const testimonialData = data.rows.map((testimonial: any) => {
+            testimonial.Image = `${baseUrl}/assets${testimonial.Image}`;
+            return testimonial;
+        });
+
+        const totalDataQuery = `SELECT COUNT(*) FROM Testimonials`;
+        const totalData = await executeQuery(totalDataQuery);
+        return { totalData: totalData.rows[0][''], data: testimonialData };
+    }
+
+    addTestimonial = async (requestData: any, image: Express.Multer.File) => {
+        const query = `INSERT INTO Testimonials (Name, Message, Image, CreatedAt) VALUES ('${requestData.name}', '${requestData.message}', '${image.path}', GETDATE())`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    deleteTestimonial = async (testimonialId: number) => {
+        const query = `DELETE FROM Testimonials WHERE id = ${testimonialId}`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    // Integration images
+
+    addIntegrationImages = async (image: Express.Multer.File) => {
+        const query = `INSERT INTO IntegrationImages (Image, CreatedAt) VALUES ('${image.path}', GETDATE())`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    getIntegrationImages = async () => {
+        const query = `SELECT * FROM IntegrationImages`;
+
+        const baseUrl = getEnvVar("LOCAL_URL");
+        const data = await executeQuery(query);
+        const integrationImages = data.rows.map((image: any) => {
+            image.Image = `${baseUrl}/assets${image.Image}`;
+            return image;
+        });
+        return integrationImages;
     }
 }

@@ -313,4 +313,26 @@ AdminDashboardApi.patch("/admin-profile",
     fileUploadMiddleware.uploadAdminProfile,
     superAdminController.updateAdminProfile);
 
+// Contact Us listing
+AdminDashboardApi.get("/contact-us", superAdminController.getContactUs);
+
+// Signup user listing
+AdminDashboardApi.get("/signup-users",  validator.query(pagination),superAdminController.getSignupUsers);
+
+// Testimonial Module
+AdminDashboardApi.get("/testimonial", validator.query(pagination), superAdminController.getTestimonial);
+AdminDashboardApi.post("/testimonial", 
+    fileUploadMiddleware.uploadTestimonialImage,
+    superAdminController.createTestimonial);
+AdminDashboardApi.delete("/testimonial/:testimonialId/delete", superAdminController.deleteTestimonial);
+
+// Integration images
+AdminDashboardApi.post("/integration-images", 
+    fileUploadMiddleware.uploadIntegrationImages,
+    superAdminController.createIntegrationImages);
+
+// AdminDashboardApi.get("/integration-images", 
+//     superAdminController.getIntegrationImages);
+// AdminDashboardApi.delete("/integration-images/:integrationImageId/delete", superAdminController.deleteIntegrationImages);
+
 export default AdminDashboardApi;

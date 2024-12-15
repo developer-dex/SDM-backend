@@ -1,10 +1,11 @@
-import {
-    executeQuery,
-    retrieveData,
-} from "../../config/databaseConfig";
+import { executeQuery, retrieveData } from "../../config/databaseConfig";
 import { clientAdminPermissions } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
-import getEnvVar, { calculatePagination, formateFrontImagePath, sleep } from "../../helpers/util";
+import getEnvVar, {
+    calculatePagination,
+    formateFrontImagePath,
+    sleep,
+} from "../../helpers/util";
 import { EPlanStatus } from "../plan/plan.interface";
 
 export class ClientAdminService {
@@ -19,8 +20,8 @@ export class ClientAdminService {
             findUserQithTokenQuery
         );
 
-        // client 
-        
+        // client
+
         // client current subsc
         const responseData = this.generateLogInSignUpResponse(
             findUserWithTokenResult.rows[0].id,
@@ -31,8 +32,13 @@ export class ClientAdminService {
                 : "DEMODATA.dbo",
             "client"
         );
-        console.log("findUserWithTokenResult.rows[0].databaseName:::", findUserWithTokenResult.rows[0].databaseName);
-        const softwareStatus = await this.getSoftwareStatus(`${findUserWithTokenResult.rows[0].databaseName}.dbo`);
+        console.log(
+            "findUserWithTokenResult.rows[0].databaseName:::",
+            findUserWithTokenResult.rows[0].databaseName
+        );
+        const softwareStatus = await this.getSoftwareStatus(
+            `${findUserWithTokenResult.rows[0].databaseName}.dbo`
+        );
         // softwareStatus.isActive = 1;
         return {
             ...findUserWithTokenResult.rows[0],
@@ -107,7 +113,6 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         if (EntryDateTime) {
             filters.push(`EntryDateTime LIKE '%${EntryDateTime}%'`);
         }
-        
 
         if (filters.length > 0) {
             query += ` WHERE ${filters.join(" AND ")}`;
@@ -125,7 +130,9 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         const countResult = await executeQuery(countQuery);
         const totalCount = countResult.rows[0].total_count;
 
-        const otherBackUpSSDataResult = await executeQuery(otherBackUpSSDataQuery);
+        const otherBackUpSSDataResult = await executeQuery(
+            otherBackUpSSDataQuery
+        );
         const otherBackUpSSData = otherBackUpSSDataResult.rows[0];
 
         // Add pagination to the query
@@ -223,7 +230,9 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
 
         const result = await executeQuery(query);
         const countResult = await executeQuery(countQuery);
-        const otherPingPathDataResult = await executeQuery(otherPingPathDataQuery);
+        const otherPingPathDataResult = await executeQuery(
+            otherPingPathDataQuery
+        );
         const otherPingPathData = otherPingPathDataResult.rows[0];
         const totalCount = countResult.rows[0].total_count;
         return { pingLogs: result.rows, totalCount, otherPingPathData };
@@ -393,13 +402,18 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
-        
-
-        const countCompleteAndFailedJobsResult = await executeQuery(countCompleteAndFailedJobsQuery);
+        const countCompleteAndFailedJobsResult = await executeQuery(
+            countCompleteAndFailedJobsQuery
+        );
         const result = await executeQuery(query);
         const countResult = await executeQuery(countQuery);
         const totalCount = countResult.rows[0].total_count;
-        return { jobFireLogs: result.rows, totalCount, countCompleteAndFailedJobs: countCompleteAndFailedJobsResult.rows[0] };
+        return {
+            jobFireLogs: result.rows,
+            totalCount,
+            countCompleteAndFailedJobs:
+                countCompleteAndFailedJobsResult.rows[0],
+        };
     };
 
     // User management
@@ -448,7 +462,9 @@ LEFT JOIN
             searchFilters.push(`u.Role LIKE '%${searchParameter}%'`);
             searchFilters.push(`u.Phone LIKE '%${searchParameter}%'`);
             searchFilters.push(`u.EntryDate LIKE '%${searchParameter}%'`);
-            searchFilters.push(`STRING_AGG(up.ModuleName, ', ') LIKE '%${searchParameter}%'`);
+            searchFilters.push(
+                `STRING_AGG(up.ModuleName, ', ') LIKE '%${searchParameter}%'`
+            );
             searchFilters.push(`u.Password LIKE '%${searchParameter}%'`);
         }
 
@@ -468,7 +484,9 @@ LEFT JOIN
             filters.push(this.getDateCondition(entryDate, "u.EntryDate"));
         }
         if (moduleNames) {
-            filters.push(`STRING_AGG(up.ModuleName, ', ') LIKE '%${moduleNames}%'`);
+            filters.push(
+                `STRING_AGG(up.ModuleName, ', ') LIKE '%${moduleNames}%'`
+            );
         }
         if (password) {
             filters.push(`u.Password LIKE '%${password}%'`);
@@ -514,7 +532,9 @@ LEFT JOIN
     ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
         FROM 
             ${DBName}.JobFireEntries;`;
-        const jobStatusPieChartResult = await executeQuery(jobStatusPieChartQuery);
+        const jobStatusPieChartResult = await executeQuery(
+            jobStatusPieChartQuery
+        );
         const jobStatusPieChart = jobStatusPieChartResult.rows[0];
         // Total clients
         const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.Users`;
@@ -527,8 +547,10 @@ LEFT JOIN
     COUNT(CASE WHEN PingStatus = 'Failed' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS failed_count,
         COUNT(CASE WHEN PingStatus = 'Success' AND Connection = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS connectedJobCount
 FROM 
-    ${DBName}.PingPathLogs;`
-        const jobOnlineOfflineResult = await executeQuery(jobOnlineOfflineQuery);
+    ${DBName}.PingPathLogs;`;
+        const jobOnlineOfflineResult = await executeQuery(
+            jobOnlineOfflineQuery
+        );
         const jobOnlineOffline = jobOnlineOfflineResult.rows[0];
 
         // lastcupporttickets
@@ -543,7 +565,9 @@ JOIN
     SupportTickets st ON cm.user_id = st.userId WHERE st.userId = ${userId}
 ORDER BY 
     st.createdAt DESC;`;
-        const latestSupportTicketDataResult = await executeQuery(latestSupportTicketDataQuery);
+        const latestSupportTicketDataResult = await executeQuery(
+            latestSupportTicketDataQuery
+        );
         const latestSupportTicketData = latestSupportTicketDataResult.rows;
 
         // supportTicket count
@@ -590,16 +614,43 @@ ORDER BY
         console.log("relativePath: ", relativePath);
         const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
 
+        return {
+            jobStatusPieChart,
+            totalClients,
+            jobOnlineOffline,
+            supportTicketCount,
+            latestSupportTicketData,
+            totalDataBackup,
+            banner: fullImagePath,
+        };
+    };
 
-        return { jobStatusPieChart, totalClients, jobOnlineOffline,supportTicketCount, latestSupportTicketData, totalDataBackup, banner: fullImagePath  };
-    }
+    getRepostFromDashboard = async (
+        DBName: string,
+        userId: number,
+        reportType: string,
+        from_date: string,
+        to_date: string
+    ) => {
+        let query = `SELECT * FROM ${DBName}.${reportType}`;
 
-    getRepostFromDashboard = async (DBName: string, userId: number, reportType: string) => {
-        const query = `SELECT * FROM ${DBName}.${reportType}`;
+        // Add conditional filtering based on DBName
+        if (reportType === "Clients") {
+            query += ` WHERE EntryTime >= '${from_date}' AND EntryTime <= '${to_date}'`;
+        } else if (reportType === "BackupSSLogs") {
+            query += ` WHERE EntryDateTime >= '${from_date}' AND EntryDateTime <= '${to_date}'`;
+        } else if (reportType === "AuditTrail") {
+            query += ` WHERE DateTimeStamp >= '${from_date}' AND DateTimeStamp <= '${to_date}'`;
+        } else if (reportType === "PingPathLogs") {
+            query += ` WHERE EntryDateTime >= '${from_date}' AND EntryDateTime <= '${to_date}'`;
+        } else if (reportType === "JobFireEntries") {
+            query += ` WHERE StartTime >= '${from_date}' AND StartTime <= '${to_date}'`;
+        }else if(reportType === "BackupJobs"){
+            query += ` WHERE EntryDate >= '${from_date}' AND EntryDate <= '${to_date}'`;
+        }
         const result = await executeQuery(query);
         return result.rows;
-        
-    }
+    };
 
     private generateLogInSignUpResponse = (
         userId: number,
@@ -614,7 +665,7 @@ ORDER BY
             userEmail: userEmail,
             loginTime: new Date().toISOString(),
             databaseName: databaseName,
-            login_type: login_type
+            login_type: login_type,
         };
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),
@@ -623,11 +674,13 @@ ORDER BY
     };
 
     // Setting
-    getSetting = async (DBName: string) => {
+    getSetting = async (DBName: string, userId: number) => {
         const query = `SELECT * FROM ${DBName}.CompanyProfile`;
+        const companyDetails = `select * from Licenses where user_id = ${userId}`;
         const result = await executeQuery(query);
-        return result.rows[0];
-    }
+        const companyDetailsResult = await executeQuery(companyDetails);
+        return { ...companyDetailsResult.rows[0], ...result.rows[0] };
+    };
 
     // Software Status
     getSoftwareStatus = async (DBName: string) => {
@@ -647,19 +700,19 @@ ORDER BY
     jfe.StartTime DESC;`;
         const result = await executeQuery(query);
         return result.rows[0];
-    }
+    };
 
     getMyNotifications = async (DBName: string, userId: number) => {
         const query = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt asnotificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by n.CreatedAt DESC`;
         const result = await executeQuery(query);
         return result.rows;
-    }
+    };
 
     markAllRead = async (userId: number) => {
         const query = `UPDATE UsersNotifications SET IsRead = 1 WHERE UserId = ${userId}`;
         const result = await executeQuery(query);
         return result.rows;
-    }
+    };
 
     // Plan listing
     getPlanListing = async (userId: number) => {
@@ -667,21 +720,24 @@ ORDER BY
 
         // Currrent user subscription plan
         const currentUserSubscriptionPlanQuery = `SELECT * FROM Subscription WHERE userId = ${userId}`;
-        const currentUserSubscriptionPlanResult = await executeQuery(currentUserSubscriptionPlanQuery);
-        const currentUserSubscriptionPlan = currentUserSubscriptionPlanResult.rows[0];
-        
+        const currentUserSubscriptionPlanResult = await executeQuery(
+            currentUserSubscriptionPlanQuery
+        );
+        const currentUserSubscriptionPlan =
+            currentUserSubscriptionPlanResult.rows[0];
+
         const plans = await executeQuery(query);
-        return {plans: plans.rows, currentUserSubscriptionPlan};
-    }
+        return { plans: plans.rows, currentUserSubscriptionPlan };
+    };
 
     getFaq = async () => {
         const query = `SELECT * FROM FAQ`;
         const result = await executeQuery(query);
         return result.rows;
-    }
+    };
 
-      // Function to convert special date strings to SQL date conditions
-      private getDateCondition(
+    // Function to convert special date strings to SQL date conditions
+    private getDateCondition(
         dateString: string,
         field: string,
         start_from?: string,
