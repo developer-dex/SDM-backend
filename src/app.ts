@@ -4,7 +4,7 @@ import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
 import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, SUPER_ADMIN_DATABASE, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
-import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, replicateTables } from "./config/databaseConfig";
+import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, initializeDatabasePool, initializeDatabasePool2, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
 
@@ -32,11 +32,12 @@ app.use("/assets", express.static(ADMIN_PROFILE_PATH));
 
 // connectClientDatabasetest(SUPER_ADMIN_DATABASE);
 
-initializeDatabase();
+// initializeDatabase(); // OLD
+initializeDatabasePool2();
 
 // databaseTestConnection();
 
-initializeDatabaseClient()
+// initializeDatabaseClient()
 
 // replicateTables('SuperAdmin', "SuperAdmin3");
 /**

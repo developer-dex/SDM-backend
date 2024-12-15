@@ -2,6 +2,8 @@ import { createAuditTrail } from "../../common/function";
 import { StatusCodes } from "../../common/responseStatusEnum";
 import {
     executeQuery,
+    executeQuery2,
+    initializeDatabasePool,
     retrieveData,
 } from "../../config/databaseConfig";
 import { Actions, Modules } from "../../helpers/constants";
@@ -41,9 +43,9 @@ export class SuperAdminService {
     signIn = async (requestData: ISignInRequest) => {
         const { email, password } = requestData;
         const query = `SELECT * FROM Admin WHERE email = '${email}' AND password = '${password}'`;
-        const result = await retrieveData(query);
+        const result = await executeQuery(query);
         console.log("result:::", result);
-        if (result.rowCount === 0) {
+        if (result.rows.length === 0) {
             return [];
         }
         const responseData = this.generateLogInSignUpResponse(
@@ -899,6 +901,17 @@ const query2 = `
         return {revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows, listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
     }
 
+    getWebsiteAnalytics = async (page: number, limit: number) => {
+
+        // Total Count
+        const totalCountQuery = `SELECT COUNT(*) FROM Analytics`;
+        const totalCountData = await executeQuery(totalCountQuery);
+        const totalCount = totalCountData.rows[0][''];
+
+        const websiteAnalytics = await executeQuery(this.websiteAnalyticsQuery(page, limit));
+        return {websiteAnalytics: websiteAnalytics.rows, totalCount: totalCount};
+    }
+
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
         const clients = await retrieveData(query);
@@ -1312,6 +1325,15 @@ if (userIds.length > 0) {
         return query;
     }
 
+    private websiteAnalyticsQuery = (page: number, limit: number) => {
+        let query = `SELECT * FROM Analytics`;
+        if (limit && page) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        return query;
+    }
+
     getFaq = async () => {
         const query = `SELECT * FROM FAQ order by CreatedDate desc`;
         const data = await executeQuery(query);
@@ -1337,46 +1359,40 @@ if (userIds.length > 0) {
     }
 
     getClientDashboard = async (DBName: string, userId: number) => {
+
+        const dbConnect = await initializeDatabasePool();
+        console.log("dbConnectdbConnect___", dbConnect)
+
+        // Prepare all queries
         const jobStatusPieChartQuery = `SELECT 
-    ROUND(COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) * 100.0 / COUNT(*), 2) AS CompletedJobsPercentage,
-    ROUND(COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*), 2) AS FailedJobsPercentage,
-    ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
-        FROM 
-            ${DBName}.dbo.JobFireEntries;`;
-        const jobStatusPieChartResult = await executeQuery(jobStatusPieChartQuery);
-        const jobStatusPieChart = jobStatusPieChartResult.rows[0];
-        // Total clients
+            ROUND(COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) * 100.0 / COUNT(*), 2) AS CompletedJobsPercentage,
+            ROUND(COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*), 2) AS FailedJobsPercentage,
+            ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
+            FROM 
+                ${DBName}.dbo.JobFireEntries;`;
+
         const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.dbo.Users`;
-        const totalClientsResult = await executeQuery(totalClientsQuery);
-        const totalClients = totalClientsResult.rows[0].total_clients;
 
-        // online, offline, connected, jobs
         const jobOnlineOfflineQuery = `SELECT 
-    COUNT(CASE WHEN PingStatus = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS success_count,
-    COUNT(CASE WHEN PingStatus = 'Failed' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS failed_count,
-        COUNT(CASE WHEN PingStatus = 'Success' AND Connection = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS connectedJobCount
-FROM 
-    ${DBName}.dbo.PingPathLogs;`
-        const jobOnlineOfflineResult = await executeQuery(jobOnlineOfflineQuery);
-        const jobOnlineOffline = jobOnlineOfflineResult.rows[0];
+            COUNT(CASE WHEN PingStatus = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS success_count,
+            COUNT(CASE WHEN PingStatus = 'Failed' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS failed_count,
+            COUNT(CASE WHEN PingStatus = 'Success' AND Connection = 'Success' AND CAST(EntryDateTime AS DATE) = CAST(GETDATE() AS DATE) THEN 1 END) AS connectedJobCount
+            FROM 
+                ${DBName}.dbo.PingPathLogs;`;
 
-        // lastcupporttickets
         const latestSupportTicketDataQuery = `SELECT TOP 7
-    cm.company_name,
-    st.Topic AS support_subject,
-    st.createdAt AS date_time,
-    st.status AS status
-FROM 
-    ClientManagement cm
-JOIN 
-    SupportTickets st ON cm.user_id = st.userId WHERE st.userId = ${userId}
-ORDER BY 
-    st.createdAt DESC;`;
-        const latestSupportTicketDataResult = await executeQuery(latestSupportTicketDataQuery);
-        const latestSupportTicketData = latestSupportTicketDataResult.rows;
+            cm.company_name,
+            st.Topic AS support_subject,
+            st.createdAt AS date_time,
+            st.status AS status
+            FROM 
+                ClientManagement cm
+            JOIN 
+                SupportTickets st ON cm.user_id = st.userId WHERE st.userId = ${userId}
+            ORDER BY 
+                st.createdAt DESC;`;
 
-        // supportTicket count
-        const query2 = `
+        const supportTicketCountQuery = `
             WITH 
             SupportTicketCounts AS (
                 SELECT 
@@ -1390,12 +1406,8 @@ ORDER BY
                 (SELECT total_tickets FROM SupportTicketCounts) AS totalTickets,
                 (SELECT open_tickets FROM SupportTicketCounts) AS openTickets,
                 (SELECT closed_tickets FROM SupportTicketCounts) AS closedTickets,
-                (SELECT response_on_time_percentage FROM SupportTicketCounts) AS responseOnTimePercentage
-        `;
-        const supportTicketCountResult = await executeQuery(query2);
-        const supportTicketCount = supportTicketCountResult.rows[0];
+                (SELECT response_on_time_percentage FROM SupportTicketCounts) AS responseOnTimePercentage;`;
 
-        // Total data backup
         const totalDataBackupQuery = `
             SELECT 
                 SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
@@ -1406,21 +1418,64 @@ ORDER BY
                     WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 2), ' MB')
                     ELSE CONCAT(SUM(CAST(DataInKB AS NUMERIC)), ' KB')
                 END AS TotalDataInReadableFormat
-            FROM ${DBName}.dbo.JobFireEntries`;
-        const totalDataBackupResult = await executeQuery(totalDataBackupQuery);
+            FROM ${DBName}.dbo.JobFireEntries;`;
+
+        const bannerQuery = `SELECT * FROM ClientWebsiteBanners WHERE user_id = ${userId}`;
+
+        const softwareStatusQuery = `SELECT TOP 1
+            jfe.Status,
+            CASE 
+                WHEN jfe.StartTime >= DATEADD(HOUR, -24, GETDATE()) AND jfe.Status = 'Completed' THEN 1 
+                ELSE 0 
+            END AS isActive,
+            CASE 
+                WHEN jfe.StartTime >= DATEADD(HOUR, -24, GETDATE()) AND jfe.Status = 'Completed' THEN jfe.StartTime 
+                ELSE jfe.StartTime 
+            END AS lastOnlineDateAndTime
+            FROM 
+                ${DBName}.dbo.JobFireEntries jfe
+            ORDER BY 
+                jfe.StartTime DESC;`;
+
+        // Execute all queries in parallel
+        const [
+            jobStatusPieChartResult,
+            totalClientsResult,
+            jobOnlineOfflineResult,
+            latestSupportTicketDataResult,
+            supportTicketCountResult,
+            totalDataBackupResult,
+            bannerResult,
+            softwareStatusResult
+        ] = await Promise.all([
+            executeQuery2(jobStatusPieChartQuery, dbConnect),
+            executeQuery2(totalClientsQuery, dbConnect),
+            executeQuery2(jobOnlineOfflineQuery, dbConnect),
+            executeQuery2(latestSupportTicketDataQuery, dbConnect),
+            executeQuery2(supportTicketCountQuery, dbConnect),
+            executeQuery2(totalDataBackupQuery, dbConnect),
+            executeQuery2(bannerQuery, dbConnect),
+            executeQuery2(softwareStatusQuery, dbConnect)
+        ]);
+
+        const jobStatusPieChart = jobStatusPieChartResult.rows[0];
+        const totalClients = totalClientsResult.rows[0].total_clients;
+        const jobOnlineOffline = jobOnlineOfflineResult.rows[0];
+        const latestSupportTicketData = latestSupportTicketDataResult.rows;
+        const supportTicketCount = supportTicketCountResult.rows[0];
         const totalDataBackup = totalDataBackupResult.rows[0];
 
-        // user banner
-        const bannerQuery = `SELECT * FROM ClientWebsiteBanners WHERE user_id = ${userId}`;
-        const bannerResult = await executeQuery(bannerQuery);
-        const banner = bannerResult.rows;
+        let fullImagePath = null;
         // add path to banner
-        const relativePath = formateFrontImagePath(banner[0].imagePath);
-        console.log("relativePath: ", relativePath);
-        const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets/clientWebsiteBanners${relativePath}`;
+        if (bannerResult.rows[0] && bannerResult.rows[0]?.imagePath) {
+            const relativePath = formateFrontImagePath(bannerResult.rows[0]?.imagePath);
+            console.log("relativePath: ", relativePath);
+            fullImagePath = `${getEnvVar("LOCAL_URL")}/assets/clientWebsiteBanners${relativePath}`;
+        }
 
+        const softwareStatus = softwareStatusResult.rows[0];
 
-        return { jobStatusPieChart, totalClients, jobOnlineOffline,supportTicketCount, latestSupportTicketData, totalDataBackup, banner: null  };
+        return { jobStatusPieChart, totalClients, jobOnlineOffline, supportTicketCount, latestSupportTicketData, totalDataBackup, banner: fullImagePath, softwareStatus };
     }
 
     updateAdminProfile = async (adminId: number,file: Express.Multer.File) => {

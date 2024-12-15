@@ -196,7 +196,7 @@ satelize.satelize({ip:ipAddress}, function(err, payload) {
         const location = payload?.continent?.en
         return location;
     }
-    return null;
+    return "India";
   });
 };
 

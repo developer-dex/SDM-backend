@@ -819,38 +819,185 @@ export const initializeDatabase = () => {
 let isQueryInProgress = false; // Flag to track query execution state
 
 // Query execution function
+// export const executeQuery = async (query: string): Promise<QueryResult> => {
+//     // Wait until the previous query is completed
+//     while (isQueryInProgress) {
+//         await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100ms
+//     }
+
+//     isQueryInProgress = true; // Set the flag to indicate a query is in progress
+
+//     return new Promise((resolve, reject) => {
+//         const request = new Request(query, (err, rowCount) => {
+//             isQueryInProgress = false; // Reset the flag when the request is done
+//             if (err) {
+//                 reject(err);
+//             }
+//         });
+
+//         const rows: any[] = [];
+//         request.on("row", (columns) => {
+//             const row: any = {};
+//             columns.forEach((column) => {
+//                 row[column.metadata.colName] = column.value;
+//             });
+//             rows.push(row);
+//         });
+
+//         request.on("requestCompleted", () => {
+//             resolve({ rows });
+//         });
+
+//         testConnection.execSql(request);
+//     });
+// };
+// ... existing code ...
+
+// Update the executeQuery function to create a new connection for each query
+// export const executeQuery = async (query: string): Promise<QueryResult> => {
+//     return new Promise((resolve, reject) => {
+//         const connection = new Connection({
+//             server: getEnvVar("SQLBASE_HOST"),
+//             options: {
+//                 database: SUPER_ADMIN_DATABASE,
+//                 encrypt: true,
+//                 port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+//                 trustServerCertificate: true,
+//             },
+//             authentication: {
+//                 type: "default",
+//                 options: {
+//                     userName: getEnvVar("SQLBASE_USER"),
+//                     password: getEnvVar("SQLBASE_PASSWORD"),
+//                 },
+//             },
+//         });
+
+//         connection.connect((err) => {
+//             if (err) {
+//                 return reject(err);
+//             }
+
+//             const request = new Request(query, (err) => {
+//                 connection.close(); // Always close the connection
+//                 if (err) {
+//                     return reject(err);
+//                 }
+//                 console.log("Query executed successfully.");
+//             });
+
+//             const rows: any[] = [];
+//             request.on("row", (columns) => {
+//                 const row: any = {};
+//                 columns.forEach((column) => {
+//                     row[column.metadata.colName] = column.value;
+//                 });
+//                 rows.push(row);
+//             });
+
+//             request.on("requestCompleted", () => {
+//                 resolve({ rows });
+//             });
+
+//             connection.execSql(request);
+//         });
+//     });
+// };
+
+// ... existing code ...
+
+
+import { ConnectionPool } from "mssql";
+let pool: ConnectionPool;
 export const executeQuery = async (query: string): Promise<QueryResult> => {
-    // Wait until the previous query is completed
-    while (isQueryInProgress) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100ms
-    }
-
-    isQueryInProgress = true; // Set the flag to indicate a query is in progress
-
+    // let pool: ConnectionPool;
+    console.log("Executing query:", query);
     return new Promise((resolve, reject) => {
-        const request = new Request(query, (err, rowCount) => {
-            isQueryInProgress = false; // Reset the flag when the request is done
-            if (err) {
-                reject(err);
-            }
-        });
-
-        const rows: any[] = [];
-        request.on("row", (columns) => {
-            const row: any = {};
-            columns.forEach((column) => {
-                row[column.metadata.colName] = column.value;
+        pool.request() // Create a new request from the pool
+            .query(query, (err, result) => {
+                if (err) {
+                    return reject(err);
+                }
+                console.log("Query executed successfully.");
+                resolve({ rows: result.recordset }); // Return the result set wrapped in an object
             });
-            rows.push(row);
-        });
-
-        request.on("requestCompleted", () => {
-            resolve({ rows });
-        });
-
-        testConnection.execSql(request);
     });
 };
+
+export const executeQuery2 = async (query: string , pool: ConnectionPool): Promise<QueryResult> => {
+    console.log("Executing query:", query);
+    return new Promise((resolve, reject) => {
+        // pool.request() // Create a new request from the pool
+            pool.query(query, (err, result) => {
+                if (err) {
+                    return reject(err);
+                }
+                console.log("Query executed successfully.");
+                resolve({ rows: result.recordset }); // Return the result set wrapped in an object
+            });
+    });
+};
+
+export const initializeDatabasePool = async () => {
+    let pool2: ConnectionPool;
+    try {
+        pool2 = new ConnectionPool({
+            server: getEnvVar("SQLBASE_HOST"),
+            authentication: {
+                type: "default",
+                options: {
+                    userName: getEnvVar("SQLBASE_USER"),
+                    password: getEnvVar("SQLBASE_PASSWORD"),
+                },
+            },
+            options: {
+                database: SUPER_ADMIN_DATABASE,
+                encrypt: true,
+                port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+                trustServerCertificate: true,
+                connectTimeout: 30000, // Increase connection timeout (30 seconds)
+                requestTimeout: 30000, 
+            },
+        });
+
+         await pool2.connect();
+         return pool2;
+        console.log("Database connected successfully.");
+    } catch (err) {
+        console.error("Database connection failed:", err);
+    }
+};
+
+export const initializeDatabasePool2 = async () => {
+    // let pool: ConnectionPool;
+    try {
+        pool = new ConnectionPool({
+            server: getEnvVar("SQLBASE_HOST"),
+            authentication: {
+                type: "default",
+                options: {
+                    userName: getEnvVar("SQLBASE_USER"),
+                    password: getEnvVar("SQLBASE_PASSWORD"),
+                },
+            },
+            options: {
+                database: SUPER_ADMIN_DATABASE,
+                encrypt: true,
+                port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+                trustServerCertificate: true,
+                connectTimeout: 30000, // Increase connection timeout (30 seconds)
+                requestTimeout: 30000, 
+            },
+        });
+
+         await pool.connect();
+        //  return pool;
+        console.log("Database connected successfully.");
+    } catch (err) {
+        console.error("Database connection failed:", err);
+    }
+};
+
 
   export const executeQueryClient = (query: string): Promise<QueryResult> => {
     return new Promise((resolve, reject) => {

@@ -1,7 +1,4 @@
-import {
-    executeQuery,
-    retrieveData,
-} from "../../config/databaseConfig";
+import { executeQuery, retrieveData } from "../../config/databaseConfig";
 import { UPLOAD_PATH } from "../../helpers/constants";
 import getEnvVar, {
     calculatePagination,
@@ -12,8 +9,7 @@ import getEnvVar, {
     getThePageNameFromCategory,
     removeFile,
 } from "../../helpers/util";
-import FrontImage from "../../models/FrontImage";
-import geoip from 'geoip-lite';
+import pkg from "ip";
 
 export class WebsiteFrontImageService {
     constructor() {}
@@ -29,19 +25,24 @@ export class WebsiteFrontImageService {
             removeFile(isExistImagePath.rows[0].imagePath);
         }
 
-       const updateNewFilePathQuery = `UPDATE FrontImage SET imagePath = '${file.path}' WHERE category = '${requestData.category}'`;
-       await executeQuery(updateNewFilePathQuery);
-        
+        const updateNewFilePathQuery = `UPDATE FrontImage SET imagePath = '${file.path}' WHERE category = '${requestData.category}'`;
+        await executeQuery(updateNewFilePathQuery);
     };
 
-    getWebsiteFrontImageUrlByCategory = async (category: any, req: any, res: any) => {
+    getWebsiteFrontImageUrlByCategory = async (
+        category: any,
+        req: any,
+        res: any
+    ) => {
         const query = `SELECT * FROM FrontImage WHERE category = '${category}'`;
         const frontImage = await executeQuery(query);
         this.logPageVisit(req, res, category);
 
         if (frontImage.rows[0]) {
             // Construct the full URL using the base URL from config and the image path
-            const relativePath = formateFrontImagePath(frontImage.rows[0].imagePath);
+            const relativePath = formateFrontImagePath(
+                frontImage.rows[0].imagePath
+            );
 
             return {
                 image_url: `${getEnvVar("LOCAL_URL")}/assets${relativePath}`,
@@ -51,13 +52,17 @@ export class WebsiteFrontImageService {
     };
 
     logPageVisit = async (req: any, res: Response, category: string) => {
-        let ipAddress = getIpAddressFromRequest(req);
+        const { address } = pkg;
+        // Get the current machine's IP address
+        const ipAddress = address();
+        console.log("_________________________________", ipAddress)
+        // let ipAddress = getIpAddressFromRequest(req);
 
-        let userType = 'guest';  
+        let userType = "guest";
         // Check if the IP address exists in the User table
         const existIpAddressQuery = `SELECT * FROM Users WHERE ipAddress = '${ipAddress}'`;
         const existIpAddress = await executeQuery(existIpAddressQuery);
-    
+
         if (existIpAddress.rows[0]) {
             userType = existIpAddress.rows[0].full_name; // Set user type to existUser if found
         }
@@ -99,12 +104,14 @@ export class WebsiteFrontImageService {
     };
 
     getClientWebsiteBanner = async (page?: number, limit?: number) => {
-        
         let query = `SELECT cb.*, u.full_name, u.email FROM ClientWebsiteBanners cb LEFT JOIN Users u ON cb.user_id = u.id`;
 
-         // Add pagination to the query
-         if (page && limit) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+        // Add pagination to the query
+        if (page && limit) {
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         // append base url to imagePath
@@ -122,7 +129,6 @@ export class WebsiteFrontImageService {
         const result = await executeQuery(query);
         return result.rows[0];
     };
-
 
     deleteClientWebsiteBanner = async (bannerId: number) => {
         const oldBannerQuery = `SELECT * FROM ClientWebsiteBanners WHERE id = ${bannerId}`;
@@ -149,18 +155,27 @@ export class WebsiteFrontImageService {
     };
 
     // Training files
-    addTrainingFiles = async (file: Express.Multer.File, adminId: number, issue_date: string, file_name: string) => {
+    addTrainingFiles = async (
+        file: Express.Multer.File,
+        adminId: number,
+        issue_date: string,
+        file_name: string
+    ) => {
         const query = `INSERT INTO TrainingFiles (adminId, filePath, mime_type, size, filename, issue_date) VALUES (${adminId}, '${file.path}', '${file.mimetype}', ${file.size}, '${file_name}', '${issue_date}')`;
         await executeQuery(query);
     };
 
-    getTrainingFiles = async (page?: number, limit?: number, status?: string) => {
+    getTrainingFiles = async (
+        page?: number,
+        limit?: number,
+        status?: string
+    ) => {
         let query = `SELECT * FROM TrainingFiles`;
 
         // Add filtering based on status
-        if (status === 'current') {
+        if (status === "current") {
             query += ` WHERE issue_date <= GETDATE()`;
-        } else if (status === 'upcoming') {
+        } else if (status === "upcoming") {
             query += ` WHERE issue_date > GETDATE()`;
         }
 
@@ -168,21 +183,28 @@ export class WebsiteFrontImageService {
 
         // Add pagination to the query
         if (page && limit) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         const trainingFiles = await retrieveData(query);
-        const trainingFilesWithFullUrl = trainingFiles.rows.map((trainingFile) => {
-                const relativePath = formateFrontImagePath(trainingFile.filePath);
+        const trainingFilesWithFullUrl = trainingFiles.rows.map(
+            (trainingFile) => {
+                const relativePath = formateFrontImagePath(
+                    trainingFile.filePath
+                );
                 const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
-    
+
                 return {
-                ...trainingFile,
-                filePath: fullImagePath,
-            };
-        });
+                    ...trainingFile,
+                    filePath: fullImagePath,
+                };
+            }
+        );
         return trainingFilesWithFullUrl;
-    }
+    };
 
     deleteTrainingFiles = async (fileId: number) => {
         const query = `SELECT * FROM TrainingFiles WHERE id = ${fileId}`;
@@ -192,9 +214,14 @@ export class WebsiteFrontImageService {
         }
         const deleteQuery = `DELETE FROM TrainingFiles WHERE id = ${fileId}`;
         await executeQuery(deleteQuery);
-    }
+    };
 
-    updateTrainingFiles = async (fileId: number, file: Express.Multer.File, issue_date: string, filename: string) => {
+    updateTrainingFiles = async (
+        fileId: number,
+        file: Express.Multer.File,
+        issue_date: string,
+        filename: string
+    ) => {
         if (file) {
             const query = `SELECT * FROM TrainingFiles WHERE id = ${fileId}`;
             const existingImagePath = await executeQuery(query);
@@ -202,7 +229,7 @@ export class WebsiteFrontImageService {
                 removeFile(existingImagePath.rows[0].filePath);
             }
         }
-        const updateQuery = `UPDATE TrainingFiles SET ${file ? `filePath = '${file.path}',` : ''} issue_date = '${issue_date}', filename = '${filename}' WHERE id = ${fileId}`;
+        const updateQuery = `UPDATE TrainingFiles SET ${file ? `filePath = '${file.path}',` : ""} issue_date = '${issue_date}', filename = '${filename}' WHERE id = ${fileId}`;
         await executeQuery(updateQuery);
-    }
+    };
 }

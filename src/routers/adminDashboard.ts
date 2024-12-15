@@ -304,6 +304,9 @@ AdminDashboardApi.post("/client-dashboard",
 
 // Analytics
 AdminDashboardApi.get("/analytics", superAdminController.getAnalytics);
+AdminDashboardApi.get("/website-analytics",
+    validator.query(pagination),
+    superAdminController.getWebsiteAnalytics);
 
 // Admin Profile
 AdminDashboardApi.patch("/admin-profile", 

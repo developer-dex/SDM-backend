@@ -979,6 +979,30 @@ export class SuperAdminController {
         }
     };
 
+    getWebsiteAnalytics = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { page, limit } = req.query as unknown as {
+            page: number;
+            limit: number;
+        };
+        try {
+            const websiteAnalytics = await this.superAdminService.getWebsiteAnalytics(page, limit);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(true, StatusCodes.OK, "Website analytics fetched successfully", websiteAnalytics)
+                );
+        } catch (error) {
+            console.log("superAdmin getWebsiteAnalytics ERROR", error);
+            return res
+                .status(200)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
     // Notification
     createNotification = async (
         req: Request & { token_payload?: any },
