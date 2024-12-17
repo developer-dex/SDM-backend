@@ -109,4 +109,7 @@ WebsiteApi.post(
     subscriptionController.subscriptionSuccessForClientAdmin
 );
 
+WebsiteApi.get("/integration-images", superAdminController.getIntegrationImages);
+WebsiteApi.get("/testimonial", superAdminController.getTestimonial);
+
 export default WebsiteApi;

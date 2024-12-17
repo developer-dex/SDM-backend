@@ -54,7 +54,7 @@ export class AuthController {
             // }
             const ipAddress = getIpAddressFromRequest(req);
             const responseData = await this.authService.login(
-                isExistUser.rows[0].id, isExistUser.rows[0].databaseName, ipAddress
+                isExistUser.rows[0].id, isExistUser.rows[0].databaseName, ipAddress, isExistUser.rows[0].uuid
             );
             return res
                 .status(200)

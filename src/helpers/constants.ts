@@ -4,10 +4,11 @@ export const CLIENT_WEBSITE_BANNER_PATH = "src/assets/clientWebsiteBanners";
 export const TRAINING_FILES_PATH = "src/assets/trainingFiles";
 export const TESTIMONIAL_IMAGE_PATH = "src/assets/testimonialImages";
 export const INTEGRATION_IMAGES_PATH = "src/assets/integrationImages";
+export const FEEDBACK_AND_SUGGESTION_IMAGE_PATH = "src/assets/feedbackAndSuggestionImages";
 export const ADMIN_PROFILE_PATH = "src/assets/adminProfiles";
 export const RESET_PASSWORD_FRONT_URL = getEnvVar('FRONTEND_URL') + "/reset-password";
 
-export const clientAdminPermissions = 'client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket,client-faq'
+export const clientAdminPermissions = 'client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket,client-faq,feedback-suggestion,email-schedule'
 
 
 export const SUPER_ADMIN_DATABASE = "SuperAdmin";

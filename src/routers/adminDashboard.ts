@@ -303,7 +303,8 @@ AdminDashboardApi.post("/client-dashboard",
     superAdminController.getClientDashboard);
 
 // Analytics
-AdminDashboardApi.get("/analytics", superAdminController.getAnalytics);
+AdminDashboardApi.get("/analytics-card", superAdminController.getAnalyticsCard);
+AdminDashboardApi.get("/analytics-table", superAdminController.getAnalyticsTable);
 AdminDashboardApi.get("/website-analytics",
     validator.query(pagination),
     superAdminController.getWebsiteAnalytics);
@@ -331,8 +332,11 @@ AdminDashboardApi.post("/integration-images",
     fileUploadMiddleware.uploadIntegrationImages,
     superAdminController.createIntegrationImages);
 
-// AdminDashboardApi.get("/integration-images", 
-//     superAdminController.getIntegrationImages);
-// AdminDashboardApi.delete("/integration-images/:integrationImageId/delete", superAdminController.deleteIntegrationImages);
+AdminDashboardApi.get("/integration-images", 
+    superAdminController.getIntegrationImages);
+AdminDashboardApi.delete("/integration-images/:integrationImageId/delete", superAdminController.deleteIntegrationImages);
+
+// Client Feedback and suggestion
+AdminDashboardApi.get("/feedback-and-suggestion", superAdminController.getFeedbackAndSuggestion);
 
 export default AdminDashboardApi;

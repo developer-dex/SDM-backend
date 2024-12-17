@@ -3,12 +3,12 @@ import cors from "cors";
 import AppConfig from "./config/appConfig";
 import MainRoute from "./routers";
 import bodyParser from "body-parser";
-import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, INTEGRATION_IMAGES_PATH, SUPER_ADMIN_DATABASE, TESTIMONIAL_IMAGE_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
+import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, FEEDBACK_AND_SUGGESTION_IMAGE_PATH, INTEGRATION_IMAGES_PATH, SUPER_ADMIN_DATABASE, TESTIMONIAL_IMAGE_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "./helpers/constants";
 import connectWebsiteDatabase, { connectClientDatabase, initializeDatabase, initializeDatabaseClient, initializeDatabasePool, initializeDatabasePool2, replicateTables } from "./config/databaseConfig";
 import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
 import cron from "node-cron";
-import { expiredLicenseCron, deleteExpiredNotification, expiredSubscription } from "./crons";
+import { expiredLicenseCron, deleteExpiredNotification, expiredSubscription, autoScheduleEmails } from "./crons";
 
 /**
  * Make express app
@@ -26,6 +26,7 @@ app.use("/assets", express.static(TRAINING_FILES_PATH));
 app.use("/assets", express.static(ADMIN_PROFILE_PATH));
 app.use("/assets", express.static(TESTIMONIAL_IMAGE_PATH));
 app.use("/assets", express.static(INTEGRATION_IMAGES_PATH));
+app.use("/assets", express.static(FEEDBACK_AND_SUGGESTION_IMAGE_PATH));
 /**
  * Website Database Connection
  */
@@ -72,6 +73,12 @@ app.use("/", MainRoute);
 // cron.schedule("*/5 * * * * *", expiredLicenseCron);
 // cron.schedule("*/5 * * * * *", deleteExpiredNotification);
 // cron.schedule("*/5 * * * * *", expiredSubscription);
+// cron.schedule("*/10 * * * * *", autoScheduleEmails)
+
+cron.schedule("0 5 * * *", expiredLicenseCron); // First schedule at 12:05 AM every day
+cron.schedule("0 15 * * *", expiredSubscription); // Second schedule at 12:15 AM every day
+cron.schedule("0 1 * * *", deleteExpiredNotification); // Updated schedule at 1:00 AM every day
+cron.schedule("0 19 * * *", autoScheduleEmails); // Last schedule at 7:00 PM every day
 
 /**
  * Handle the error in middleware request validation error

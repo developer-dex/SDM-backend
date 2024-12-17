@@ -1,12 +1,14 @@
 import { executeQuery, retrieveData } from "../../config/databaseConfig";
 import { clientAdminPermissions } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
+import sendCsvToMail, { sendMultipleCsvToMail } from "../../helpers/sendMail";
 import getEnvVar, {
     calculatePagination,
     formateFrontImagePath,
     sleep,
 } from "../../helpers/util";
 import { EPlanStatus } from "../plan/plan.interface";
+import fs from "fs";
 
 export class ClientAdminService {
     private jwtService: JwtService;
@@ -15,12 +17,23 @@ export class ClientAdminService {
     }
 
     loginInternal = async (requestData: any) => {
-        const findUserQithTokenQuery = `SELECT * FROM Users WHERE login_token = '${requestData.token}'`;
+        const findUserQithTokenQuery = `SELECT * FROM Users WHERE uuid = '${requestData.token}'`;
+        console.log("findUserQithTokenQuery", findUserQithTokenQuery);
         const findUserWithTokenResult = await executeQuery(
             findUserQithTokenQuery
         );
 
-        // client
+        console.log("findUserWithTokenResult", findUserWithTokenResult);
+
+        if (
+            !findUserWithTokenResult ||
+            !findUserWithTokenResult.rows ||
+            !findUserWithTokenResult.rows[0] ||
+            !findUserWithTokenResult.rows[0].databaseName ||
+            findUserWithTokenResult.rows[0].databaseName.length === 0
+        ) {
+            return false;
+        }
 
         // client current subsc
         const responseData = this.generateLogInSignUpResponse(
@@ -635,9 +648,7 @@ ORDER BY
         let query = `SELECT * FROM ${DBName}.${reportType}`;
 
         // Add conditional filtering based on DBName
-        if (reportType === "Clients") {
-            query += ` WHERE EntryTime >= '${from_date}' AND EntryTime <= '${to_date}'`;
-        } else if (reportType === "BackupSSLogs") {
+        if (reportType === "BackupSSLogs") {
             query += ` WHERE EntryDateTime >= '${from_date}' AND EntryDateTime <= '${to_date}'`;
         } else if (reportType === "AuditTrail") {
             query += ` WHERE DateTimeStamp >= '${from_date}' AND DateTimeStamp <= '${to_date}'`;
@@ -645,8 +656,6 @@ ORDER BY
             query += ` WHERE EntryDateTime >= '${from_date}' AND EntryDateTime <= '${to_date}'`;
         } else if (reportType === "JobFireEntries") {
             query += ` WHERE StartTime >= '${from_date}' AND StartTime <= '${to_date}'`;
-        }else if(reportType === "BackupJobs"){
-            query += ` WHERE EntryDate >= '${from_date}' AND EntryDate <= '${to_date}'`;
         }
         const result = await executeQuery(query);
         return result.rows;
@@ -734,6 +743,202 @@ ORDER BY
         const query = `SELECT * FROM FAQ`;
         const result = await executeQuery(query);
         return result.rows;
+    };
+
+    // Email Configration
+    getEmailConfiguration = async (userId: number) => {
+        const query = `SELECT * FROM EmailConfig WHERE UserId = ${userId}`;
+        const result = await executeQuery(query);
+        return result.rows;
+    };
+
+    updateEmailConfiguration = async (
+        DBName: string,
+        userId: number,
+        body: any
+    ) => {
+        // Find is this user email config is exit then update else create
+        const isExitQuery = `SELECT * FROM EmailConfig WHERE UserId = ${userId}`;
+        const isExitResult = await executeQuery(isExitQuery);
+        if (isExitResult.rows.length > 0) {
+            const updateQuery = `UPDATE EmailConfig SET SmtpServer = '${body.SmtpServer}', SmtpPort = '${body.SmtpPort}', SenderEmail = '${body.SenderEmail}', Password = '${body.Password}', EnableTLS = '${body.EnableTLS}' WHERE UserId = ${userId}`;
+            const updateResult = await executeQuery(updateQuery);
+            return updateResult.rows;
+        }
+
+        const query = `INSERT INTO EmailConfig (UserId, SmtpServer, SmtpPort, SenderEmail, Password, EnableTLS) VALUES (${userId}, '${body.SmtpServer}', '${body.SmtpPort}', '${body.SenderEmail}', '${body.Password}', '${body.EnableTLS}')`;
+        const result = await executeQuery(query);
+        return result.rows;
+    };
+
+    createEmailSchedule = async (DBName: string, userId: number, body: any) => {
+        const isEmailInstant = body.Type === "instant";
+        const query = `INSERT INTO EmailSchedule (UserId, ReportName, Type, EmailTo, Subject, Body${isEmailInstant ? ",LastRunDate" : ""}) VALUES (${userId}, '${body.ReportName}', '${body.Type}', '${body.EmailTo}', '${body.Subject}', '${body.Body}'${isEmailInstant ? `, GETDATE()` : ""})`;
+        await executeQuery(query);
+
+        if (isEmailInstant) {
+            this.instantEmailSchedule(DBName, userId, body);
+        }
+
+        return true;
+
+        // return result.rows;
+    };
+
+    updateEmailSchedule = async (DBName: string, userId: number, body: any) => {
+        const isEmailInstant = body.Type === "instant";
+        // body.EmailTo is coming in comma saprated value I want to remove extra space
+        const emailTo = body.EmailTo.split(",").map((email: string) => email.trim()).join(",");
+        const reportName = body.ReportName.split(",").map((report: string) => report.trim()).join(",");
+        const query = `UPDATE EmailSchedule SET ReportName = '${reportName}', Type = '${body.Type}', EmailTo = '${emailTo}', Subject = '${body.Subject}', Body = '${body.Body}'${isEmailInstant ? `, LastRunDate = GETDATE()` : ""} WHERE Id = ${body.id}`;
+        
+        await executeQuery(query);
+        if (isEmailInstant) {
+            this.instantEmailSchedule(DBName, userId, body);
+        }
+
+        return true;
+    };
+
+    deleteEmailSchedule = async (id: number) => {
+        const query = `DELETE FROM EmailSchedule WHERE Id = ${id};`;
+        await executeQuery(query);
+        return true;
+    };
+
+    getEmailSchedule = async (page: number, limit: number, userId: number) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM EmailSchedule WHERE UserId = ${userId}`;
+        if (page && limit) {
+            query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        const totalQuery = `SELECT COUNT(*) FROM EmailSchedule WHERE UserId = ${userId}`;
+        const result = await executeQuery(query);
+        const totalResult = await executeQuery(totalQuery);
+        return {
+            emailSchedule: result.rows,
+            totalCount: totalResult.rows[0][""],
+        };
+    };
+
+    private instantEmailSchedule = async (
+        DBName: string,
+        userId: number,
+        body: any
+    ) => {
+        // Make csv file for each report and save into attachmentPaths and send email to users
+
+        const emailConfig = await this.getEmailConfiguration(userId);
+        console.log("emailConfig_____________", emailConfig);
+        const attachmentPaths = [];
+
+        // split the ReportName by space and get the first word
+        const reportNames = (body.ReportName.split(",").map((report: string) => report.trim()).join(",")).split(",");
+        console.log("reportNames___________________", reportNames);
+        for (const reportName of reportNames) {
+            console.log("singleReport___________", reportName)
+            let query = `SELECT * FROM ${DBName}.${reportName}`;
+            console.log("query________________", query);
+            if (reportName === "Clients" || reportName === "BackupJobs") {
+            } else {
+                if (reportName === "BackupSSLogs") {
+                    query += ` WHERE EntryDateTime >= CAST(GETDATE() AS DATE) AND EntryDateTime < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))`;
+                } else if (reportName === "AuditTrail") {
+                    query += ` WHERE DateTimeStamp >= CAST(GETDATE() AS DATE) AND DateTimeStamp < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))`;
+                } else if (reportName === "PingPathLogs") {
+                    query += ` WHERE EntryDateTime >= CAST(GETDATE() AS DATE) AND EntryDateTime < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))`;
+                } else if (reportName === "JobFireEntries") {
+                    query += ` WHERE StartTime >= CAST(GETDATE() AS DATE) AND StartTime < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))`;
+                }
+            }
+            const result = await executeQuery(query);
+            const csvFilePath = await this.generateCSVFile(
+                reportName,
+                result.rows
+            );
+            attachmentPaths.push({
+                fileName: csvFilePath.fileName,
+                path: csvFilePath.filePath,
+            });
+        }
+
+        // Send email to users
+        const email = body.EmailTo;
+        const subject = body.Subject;
+        const text = body.Body;
+        await sendMultipleCsvToMail(
+            email,
+            subject,
+            text,
+            attachmentPaths,
+            emailConfig[0].SenderEmail,
+            emailConfig[0].Password
+        );
+        // return attachmentPaths;
+    };
+
+    private async generateCSVFile(
+        reportName: string,
+        data: any[]
+    ): Promise<{ fileName: string; filePath: string }> {
+        const csv = data.map((row) => Object.values(row).join(",")).join("\n");
+        const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
+        const filePath = `src/assets/emailCsv/${fileName}`; // Define your path here
+        // Ensure the directory exists
+        await fs.promises.mkdir("src/assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
+
+        await fs.promises.writeFile(filePath, csv);
+        return {
+            fileName,
+            filePath,
+        };
+    }
+
+    // Feedback and suggestion
+    createFeedbackAndSuggestion = async (
+        DBName: string,
+        userId: number,
+        body: any,
+        file: any
+    ) => {
+        const filePath = file ? file.path : null;
+        const mimeType = file ? file.mimetype : null;
+        const query = `INSERT INTO FeedbackAndSuggestion (UserId, Username, Email, Subject, Type, Message, Image, MimeType ) VALUES (${userId}, '${body.Username}', '${body.Email}', '${body.Subject}', '${body.Type}', '${body.Message}', ${filePath ? `'${filePath}'` : null}, ${mimeType ? `'${mimeType}'` : null})`;
+        const result = await executeQuery(query);
+        return result.rows;
+    };
+
+    getFeedbackAndSuggestion = async (
+        page: number,
+        limit: number,
+        userId: number
+    ) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM FeedbackAndSuggestion WHERE UserId = ${userId}`;
+        const totalQuery = `SELECT COUNT(*) FROM FeedbackAndSuggestion WHERE UserId = ${userId}`;
+
+        if (page && limit) {
+            query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        console.log("query", query);
+        const result = await executeQuery(query);
+
+        const changeImagesPath = (imagePath: string) => {
+            if (!imagePath) return null;
+            const relativePath = formateFrontImagePath(imagePath);
+            return `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+        };
+
+        const feedbackAndSuggestion = result.rows.map((item: any) => {
+            return {
+                ...item,
+                Image:
+                    item.Image !== null ? changeImagesPath(item.Image) : null, // TODO
+            };
+        });
+        const totalResult = await executeQuery(totalQuery);
+        return { feedbackAndSuggestion, totalCount: totalResult.rows[0][""] };
     };
 
     // Function to convert special date strings to SQL date conditions

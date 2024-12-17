@@ -35,6 +35,38 @@ export default async function sendCsvToMail(email: any, subject: any, text: any,
     });
 }
 
+export async function sendMultipleCsvToMail(email: any, subject: any, text: any, attachments: any, myEmail: string, myPassword: string) {
+    const transporter = nodeMailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: myEmail,
+            pass: myPassword,
+        },
+    });
+
+
+    const mailOptions = {
+        from: myEmail,
+        to: email,
+        subject: subject,
+        text: text,
+        attachments: attachments,
+    };
+    transporter.sendMail(mailOptions, (error, result) => {
+        if (error) {
+            attachments.forEach(attachment => {
+                fs.unlinkSync(attachment.path);
+            });
+            console.log("email error", error)
+        } else {
+            attachments.forEach(attachment => {
+                fs.unlinkSync(attachment.path);
+            });
+            console.log("Mail sent:", result.response);
+        }
+    });
+}
+
 export async function sendErrorMail(email: any, subject: any, text: any) {
     return new Promise((resolve, reject) => {
         const transporter = nodeMailer.createTransport({

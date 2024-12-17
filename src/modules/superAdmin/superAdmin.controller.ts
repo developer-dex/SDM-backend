@@ -51,7 +51,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin signIn ERROR", error);
             return res
-                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -109,7 +109,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -141,7 +141,18 @@ export class SuperAdminController {
                         "User deleted successfully"
                     )
                 );
-        } catch (error) {}
+        } catch (error) {
+            console.log("superAdmin deleteUser ERROR", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
     };
 
     updateUserData = async (
@@ -184,7 +195,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -218,7 +229,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -258,7 +269,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -324,7 +335,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getAllClients ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -358,7 +369,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(StatusCodes.INTERNAL_SERVER_ERROR)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -386,7 +397,17 @@ export class SuperAdminController {
                         "User deleted successfully"
                     )
                 );
-        } catch (error) {}
+        } catch (error) {
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
     };
 
     updateClient = async (
@@ -447,7 +468,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin updateClient ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -527,7 +548,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -559,7 +580,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin createLicense ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -590,7 +611,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin deleteLicense ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -621,7 +642,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("update license:::", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -654,7 +675,7 @@ export class SuperAdminController {
                 );
         } catch (error) {
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -689,7 +710,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin createAuditLog ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -766,7 +787,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getAllAuditLogs ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -799,7 +820,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin dashboardTemp ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -839,7 +860,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getAllSupportTicketTitles ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -870,7 +891,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin addSupportTicketTitle ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -903,7 +924,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin deleteSupportTicketTitle ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -934,7 +955,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin updateSupportTicketTitle ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -946,7 +967,7 @@ export class SuperAdminController {
     };
 
     // Analytics
-    getAnalytics = async (
+    getAnalyticsTable = async (
         req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
@@ -958,7 +979,16 @@ export class SuperAdminController {
             };
             const analytics = await this.superAdminService.getAnalytics(
                 Number(page),
-                Number(limit)
+                Number(limit),
+                req.query.companyId as string,
+                req.query.companyName as string,
+                req.query.planType as string,
+                req.query.planActivation as string,
+                req.query.revenueType as string,
+                req.query.totalRevenue as string,
+                req.query.startDate as string,
+                req.query.endDate as string,
+                req.query.rate as string
             );
             return res
                 .status(200)
@@ -973,7 +1003,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getAnalytics ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -983,6 +1013,32 @@ export class SuperAdminController {
                 );
         }
     };
+
+    getAnalyticsCard = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+       
+        try {
+            const analyticsCard = await this.superAdminService.getAnalyticsCard();
+            return res
+                .status(200)
+            .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Analytics card fetched successfully",
+                        analyticsCard
+                    )
+                );
+        } catch (error) {
+            console.log("superAdmin getAnalyticsCard ERROR", error);
+            return res
+                .status(400)
+                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
 
     getWebsiteAnalytics = async (
         req: Request & { token_payload?: any },
@@ -1003,7 +1059,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getWebsiteAnalytics ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
@@ -1029,7 +1085,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin createNotification ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1063,7 +1119,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getNotification ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1090,7 +1146,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin deleteNotification ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
@@ -1144,7 +1200,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getNotificationList ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1175,7 +1231,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin exportCsv ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1207,7 +1263,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin getFaq ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1310,7 +1366,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Client dashboard fetched successfully", result));
         } catch (error) {
             console.log("superAdmin getClientDashboard ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1338,7 +1394,7 @@ export class SuperAdminController {
         } catch (error) {
             console.log("superAdmin updateAdminProfile ERROR", error);
             return res
-                .status(200)
+                .status(400)
                 .send(
                     this.responseService.responseWithoutData(
                         false,
@@ -1370,7 +1426,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Contact Us fetched successfully", contactUs));
         } catch (error) {
             console.log("superAdmin getContactUs ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1389,7 +1445,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Signup users fetched successfully", signupUsers));
         } catch (error) {
             console.log("superAdmin getSignupUsers ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1408,7 +1464,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Testimonial fetched successfully", testimonial));
         } catch (error) {
             console.log("superAdmin getTestimonial ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1424,7 +1480,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial created successfully"));
         } catch (error) {
             console.log("superAdmin createTestimonial ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1439,7 +1495,7 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial deleted successfully"));
         } catch (error) {
             console.log("superAdmin deleteTestimonial ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 
@@ -1455,7 +1511,54 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Integration images created successfully"));
         } catch (error) {
             console.log("superAdmin createIntegrationImages ERROR", error);
-            return res.status(200).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    getIntegrationImages = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const integrationImages = await this.superAdminService.getIntegrationImages();
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Integration images fetched successfully", integrationImages));
+        } catch (error) {
+            console.log("superAdmin getIntegrationImages ERROR", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    deleteIntegrationImages = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { integrationImageId } = req.params;
+        try {
+            await this.superAdminService.deleteIntegrationImages(Number(integrationImageId));
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Integration image deleted successfully"));
+        } catch (error) {
+            console.log("superAdmin deleteIntegrationImages ERROR", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    getFeedbackAndSuggestion = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const { page, limit } = req.query as unknown as {
+            page: number;
+            limit: number;
+        };
+        try {
+            const feedbackAndSuggestion = await this.superAdminService.getFeedbackAndSuggestion(page, limit);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Feedback and suggestion fetched successfully", feedbackAndSuggestion));
+        } catch (error) {
+            console.log("superAdmin getFeedbackAndSuggestion ERROR", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
 }

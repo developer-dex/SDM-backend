@@ -319,7 +319,7 @@ export class SuperAdminService {
 
         if (isExportToEmail) {
             const header = [
-                { id: "id", title: "ID" },
+                { id: "ID", title: "ID" },
                 { id: "company_name", title: "Company Name" },
                 { id: "company_address", title: "Company Address" },
                 { id: "gst", title: "GST" },
@@ -479,7 +479,7 @@ export class SuperAdminService {
 
         if (isExportToEmail) {
             const header = [
-                { id: "license_id", title: "ID" },
+                { id: "ID", title: "ID" },
                 { id: "issue_date", title: "Issue Date" },
                 { id: "expiration_date", title: "Expiration Date" },
                 { id: "license_key", title: "License Key" },
@@ -522,11 +522,16 @@ export class SuperAdminService {
         }
         const { issue_date, expiry_date, status } = requestData;
 
-        console.log("Checking values:", {
-            userId: user.rows[0].plan_type,
-            issueDate: issue_date,
-            expiryDate: expiry_date,
-        });
+        console.log("user.rows[0].plan_type", user.rows[0].plan_type)
+
+      if(!user.rows[0].plan_type){
+        console.log("Helllo world_________--")
+        return this.responseService.responseWithoutData(
+            false,
+            StatusCodes.BAD_REQUEST,
+            "User not subscribed to any plan"
+        );
+      }
 
         // Ensure that the required fields are defined
         if (!user.rows[0].id || !issue_date || !expiry_date) {
@@ -715,7 +720,7 @@ export class SuperAdminService {
 
         if (isExportToEmail) {
             const header = [
-                { id: "Id", title: "ID" },
+                { id: "ID", title: "ID" },
                 { id: "module", title: "Module" },
                 { id: "action", title: "Action" },
                 { id: "user_id", title: "User ID" },
@@ -898,13 +903,18 @@ const query2 = `
     };
 
     // Analytics
-    getAnalytics = async (page: number, limit: number) => {
+    getAnalytics = async (page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
         
+        // const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
+        const {query, totalCountQuery} = await this.listOfClientsQuery(page, limit, companyId, companyName, planType, planActivation, revenueType, totalRevenue, startDate, endDate, rate);
+        const listOfClients = await executeQuery(query);
+        const totalCount = await executeQuery(totalCountQuery);
+        return { listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
+    }
+
+    getAnalyticsCard = async () => {
         const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
-        const listOfClients = await executeQuery(this.listOfClientsQuery(page, limit));
-        const totalCount = await executeQuery(this.listOfClientsCountQuery());
-        console.log(totalCount.rows[0]);
-        return {revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows, listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
+        return {revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows}
     }
 
     getWebsiteAnalytics = async (page: number, limit: number) => {
@@ -1227,7 +1237,33 @@ if (userIds.length > 0) {
             SubscriptionData SD;`;
     }
 
-    private listOfClientsQuery = (page: number, limit: number) => {
+    private listOfClientsQuery = async(page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
+        const filters = [];
+        // Add your new filters here
+        if(companyId){
+            filters.push(`CM.company_id LIKE '%${companyId}%'`);
+        }
+        if (companyName) {
+            filters.push(`CM.company_name LIKE '%${companyName}%'`);
+        }
+        if (planType) {
+            filters.push(`P.plan_type LIKE '%${planType}%'`);
+        }
+        if (planActivation) {
+            filters.push(`SH.status LIKE '%${planActivation}%'`);
+        }
+        if (revenueType) {
+            filters.push(`P.[plan_type] LIKE '%${revenueType}%'`);
+        }
+        if (totalRevenue) {
+            filters.push(`P.price LIKE '%${totalRevenue}%'`);
+        }
+        if (rate) {
+            filters.push(`Rates LIKE '%${rate}%'`);
+        }
+        
+        // ... add more filters as needed
+
         let query = `WITH SubscriptionData AS (
             SELECT 
                 CM.company_id,
@@ -1246,8 +1282,14 @@ if (userIds.length > 0) {
             JOIN 
                 SuperAdmin.dbo.ClientManagement CM ON SH.userId = CM.user_id
             WHERE 
-                SH.status IN ('active', 'cancelled', 'expired')
-        ),
+                SH.status IN ('active', 'cancelled', 'expired')`;
+
+        // Append filters to the query
+        if (filters.length > 0) {
+            query += ` AND ${filters.join(" AND ")}`;
+        }
+
+        query += `),
         PlanChange AS (
             SELECT 
                 company_id,
@@ -1267,21 +1309,16 @@ if (userIds.length > 0) {
                 RowNum = 1 
         )
         SELECT 
-            company_id,
-            company_name,
-            plan_type,
-            plan_activation,
-            revenue_type,
-            total_revenue,
-            Rates
+            *
         FROM 
             PlanChange`;
 
+        const totalCountQuery = query;
         if (limit && page) {
             const { offset, limit: limitData } = calculatePagination(page, limit);
             query += ` ORDER BY company_id OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
-        return query;
+        return {totalCountQuery,query};
     }
 
     private listOfClientsCountQuery = () => {
@@ -1500,19 +1537,19 @@ if (userIds.length > 0) {
 
         const filters = [];
         if (name) {
-            filters.push(`Name = '${name}'`);
+            filters.push(`Name ILIKE '${name}'`);
         }
         if (phoneNo) {
-            filters.push(`PhoneNo = '${phoneNo}'`);
+            filters.push(`PhoneNo ILIKE '${phoneNo}'`);
         }
         if (email) {
-            filters.push(`Email = '${email}'`);
+            filters.push(`Email ILIKE '${email}'`);
         }
         if (subject) {
-            filters.push(`Subject = '${subject}'`);
+            filters.push(`Subject ILIKE '${subject}'`);
         }
         if (message) {
-            filters.push(`Message = '${message}'`);
+            filters.push(`Message ILIKE '${message}'`);
         }
         if (createdAt) {
             filters.push(this.getDateCondition(
@@ -1559,7 +1596,8 @@ if (userIds.length > 0) {
         const baseUrl = getEnvVar("LOCAL_URL");
         const data = await executeQuery(query);
         const testimonialData = data.rows.map((testimonial: any) => {
-            testimonial.Image = `${baseUrl}/assets${testimonial.Image}`;
+            const relativePath = formateFrontImagePath(testimonial.Image);
+            testimonial.Image = `${baseUrl}/assets${relativePath}`;
             return testimonial;
         });
 
@@ -1594,9 +1632,42 @@ if (userIds.length > 0) {
         const baseUrl = getEnvVar("LOCAL_URL");
         const data = await executeQuery(query);
         const integrationImages = data.rows.map((image: any) => {
-            image.Image = `${baseUrl}/assets${image.Image}`;
+            const relativePath = formateFrontImagePath(image.Image);
+            image.Image = `${baseUrl}/assets${relativePath}`;
             return image;
         });
         return integrationImages;
     }
+
+    deleteIntegrationImages = async (integrationImageId: number) => {
+        const query = `DELETE FROM IntegrationImages WHERE id = ${integrationImageId}`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    getFeedbackAndSuggestion = async (page: number, limit: number) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM FeedbackAndSuggestion`;
+        const totalQuery = `SELECT COUNT(*) FROM FeedbackAndSuggestion`;
+
+        if (page && limit) {
+            query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+        const result = await executeQuery(query);
+
+        const changeImagesPath = (imagePath: string) => {
+            if(!imagePath) return null;
+            const relativePath = formateFrontImagePath(imagePath);
+            return `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+        }
+
+        const feedbackAndSuggestion = result.rows.map((item: any) => {
+            return {
+                ...item,
+                Image: item.Image !== null ? changeImagesPath(item.Image) : null // TODO
+            }
+        })
+        const totalResult = await executeQuery(totalQuery);
+        return { feedbackAndSuggestion, totalCount: totalResult.rows[0][''] };
+    };
 }

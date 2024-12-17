@@ -1,4 +1,4 @@
-import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, INTEGRATION_IMAGES_PATH, TESTIMONIAL_IMAGE_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "../helpers/constants";
+import { ADMIN_PROFILE_PATH, CLIENT_WEBSITE_BANNER_PATH, FEEDBACK_AND_SUGGESTION_IMAGE_PATH, INTEGRATION_IMAGES_PATH, TESTIMONIAL_IMAGE_PATH, TRAINING_FILES_PATH, UPLOAD_PATH } from "../helpers/constants";
 import { createMulterMiddleware } from "../helpers/util";
 import { Request, Response, NextFunction } from "express";
 
@@ -86,6 +86,20 @@ export class FileUploadMiddleware {
         next: NextFunction
     ) => {
         const multerMiddleware = createMulterMiddleware(INTEGRATION_IMAGES_PATH);
+        multerMiddleware.single("image")(req, res, (err) => {
+            if (err) {
+                return res.status(400).json({ message: "File upload failed", error: err });
+            }
+            next();
+        });
+    }
+
+    uploadFeedbackAndSuggestionImage = (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        const multerMiddleware = createMulterMiddleware(FEEDBACK_AND_SUGGESTION_IMAGE_PATH);
         multerMiddleware.single("image")(req, res, (err) => {
             if (err) {
                 return res.status(400).json({ message: "File upload failed", error: err });

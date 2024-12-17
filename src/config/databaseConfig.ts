@@ -699,7 +699,7 @@ export async function executeSqlQuery(
             return;
           }
   
-          console.log("Query executed successfully.");
+        //   console.log("Query executed successfully.");
           resolve();
         });
   
@@ -931,7 +931,7 @@ export const executeQuery2 = async (query: string , pool: ConnectionPool): Promi
                 if (err) {
                     return reject(err);
                 }
-                console.log("Query executed successfully.");
+                // console.log("Query executed successfully.");
                 resolve({ rows: result.recordset }); // Return the result set wrapped in an object
             });
     });

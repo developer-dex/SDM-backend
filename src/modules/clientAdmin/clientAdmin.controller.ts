@@ -20,6 +20,17 @@ export class ClientAdminController {
             const result = await this.clientAdminService.loginInternal(
                 req.body
             );
+            if (!result) {
+                return res
+                    .status(StatusCodes.OK)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.OK,
+                            "Dashboard not found. Please contact admin."
+                        )
+                    );
+            }
             return res
                 .status(StatusCodes.OK)
                 .send(
@@ -536,7 +547,7 @@ export class ClientAdminController {
         }
     };
 
-        getSoftwareStatus = async (
+    getSoftwareStatus = async (
         req: Request & { token_payload?: any },
         res: Response
     ) => {
@@ -635,21 +646,35 @@ export class ClientAdminController {
                     )
                 );
         }
-    }
+    };
 
-    getFaq = async (
-        req: Request & { token_payload?: any },
-        res: Response
-    ) => {
+    getFaq = async (req: Request & { token_payload?: any }, res: Response) => {
         const tokenPayload = req.token_payload;
         try {
             const result = await this.clientAdminService.getFaq();
-            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "FAQ fetched successfully", result));
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "FAQ fetched successfully",
+                        result
+                    )
+                );
         } catch (error) {
             console.log("clientAdminController:::getFaq:::", error);
-            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     // Pkan listing
     getPlanListing = async (
@@ -658,19 +683,320 @@ export class ClientAdminController {
     ) => {
         const tokenPayload = req.token_payload;
         try {
-            const result = await this.clientAdminService.getPlanListing(tokenPayload?.data.id);
+            const result = await this.clientAdminService.getPlanListing(
+                tokenPayload?.data.id
+            );
             return res
                 .status(200)
                 .send(
-                    this.responseService.responseWithData(true, StatusCodes.OK, "Plan listing fetched successfully", result)
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Plan listing fetched successfully",
+                        result
+                    )
                 );
         } catch (error) {
             console.log("clientAdminController:::getPlanListing:::", error);
             return res
                 .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    //Email configuration
+    getEmailConfiguration = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        try {
+            const tokenPayload = req.token_payload;
+            const result = await this.clientAdminService.getEmailConfiguration(
+                tokenPayload?.data.id
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Email configuration fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::getEmailConfiguration:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    updateEmailConfiguration = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result =
+                await this.clientAdminService.updateEmailConfiguration(
+                    tokenPayload?.data.databaseName,
+                    tokenPayload?.data.id,
+                    req.body
+                );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Email configuration updated successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::updateEmailConfiguration:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    createEmailSchedule = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        console.log("tokenPayload__________", tokenPayload);
+        try {
+            await this.clientAdminService.createEmailSchedule(
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id,
+                req.body
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.OK,
+                        "Email schedule created successfully"
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::createEmailSchedule:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    updateEmailSchedule = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        console.log("tokenPayload__________", tokenPayload);
+        try {
+            await this.clientAdminService.updateEmailSchedule(
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id,
+                req.body
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.OK,
+                        "Email schedule updated successfully"
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::updateEmailSchedule:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    deleteEmailSchedule = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        const { id } = req.params;
+        try {
+            await this.clientAdminService.deleteEmailSchedule(
+                Number(id)
+            );
+            return res
+                .status(200)
+                .send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Email schedule deleted successfully"));
+        } catch (error) {
+            console.log("clientAdminController:::deleteEmailSchedule:::", error);
+            return res
+                .status(400)
                 .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }
+
+    getEmailSchedule = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        const { page, limit } = req.query as unknown as paginationRequeset;
+        try {
+            const result = await this.clientAdminService.getEmailSchedule(
+                Number(page),
+                Number(limit),
+                tokenPayload?.data.id
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Email schedule fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log("clientAdminController:::getEmailSchedule:::", error);
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    createFeedbackAndSuggestion = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        const file = req.file;
+        try {
+            await this.clientAdminService.createFeedbackAndSuggestion(
+                tokenPayload?.data.databaseName,
+                tokenPayload?.data.id,
+                req.body,
+                file
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.OK,
+                        "Feedback and suggestion created successfully"
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::createFeedbackAndSuggestion:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    getFeedbackAndSuggestion = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        const { page, limit } = req.query as unknown as paginationRequeset;
+        try {
+            const result =
+                await this.clientAdminService.getFeedbackAndSuggestion(
+                    Number(page),
+                    Number(limit),
+                    tokenPayload?.data.id
+                );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Feedback and suggestion fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            console.log(
+                "clientAdminController:::getFeedbackAndSuggestion:::",
+                error
+            );
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
 }
 
 export const clientAdminController = new ClientAdminController();

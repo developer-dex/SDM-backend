@@ -27,11 +27,11 @@ export class AuthService {
         this.jwtService = new JwtService();
     }
 
-    login = async (userId: number, databaseName: string, ipAddress: string): Promise<ILoginResponse> => {
+    login = async (userId: number, databaseName: string, ipAddress: string, uuid: string): Promise<ILoginResponse> => {
         // Update the ipAddress in the Users table
         const updateIpAddressQuery = `UPDATE Users SET ipAddress = '${ipAddress}' WHERE id = '${userId}'`;
         await executeQuery(updateIpAddressQuery);
-        return this.generateLogInSignUpResponse(userId, databaseName);
+        return this.generateLogInSignUpResponse(userId, databaseName, uuid);
     };
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
@@ -112,7 +112,7 @@ export class AuthService {
         // return await ResetPassword.deleteOne({ email });
     };
 
-    private generateLogInSignUpResponse = (userId: number, databaseName?: string) => {
+    private generateLogInSignUpResponse = (userId: number, databaseName?: string, uuid?: string) => {
         let jwtTokenPayload: Record<string, any> = {
             id: userId,
             databaseName: databaseName || null
@@ -120,7 +120,8 @@ export class AuthService {
         return {
             authorization_token: this.jwtService.generateToken(jwtTokenPayload),
             user_id: userId,
-            redirect_url: getEnvVar("DASHBOARD_URL"),
+            redirect_url: getEnvVar("DASHBOARD_URL") + `/${uuid}`,
+            user_uuid: uuid
         };
     };
 }

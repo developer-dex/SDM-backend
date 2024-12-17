@@ -64,3 +64,30 @@ export const reportFromDashboardRequest = Joi.object({
     from_date: Joi.string().required(),
     to_date: Joi.string().required()
 });
+
+
+export const createUpdateEmailConfigurationRequest = Joi.object({
+    SmtpServer: Joi.string().required(),
+    SmtpPort: Joi.number().required(),
+    SenderEmail: Joi.string().required(),
+    Password: Joi.string().required(),
+    EnableTLS: Joi.boolean().required(),
+});
+
+
+export const createEmailScheduleRequest = Joi.object({
+    ReportName: Joi.string().required(),
+    Type: Joi.string().valid('recurring', 'instant').required(),
+    EmailTo: Joi.string().required(),
+    Subject: Joi.string().required(), 
+    Body: Joi.string().required(),
+});
+
+export const updateEmailScheduleRequest = Joi.object({
+    id: Joi.number().required(),
+    ReportName: Joi.string().required(),
+    Type: Joi.string().valid('recurring', 'instant').required(),
+    EmailTo: Joi.string().required(),
+    Subject: Joi.string().required(), 
+    Body: Joi.string().required(),
+});

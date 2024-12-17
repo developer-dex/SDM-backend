@@ -3,12 +3,23 @@ import { AuthMiddleware } from "../middlewares/auth.middleware";
 import { supportTicketController } from "../modules/supportTicket/supportTicket.controller";
 import { clientAdminController } from "../modules/clientAdmin/clientAdmin.controller";
 import { createValidator } from "express-joi-validation";
-import { createSupportTicketRequest, paginationRequest, reportFromDashboardRequest, updateSupportTicketRequest } from "../modules/clientAdmin/clientAdmin.validation";
+import {
+    createEmailScheduleRequest,
+    createSupportTicketRequest,
+    createUpdateEmailConfigurationRequest,
+    paginationRequest,
+    reportFromDashboardRequest,
+    updateEmailScheduleRequest,
+    updateSupportTicketRequest,
+} from "../modules/clientAdmin/clientAdmin.validation";
 import { websiteFrontImageController } from "../modules/websitefrontImages/websiteFrontImage.controller";
+import { FileUploadMiddleware } from "../middlewares/fileupload.middleware";
 
 const ClientDashboardApi: Router = Router();
 
 const validator = createValidator({ passError: true });
+
+const fileUploadMiddleware = new FileUploadMiddleware();
 
 const authMiddleware = new AuthMiddleware();
 
@@ -77,10 +88,7 @@ ClientDashboardApi.get(
     clientAdminController.getUsersList
 );
 
-ClientDashboardApi.get(
-    "/dashboard",
-    clientAdminController.getDashboard
-);
+ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 
 // Setting API
 ClientDashboardApi.get("/setting", clientAdminController.getSetting);
@@ -111,21 +119,59 @@ ClientDashboardApi.get(
 );
 
 // Notification
-ClientDashboardApi.get(
-    "/notifications",
-    clientAdminController.getNotification
-);
+ClientDashboardApi.get("/notifications", clientAdminController.getNotification);
 
-ClientDashboardApi.post(
-    "/mark-all-read",
-    clientAdminController.markAllRead
-);
-
+ClientDashboardApi.post("/mark-all-read", clientAdminController.markAllRead);
 
 // Get FAQ
 ClientDashboardApi.get("/faq", clientAdminController.getFaq);
 
 ClientDashboardApi.get("/plans", clientAdminController.getPlanListing);
+
+// Get email configuration
+ClientDashboardApi.get(
+    "/email-configuration",
+    clientAdminController.getEmailConfiguration
+);
+ClientDashboardApi.patch(
+    "/email-configuration",
+    validator.body(createUpdateEmailConfigurationRequest),
+    clientAdminController.updateEmailConfiguration
+);
+
+// Email schedueling
+ClientDashboardApi.post(
+    "/email-schedule",
+    validator.body(createEmailScheduleRequest),
+    clientAdminController.createEmailSchedule
+);
+ClientDashboardApi.get(
+    "/email-schedule",
+    validator.query(paginationRequest),
+    clientAdminController.getEmailSchedule
+);
+ClientDashboardApi.delete(
+    "/email-schedule/:id/delete",
+    clientAdminController.deleteEmailSchedule
+);
+ClientDashboardApi.put(
+    "/email-schedule",
+    validator.body(updateEmailScheduleRequest),
+    clientAdminController.updateEmailSchedule
+);
+
+// Feedback and suggestion
+ClientDashboardApi.post(
+    "/feedback-and-suggestion",
+    fileUploadMiddleware.uploadFeedbackAndSuggestionImage,
+    clientAdminController.createFeedbackAndSuggestion
+);
+
+ClientDashboardApi.get(
+    "/feedback-and-suggestion",
+    clientAdminController.getFeedbackAndSuggestion
+);
+
 // Dashboard
 // ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 export default ClientDashboardApi;
