@@ -73,6 +73,7 @@ export interface ICreateLicenseRequest {
     user_id: string;
     issue_date: string;
     expiry_date: string;
+    count: number;
     // license_type: string;
     status: string;
     // company_id: string;

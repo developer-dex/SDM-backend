@@ -520,12 +520,11 @@ export class SuperAdminService {
                 "User not found"
             );
         }
-        const { issue_date, expiry_date, status } = requestData;
+        const { issue_date, expiry_date, status, count } = requestData;
 
         console.log("user.rows[0].plan_type", user.rows[0].plan_type)
 
       if(!user.rows[0].plan_type){
-        console.log("Helllo world_________--")
         return this.responseService.responseWithoutData(
             false,
             StatusCodes.BAD_REQUEST,
@@ -542,11 +541,12 @@ export class SuperAdminService {
             user.rows[0].plan_type,
             user.rows[0].pan,
             issue_date,
-            expiry_date
+            expiry_date,
+            count
         );
 
         console.log("license_key:::", license_key);
-        const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_type}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}')`;
+        const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan, count) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_type}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}', ${count})`;
         return await executeQuery(query);
     };
 
@@ -587,7 +587,19 @@ export class SuperAdminService {
 
     getAllCustomers = async () => {
         // const { offset, limit: limitData } = calculatePagination(page, limit);
-        let query = `SELECT * FROM Users WHERE id NOT IN (SELECT user_id FROM ClientManagement)`;
+        let query = `SELECT * FROM Users WHERE id IN (SELECT user_id FROM ClientManagement)`;
+        // if(limit && page) {
+        //     query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        // }
+        const data = await executeQuery(query);
+        return {
+            customers: data.rows,
+        };
+    };
+
+    getAllCustomersExistInClientManagement = async () => {
+        // const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM Users WHERE id NOT IN (SELECT DISTINCT(user_id) FROM ClientManagement)`;
         // if(limit && page) {
         //     query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         // }

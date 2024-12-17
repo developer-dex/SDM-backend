@@ -623,9 +623,8 @@ ORDER BY
         const bannerResult = await executeQuery(bannerQuery);
         const banner = bannerResult.rows;
         // add path to banner
-        const relativePath = formateFrontImagePath(banner[0].imagePath);
-        console.log("relativePath: ", relativePath);
-        const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+        const relativePath = formateFrontImagePath(banner[0]?.imagePath);
+        const fullImagePath = relativePath ? `${getEnvVar("LOCAL_URL")}/assets${relativePath}` : null;
 
         return {
             jobStatusPieChart,

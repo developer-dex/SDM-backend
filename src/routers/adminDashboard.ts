@@ -170,9 +170,15 @@ AdminDashboardApi.put(
 
 // Customer management routes
 AdminDashboardApi.get(
-    "/customer",
+    "/customer-for-license",
     // validator.query(getAllClientsRequest),
     superAdminController.getAllCustomers
+);
+
+AdminDashboardApi.get(
+    "/customer-for-client-management",
+    // validator.query(getAllClientsRequest),
+    superAdminController.getAllCustomersExistInClientManagement
 );
 
 // Manage support ticket titles

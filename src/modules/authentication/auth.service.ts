@@ -35,14 +35,14 @@ export class AuthService {
     };
 
     signUp = async (signUpReqPayload: ISignUpRequest) => {
-        const createUserQuery = `INSERT INTO Users (full_name, email, password, databaseName, ipAddress) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}', 'DEMODATA', '${signUpReqPayload.ipAddress}')`;
+        const createUserQuery = `INSERT INTO Users (full_name, email, password, databaseName, ipAddress, mobileNumber) VALUES ('${signUpReqPayload.full_name}', '${signUpReqPayload.email}', '${bcryptjs.hashSync(signUpReqPayload.password)}', 'DEMODATA', '${signUpReqPayload.ipAddress}', '${signUpReqPayload.mobileNumber}')`;
         await executeQuery(createUserQuery);
 
         const newUserDetailsQuery = `SELECT * FROM Users WHERE email = '${signUpReqPayload.email}'`;
         const newUserDetails = await executeQuery(
                         newUserDetailsQuery
         );
-        return this.generateLogInSignUpResponse(newUserDetails.rows[0].id);
+        return this.generateLogInSignUpResponse(newUserDetails.rows[0].id, newUserDetails.rows[0].databaseName,newUserDetails.rows[0].uuid);
     };
 
     forgetPassword = async (

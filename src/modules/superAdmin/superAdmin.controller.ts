@@ -686,6 +686,37 @@ export class SuperAdminController {
         }
     };
 
+    getAllCustomersExistInClientManagement = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        // const { limit, page } = req.query as unknown as IGetAllUsersRequest;
+        try {
+            const customers = await this.superAdminService.getAllCustomersExistInClientManagement();
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Customers fetched successfully",
+                        customers
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(400)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
     // Audit Logs
     createAuditLog = async (
         req: Request & { token_payload?: any },

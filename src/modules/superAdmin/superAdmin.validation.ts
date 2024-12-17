@@ -33,7 +33,7 @@ export const updateUserRequest = Joi.object({
 });
 
 export const deleteClientRequest = Joi.object({
-    userId: Joi.string().required(),
+    companyId: Joi.string().required(),
 });
 
 export const getAllClientsRequest = Joi.object({
@@ -75,6 +75,7 @@ export const createLicenseRequest = Joi.object({
     user_id: Joi.number().required(),
     issue_date: Joi.string().required(),
     expiry_date: Joi.string().required(),
+    count: Joi.number().required(),
     // license_type: Joi.string().required(),
     status: Joi.string().required(),
     // company_id: Joi.string().required(),

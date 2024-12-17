@@ -8,6 +8,7 @@ export interface ISignUpRequest {
     password: string;
     full_name: string;
     ipAddress?: string;
+    mobileNumber: string;
 }
 
 export interface ILoginResponse {
