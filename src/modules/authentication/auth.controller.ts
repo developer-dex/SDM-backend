@@ -133,7 +133,19 @@ export class AuthController {
             const isExistUser = await this.authService.isExistUser(
                 requestData.email
             );
-            await this.authService.forgetPassword(requestData, isExistUser[0].id);
+            console.log("isExistUser:::", isExistUser);
+            if (!isExistUser.rows[0]) {
+                return res
+                    .status(200)
+                    .send(
+                        this.responseService.responseWithoutData(
+                            false,
+                            StatusCodes.FORBIDDEN,
+                            "User dose not exist"
+                        )
+                    );
+            }
+            await this.authService.forgetPassword(requestData, isExistUser.rows[0].id);
             return res
                 .status(200)
                 .send(
@@ -144,6 +156,7 @@ export class AuthController {
                     )
                 );
         } catch (error) {
+            console.log("forgotpassword error:::", error);
             return res
                 .status(200)
                 .send(

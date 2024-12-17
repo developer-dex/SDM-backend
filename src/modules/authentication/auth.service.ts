@@ -57,18 +57,19 @@ export class AuthService {
 
         const forgotPasswordURl = `${RESET_PASSWORD_FRONT_URL}/${forgotPasswordToken}`;
 
-        const createResetPasswordQuery = `INSERT INTO ResetPassword (user_id, email, token, expired_at) VALUES ('${userId}', '${forgetPasswordReqPayload.email}', '${forgotPasswordToken}', '${new Date(    
-            Date.now() +
-                parseTimeInterval(mailConfig.passwordResetTokenExpire).ms
-        )}')`;
+        const createResetPasswordQuery = `INSERT INTO ResetPassword (userId, email, token, expired_at) VALUES (${userId}, '${forgetPasswordReqPayload.email}', '${forgotPasswordToken}', DATEADD(HOUR, 1, GETDATE()))`;
+
+        console.log("createResetPasswordQuery:::", createResetPasswordQuery);
         await executeQuery(createResetPasswordQuery);
            
 
         const emailData = {
             email: forgetPasswordReqPayload.email,
             subject: "Reset Password",
-            text: `Please click the link below to reset your password. <a href=${forgotPasswordURl}>${forgotPasswordURl}</a>`,
+            text: `Please click the link below to reset your password: ${forgotPasswordURl}`,
         };
+
+        console.log("emailData:::", emailData);
 
         this.sendEmail(emailData);
     };
@@ -103,7 +104,7 @@ export class AuthService {
         const resetPasswordRecord = await retrieveData(
                         query
         );
-        return resetPasswordRecord[0];
+        return resetPasswordRecord.rows[0];
     };
 
     private deleteResetPasswordRecord = async (email: string) => {
