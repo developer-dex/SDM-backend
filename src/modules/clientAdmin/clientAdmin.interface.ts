@@ -46,6 +46,14 @@ export interface paginationRequeset {
     Difference?: string;
     Status?: string;
     EntryDateTime?: string;
+    endTime?: string;
+    duration?: string;
+    nextRunDateTime?: string;
+    jobType?: string;
+    dataInKB?: string;
+    dataInMB?: string;
+    dataInGB?: string;
+    dataInTB?: string; 
 }
 
 export interface createSupportTicketRequest {

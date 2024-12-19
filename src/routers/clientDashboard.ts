@@ -70,7 +70,7 @@ ClientDashboardApi.get(
 // Job Fire Statistics
 ClientDashboardApi.get(
     "/job-fire-statistics",
-    validator.query(paginationRequest),
+    // validator.query(paginationRequest),
     clientAdminController.getJobFireStatistics
 );
 

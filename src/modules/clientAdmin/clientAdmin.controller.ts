@@ -291,10 +291,6 @@ export class ClientAdminController {
         req: Request & { token_payload?: any },
         res: Response
     ) => {
-        console.log(
-            "clientAdminController:::getJobFireStatistics:::",
-            req.query
-        );
         try {
             const tokenPayload = req.token_payload;
             const {
@@ -308,6 +304,14 @@ export class ClientAdminController {
                 destinationFolder,
                 status,
                 startTime,
+                endTime,
+                duration,
+                nextRunDateTime,
+                jobType,
+                dataInKB,
+                dataInMB,
+                dataInGB,
+                dataInTB,   
             } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getJobFireStatistics(
                 tokenPayload?.data.databaseName,
@@ -320,7 +324,15 @@ export class ClientAdminController {
                 sourceFolder,
                 destinationFolder,
                 status,
-                startTime
+                startTime,
+                endTime,
+                duration,
+                nextRunDateTime,
+                jobType,
+                dataInKB,
+                dataInMB,
+                dataInGB,
+                dataInTB,
             );
             return res
                 .status(StatusCodes.OK)

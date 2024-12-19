@@ -33,7 +33,7 @@ export const updateUserRequest = Joi.object({
 });
 
 export const deleteClientRequest = Joi.object({
-    companyId: Joi.string().required(),
+    id: Joi.string().required(),
 });
 
 export const getAllClientsRequest = Joi.object({

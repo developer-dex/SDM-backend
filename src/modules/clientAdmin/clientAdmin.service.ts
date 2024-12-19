@@ -150,7 +150,7 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
 
         // Add pagination to the query
         if (page && limit) {
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+            query += ` ORDER BY Id DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         console.log("query:::", query);
@@ -178,6 +178,8 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         entryDateTime?: string
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
+        console.log("offset:::", offset);
+        console.log("limitData:::", limitData);
         let query = `SELECT * FROM ${DBName}.PingPathLogs`;
         let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.PingPathLogs`;
         let otherPingPathDataQuery = `SELECT 
@@ -237,8 +239,9 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             otherPingPathDataQuery += ` WHERE ${searchFilters.join(" OR ")}`;
         }
 
-        if (limitData && offset) {
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        if (limitData || offset) {
+            console.log("offset:::", offset);
+            query += ` ORDER BY Id DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         const result = await executeQuery(query);
@@ -326,7 +329,7 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         }
 
         if (limit && page) {
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+            query += ` ORDER BY EventID DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         console.log("query:::", query);
@@ -347,7 +350,15 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         sourceFolder?: string,
         destinationFolder?: string,
         status?: string,
-        startTime?: string
+        startTime?: string,
+        endTime?: string,
+        duration?: string,
+        nextRunDateTime?: string,
+        jobType?: string,
+        dataInKB?: string,
+        dataInMB?: string,
+        dataInGB?: string,
+        dataInTB?: string,
     ) => {
         let query = `SELECT * FROM ${DBName}.JobFireEntries`;
         let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.JobFireEntries`;
@@ -371,6 +382,14 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             searchFilters.push(`DestinationFolder LIKE '%${searchParameter}%'`);
             searchFilters.push(`Status LIKE '%${searchParameter}%'`);
             searchFilters.push(`StartTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`EndTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Duration LIKE '%${searchParameter}%'`);
+            searchFilters.push(`NextRunDateTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`JobType LIKE '%${searchParameter}%'`);
+            searchFilters.push(`DataInKB LIKE '%${searchParameter}%'`);
+            searchFilters.push(`DataInMB LIKE '%${searchParameter}%'`);
+            searchFilters.push(`DataInGB LIKE '%${searchParameter}%'`);
+            searchFilters.push(`DataInTB LIKE '%${searchParameter}%'`);
         }
 
         if (jobName) {
@@ -392,7 +411,31 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             filters.push(`Status LIKE '%${status}%'`);
         }
         if (startTime) {
-            filters.push(`StartTime LIKE '%${startTime}%'`);
+            filters.push(this.getDateCondition(startTime, "StartTime"));
+        }
+        if (endTime) {
+            filters.push(this.getDateCondition(endTime, "EndTime"));
+        }
+        if (duration) {
+            filters.push(`Duration LIKE '%${duration}%'`);
+        }
+        if (nextRunDateTime) {
+            filters.push(this.getDateCondition(nextRunDateTime, "NextRunDateTime"));
+        }
+        if (jobType) {
+            filters.push(`JobType LIKE '%${jobType}%'`);
+        }
+        if (dataInKB) {
+            filters.push(`DataInKB LIKE '%${dataInKB}%'`);
+        }
+        if (dataInMB) {
+            filters.push(`DataInMB LIKE '%${dataInMB}%'`);
+        }
+        if (dataInGB) {
+            filters.push(`DataInGB LIKE '%${dataInGB}%'`);
+        }
+        if (dataInTB) {
+            filters.push(`DataInTB LIKE '%${dataInTB}%'`);
         }
 
         if (filters.length > 0) {
@@ -412,7 +455,7 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
                 page,
                 limit
             );
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+            query += ` ORDER BY EntryId DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         const countCompleteAndFailedJobsResult = await executeQuery(
@@ -526,7 +569,7 @@ LEFT JOIN
         u.EntryDate`;
 
         if (page && limit) {
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+            query += ` ORDER BY ID DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         console.log("query:::", query);
@@ -542,7 +585,12 @@ LEFT JOIN
         const jobStatusPieChartQuery = `SELECT 
     ROUND(COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) * 100.0 / COUNT(*), 2) AS CompletedJobsPercentage,
     ROUND(COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) * 100.0 / COUNT(*), 2) AS FailedJobsPercentage,
-    ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage
+    ROUND(COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) * 100.0 / COUNT(*), 2) AS PartialCompletedJobsPercentage,
+    COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) AS CompletedJobsCount,
+    COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) AS FailedJobsCount,
+    COUNT(CASE WHEN Status = 'OTHER' THEN 1 END) AS PartialCompletedJobsCount,
+    COUNT(*) AS TotalJobCount 
+    
         FROM 
             ${DBName}.JobFireEntries;`;
         const jobStatusPieChartResult = await executeQuery(
@@ -880,12 +928,14 @@ ORDER BY
         reportName: string,
         data: any[]
     ): Promise<{ fileName: string; filePath: string }> {
-        const csv = data.map((row) => Object.values(row).join(",")).join("\n");
+        // Add headers from the keys of the first object in the data array
+        const headers = Object.keys(data[0]).join(","); // Get headers from the first row
+        const csv = [headers, ...data.map((row) => Object.values(row).join(","))].join("\n"); // Combine headers with data
         const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
         const filePath = `src/assets/emailCsv/${fileName}`; // Define your path here
         // Ensure the directory exists
         await fs.promises.mkdir("src/assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
-
+    
         await fs.promises.writeFile(filePath, csv);
         return {
             fileName,

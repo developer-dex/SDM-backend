@@ -125,11 +125,11 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { userId } = req.params;
+        const { id } = req.params;
         const token_payload = req.token_payload;
         try {
             await this.superAdminService.deleteUser(
-                Number(userId),
+                Number(id),
                 token_payload.data
             );
             return res
@@ -502,6 +502,7 @@ export class SuperAdminController {
                 company_name,
                 company_pan,
                 user_email,
+                count
             } = req.query as unknown as {
                 page: number;
                 limit: number;
@@ -518,6 +519,7 @@ export class SuperAdminController {
                 company_name?: string;
                 company_pan?: string;
                 user_email?: string;
+                count?: string;
             };
             const licenses = await this.superAdminService.getAllLicenses(
                 page,
@@ -534,7 +536,8 @@ export class SuperAdminController {
                 company_id,
                 company_name,
                 company_pan,
-                user_email
+                user_email,
+                count
             );
             return res
                 .status(200)

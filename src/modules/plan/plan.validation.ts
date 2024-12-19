@@ -62,4 +62,5 @@ export const getAllLicensesRequest = Joi.object({
     user_email: Joi.string().optional(),
     recipientEmail: Joi.string().optional(),
     isExportToEmail: Joi.string().optional(),
+    count: Joi.string().optional(),
 });

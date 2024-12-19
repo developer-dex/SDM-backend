@@ -107,7 +107,7 @@ AdminDashboardApi.get(
 );
 
 AdminDashboardApi.delete(
-    "/user/:userId/delete",
+    "/user/:id/delete",
     validator.params(deleteClientRequest),
     superAdminController.deleteUser
 );

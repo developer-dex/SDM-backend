@@ -44,7 +44,6 @@ export class SuperAdminService {
         const { email, password } = requestData;
         const query = `SELECT * FROM Admin WHERE email = '${email}' AND password = '${password}'`;
         const result = await executeQuery(query);
-        console.log("result:::", result);
         if (result.rows.length === 0) {
             return [];
         }
@@ -54,7 +53,8 @@ export class SuperAdminService {
             result.rows[0].role
         );
 
-        const profilePhoto = formateFrontImagePath(result.rows[0].profilePhoto);
+        let profilePhoto = result.rows[0].profilePhoto ? formateFrontImagePath(result.rows[0].profilePhoto) : null;
+        
 
         const data = {
             id: result.rows[0].id,
@@ -408,9 +408,10 @@ export class SuperAdminService {
         company_id?: string,
         company_name?: string,
         company_pan?: string,
-        user_email?: string
+        user_email?: string,
+        count?: string
     ) => {
-        let query = `SELECT l.issue_date, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email, u.id as user_id FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
+        let query = `SELECT l.issue_date, l.count, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email, u.id as user_id FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
 
         const filters = [];
         const searchFilters = [];
@@ -423,6 +424,7 @@ export class SuperAdminService {
             searchFilters.push(`l.company_name LIKE '%${searchParameter}%'`);
             searchFilters.push(`l.company_pan LIKE '%${searchParameter}%'`);
             searchFilters.push(`u.email LIKE '%${searchParameter}%'`);
+            searchFilters.push(`l.count LIKE '%${searchParameter}%'`);
         }
 
         if (issue_date) {
@@ -457,6 +459,9 @@ export class SuperAdminService {
         if (user_email) {
             filters.push(`u.email LIKE '%${user_email}%'`);
         }
+        if (count) {
+            filters.push(`l.count = ${count}`);
+        }
 
         if (filters.length > 0) {
             query += ` WHERE ${filters.join(" AND ")}`;
@@ -488,6 +493,7 @@ export class SuperAdminService {
                 { id: "company_id", title: "Company ID" },
                 { id: "company_name", title: "Company Name" },
                 { id: "company_pan", title: "Company PAN" },
+                { id: "count", title: "Count" },
             ];
             const path = await createCsvFile(data.rows, header);
             await sendCsvToMail(
@@ -572,14 +578,15 @@ export class SuperAdminService {
             );
         }
         console.log("user[0]user[0]user[0]", user.rows[0].plan_type)
-        const { license_id, issue_date, expiry_date, status } = requestData;
+        const { license_id, issue_date, expiry_date, status, count } = requestData;
         const license_key = generateLicenseKey(
             user.rows[0].plan_type,
             user.rows[0].pan,
             issue_date,
-            expiry_date
+            expiry_date,
+            count
         );
-        const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user.rows[0].plan_type}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user.rows[0].company_id}', company_name = '${user.rows[0].company_name}', company_pan = '${user.rows[0].pan}' WHERE id = '${license_id}'`;
+        const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user.rows[0].plan_type}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user.rows[0].company_id}', company_name = '${user.rows[0].company_name}', company_pan = '${user.rows[0].pan}', count = ${count} WHERE id = '${license_id}'`;
         return await executeQuery(query);
     };
 
