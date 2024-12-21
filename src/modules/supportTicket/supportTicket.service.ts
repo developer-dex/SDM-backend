@@ -61,13 +61,25 @@ export class SupportTicketService {
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT 
-        *,
+        s.Topic,
+        s.status,
+        s.createdAt,
+        s.end_time,
+        s.is_on_time,
+        s.take_time_in_hr,
+        s.solved_status_time,
+        s.start_time,
+        u.full_name,
+        u.email,
+        cm.company_name, cm.company_id,
         CASE 
-            WHEN status = 'PENDING' AND DATEDIFF(HOUR, createdAt, GETDATE()) > 24 THEN 1 
+            WHEN s.status = 'PENDING' AND DATEDIFF(HOUR, s.createdAt, GETDATE()) > 24 THEN 1 
             ELSE 0 
         END AS highPriority
-    FROM SupportTickets
-    order by highPriority DESC, createdAt DESC`;
+    FROM SupportTickets s
+    LEFT JOIN Users u ON u.id = s.userId
+    LEFT JOIN ClientManagement cm ON cm.user_id = u.id
+    order by highPriority DESC, s.createdAt DESC`;
         if (offset && limitData) {
             query += `ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }

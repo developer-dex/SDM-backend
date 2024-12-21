@@ -153,6 +153,9 @@ export const generateLicenseKey = (
     // Formatting issue date
     const issueDateObj = new Date(issueDate);
     const dayOfPurchase = String(issueDateObj.getDate()).padStart(2, "0"); // Day of purchase
+
+
+
     const monthYearOfPurchase =
         String(issueDateObj.getMonth() + 1).padStart(2, "0") +
         String(issueDateObj.getFullYear()).slice(-2); // MMYY
@@ -160,18 +163,25 @@ export const generateLicenseKey = (
     // Formatting expiration date
     const expirationDateObj = new Date(expirationDate);
     const dayOfExpiry = String(expirationDateObj.getDate()).padStart(2, "0"); // Day of expiry
+
+    // Split dayOfExpiry into individual digits
+    const [firstDigit, secondDigit] = dayOfExpiry.split('');
+
+    console.log("dayOfExpirydayOfExpiry____", dayOfExpiry)
     const expiryDateMMYY =
         String(expirationDateObj.getMonth() + 1).padStart(2, "0") +
         String(expirationDateObj.getFullYear()).slice(-2); // MMYY
 
+        console.log("expiryDateMMYY", expiryDateMMYY);
          // Formatting userCount to 5 digits
     const formattedUserCount = String(userCount || 0).padStart(5, "0"); // Format userCount to 5 digits
 
 
     // Constructing the license key
-    const licenseKey = `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${dayOfExpiry}-${expiryDateMMYY}-${formattedUserCount}`;
+    const updatedLicenseKey =
+     `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${firstDigit}-${secondDigit}${expiryDateMMYY}-${formattedUserCount}`;
 
-    return licenseKey;
+    return updatedLicenseKey;
 };
 
 export const createCsvFile = async (data: any[], header: any[]) => {

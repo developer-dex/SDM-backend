@@ -345,4 +345,8 @@ AdminDashboardApi.delete("/integration-images/:integrationImageId/delete", super
 // Client Feedback and suggestion
 AdminDashboardApi.get("/feedback-and-suggestion", superAdminController.getFeedbackAndSuggestion);
 
+// admin email configration 
+AdminDashboardApi.get("/email-configration", superAdminController.getAdminEmailConfigration);
+AdminDashboardApi.put("/email-configration", superAdminController.updateAdminEmailConfigration);
+
 export default AdminDashboardApi;

@@ -4,6 +4,8 @@ import { EPlanStatus } from "./plan.interface";
 import getEnvVar from "../../helpers/util";
 import { retrieveData, executeQuery } from "../../config/databaseConfig";
 import { v4 as uuidv4 } from 'uuid';
+import { Actions, Modules } from "../../helpers/constants";
+import { createAuditTrail } from "../../common/function";
 
 
 export class PlanService {
@@ -15,7 +17,7 @@ export class PlanService {
         });
     }
 
-    createPlan = async (planCreatePayload: any) => {
+    createPlan = async (planCreatePayload: any, token_payload: any) => {
         console.log("planCreatePayload:::", planCreatePayload);
         try {
             // const plan = await this.razorpay.plans.create({
@@ -40,6 +42,16 @@ export class PlanService {
             const insertQuery = `INSERT INTO Plans (plan_name, plan_type, interval, price, product_id, features, min_users, max_users, currency) VALUES ('${planCreatePayload.plan_name}', '${planCreatePayload.plan_type}', 1, '${planCreatePayload.price}', '${planId}', '${JSON.stringify(planCreatePayload.features)}', '${planCreatePayload.min_users}', '${planCreatePayload.max_users}', '${getEnvVar("CURRENCY")}')`;
 
             console.log("insertQuery:::", insertQuery);
+
+            const data = {
+                id: token_payload?.id,
+                username: token_payload?.username,
+                loginTime: new Date().toISOString(),
+                role: token_payload?.role,
+                module: Modules.PRICING_PLAN,
+                action: Actions.PRICING_PLAN.CREATE,
+            };
+            await createAuditTrail(data);
             return await executeQuery(insertQuery);
             
         } catch (error) {
@@ -50,8 +62,17 @@ export class PlanService {
         }
     };
 
-    updatePlan = async (planId: string, features: object) => {
-        const updateQuery = `UPDATE Plans SET features = '${JSON.stringify(features)}' WHERE id = '${planId}'`;
+    updatePlan = async (planId: string, price: number, features: object, token_payload: any) => {
+        const updateQuery = `UPDATE Plans SET price = ${price}, features = '${JSON.stringify(features)}' WHERE id = '${planId}'`;
+        const data = {
+            id: token_payload?.id,
+            username: token_payload?.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload?.role,
+            module: Modules.PRICING_PLAN,
+            action: Actions.PRICING_PLAN.UPDATE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(updateQuery);
     }
 

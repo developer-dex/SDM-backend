@@ -85,7 +85,8 @@ export class SuperAdminService {
         role?: string,
         permissions?: string,
         password?: string,
-        created_at?: string
+        created_at?: string,
+        token_payload?: any
     ) => {
         // Count total number of clients
         const totalCountQuery = `SELECT COUNT(*) as count FROM Admin`;
@@ -162,6 +163,15 @@ export class SuperAdminService {
                 path,
                 "users.csv"
             );
+            const data = {
+                id: token_payload?.id,
+                username: token_payload?.username,
+                loginTime: new Date().toISOString(),
+                role: token_payload?.role,
+                module: Modules.USER_MANAGEMENT,
+                action: Actions.USER_MANAGEMENT.EXPORT_TO_EMAIL,
+            };
+            await createAuditTrail(data);
         }
 
         return {
@@ -252,9 +262,10 @@ export class SuperAdminService {
         gst?: string,
         pan?: string,
         industry_type?: string,
-        cost?: string
+        cost?: string,
+        plan_name?: string
     ) => {
-        let query = `SELECT cm.company_name, cm.id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id, u.databaseName  FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id`;
+        let query = `SELECT cm.company_name, cm.id, p.plan_name, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id, u.databaseName  FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id LEFT JOIN Plans p ON p.id = cm.plan_id`;
 
         const filters = [];
         const searchFilters = [];
@@ -271,6 +282,7 @@ export class SuperAdminService {
             searchFilters.push(`cm.cost LIKE '%${searchParameter}%'`);
             searchFilters.push(`cm.payment_method LIKE '%${searchParameter}%'`);
             searchFilters.push(`cm.status LIKE '%${searchParameter}%'`)
+            searchFilters.push(`p.plan_name LIKE '%${searchParameter}%'`)
         }
         if (company_name) {
             filters.push(`cm.company_name LIKE '%${company_name}%'`);
@@ -289,6 +301,9 @@ export class SuperAdminService {
         }
         if (status) {
             filters.push(`cm.status = '${status}'`);
+        }
+        if (plan_name) {
+            filters.push(`p.plan_name = '${plan_name}'`);
         }
         if (gst) {
             filters.push(`cm.gst = '${gst}'`);
@@ -310,7 +325,11 @@ export class SuperAdminService {
             query += ` WHERE ${searchFilters.join(" OR ")}`;
         }
         const { offset, limit: limitData } = calculatePagination(page, limit);
-        query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        if (limit && page) {
+            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        console.log("CLIENT______________", query);
         const data = await executeQuery(query);
 
         // total count of client
@@ -362,7 +381,7 @@ export class SuperAdminService {
             cost,
             user_id,
         } = requestData;
-        const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst, pan, industry_type, company_id, status, plan_type, cost, user_id) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_type}', ${cost}, ${user_id})`;
+        const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst, pan, industry_type, company_id, status, plan_type, cost, user_id, plan_id) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_type}', ${cost}, ${user_id}, ${plan_id})`;
         return await executeQuery(query);
     };
 
@@ -386,8 +405,9 @@ export class SuperAdminService {
             plan_type,
             id,
             cost,
+            plan_id,
         } = requestData;
-        const query = `UPDATE ClientManagement SET company_name = '${company_name}', company_id = '${company_id}', company_address = '${company_address}', payment_method = '${payment_method}', gst = '${gst_number}', pan = '${pan_number}', industry_type = '${industry_type}', status = '${status}', plan_type = '${plan_type}', cost = ${cost} WHERE id = '${id}'`;
+        const query = `UPDATE ClientManagement SET company_name = '${company_name}', company_id = '${company_id}', company_address = '${company_address}', payment_method = '${payment_method}', gst = '${gst_number}', pan = '${pan_number}', industry_type = '${industry_type}', status = '${status}', plan_type = '${plan_type}', cost = ${cost}, plan_id = ${plan_id} WHERE id = '${id}'`;
         return await executeQuery(query);
     };
 
@@ -409,7 +429,8 @@ export class SuperAdminService {
         company_name?: string,
         company_pan?: string,
         user_email?: string,
-        count?: string
+        count?: string,
+        token_payload?: any
     ) => {
         let query = `SELECT l.issue_date, l.count, l.id as license_id, l.expiration_date, l.license_key, l.license_type, l.status, l.company_id, l.company_name, l.company_pan, u.email, u.id as user_id FROM Licenses l LEFT JOIN Users u on u.id = l.user_id`;
 
@@ -503,6 +524,15 @@ export class SuperAdminService {
                 path,
                 "licenses.csv"
             );
+            const auditData = {
+                id: token_payload?.id,
+                username: token_payload?.username,
+                loginTime: new Date().toISOString(),
+                role: token_payload?.role,
+                module: Modules.LICENSE_MANAGEMENT,
+                action: Actions.LICENSE_MANAGEMENT.EXPORT_TO_EMAIL,
+            };
+            await createAuditTrail(auditData);
         }
         return {
             licenses: data.rows,
@@ -510,7 +540,7 @@ export class SuperAdminService {
         };
     };
 
-    createLicense = async (requestData: ICreateLicenseRequest) => {
+    createLicense = async (requestData: ICreateLicenseRequest, token_payload: any) => {
         const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name, u.id FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
@@ -553,15 +583,34 @@ export class SuperAdminService {
 
         console.log("license_key:::", license_key);
         const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan, count) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_type}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}', ${count})`;
-        return await executeQuery(query);
+        
+        await executeQuery(query);
+        const data = {
+            id: token_payload?.id,
+            username: token_payload?.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload?.role,
+            module: Modules.LICENSE_MANAGEMENT,
+            action: Actions.LICENSE_MANAGEMENT.CREATE,
+        };
+        return createAuditTrail(data);
     };
 
-    deleteLicense = async (licenseId: string) => {
+    deleteLicense = async (licenseId: string, token_payload: any) => {
         const query = `DELETE FROM Licenses WHERE company_id = '${licenseId}'`;
+        const data = {
+            id: token_payload?.id,
+            username: token_payload?.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload?.role,
+            module: Modules.LICENSE_MANAGEMENT,
+            action: Actions.LICENSE_MANAGEMENT.DELETE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
     };
 
-    updateLicense = async (requestData: ICreateLicenseRequest) => {
+    updateLicense = async (requestData: ICreateLicenseRequest, token_payload: any) => {
         const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
@@ -587,7 +636,16 @@ export class SuperAdminService {
             count
         );
         const query = `UPDATE Licenses SET license_key = '${license_key}', license_type = '${user.rows[0].plan_type}', issue_date = '${issue_date}', expiration_date = '${expiry_date}', status = '${status}', company_id = '${user.rows[0].company_id}', company_name = '${user.rows[0].company_name}', company_pan = '${user.rows[0].pan}', count = ${count} WHERE id = '${license_id}'`;
-        return await executeQuery(query);
+        await executeQuery(query);
+        const data = {
+            id: token_payload?.id,
+            username: token_payload?.username,
+            loginTime: new Date().toISOString(),
+            role: token_payload?.role,
+            module: Modules.LICENSE_MANAGEMENT,
+            action: Actions.LICENSE_MANAGEMENT.UPDATE,
+        };
+        return createAuditTrail(data);
     };
 
     // Customer Management
@@ -654,7 +712,8 @@ export class SuperAdminService {
         loginTime?: string,
         logoutTime?: string,
         start_from?: string,
-        end_to?: string
+        end_to?: string,
+        token_payload?: any
     ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT * FROM AuditTrail`;
@@ -757,6 +816,15 @@ export class SuperAdminService {
                 path,
                 "support_ticket_titles.csv"
             );
+            const auditData = {
+                id: token_payload?.id,
+                username: token_payload?.username,
+                loginTime: new Date().toISOString(),
+                role: token_payload?.role,
+                module: Modules.AUDIT_LOGS,
+                action: Actions.AUDIT_TRAIL.EXPORT_TO_EMAIL,
+            };
+            await createAuditTrail(auditData);
         }
         return {
             auditLogs: data.rows,
@@ -879,8 +947,8 @@ const query2 = `
 
         // Return the counts in the final result
         return {
-            onlineClients: NoDataInLast24Hours.length,
-            offlineClients: DataInLast24Hours.length,
+            onlineClients: DataInLast24Hours.length,
+            offlineClients: NoDataInLast24Hours.length,
             totalUsers: users.rows.length,
             ticketAndLicenseData: result.rows,
             latestSupportTicketData: latestSupportTicketData.rows,
@@ -925,7 +993,7 @@ const query2 = `
     getAnalytics = async (page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
         
         // const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
-        const {query, totalCountQuery} = await this.listOfClientsQuery(page, limit, companyId, companyName, planType, planActivation, revenueType, totalRevenue, startDate, endDate, rate);
+        const {totalCountQuery, query} = await this.listOfClientsQuery(page, limit, companyId, companyName, planType, planActivation, revenueType, totalRevenue, startDate, endDate, rate);
         const listOfClients = await executeQuery(query);
         const totalCount = await executeQuery(totalCountQuery);
         return { listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
@@ -1192,7 +1260,7 @@ if (userIds.length > 0) {
         return `WITH SubscriptionData AS (
             SELECT 
                 SH.userId,
-                P.price AS PlanPrice,
+                SH.plan_price AS PlanPrice,
                 P.[plan_type],
                 SH.startDate,
                 SH.cancelledAt,
@@ -1207,82 +1275,46 @@ if (userIds.length > 0) {
                 SH.status IN ('active', 'expired', 'cancelled')
         )
         SELECT 
-         
             SUM(SD.PlanPrice) AS TotalRevenue,
-        
-         
-            SUM(CASE WHEN SD.[plan_type] = 'monthly' THEN SD.PlanPrice ELSE SD.PlanPrice / 12 END) AS MonthlyRecurringRevenue,
-        
-         
-            SUM(CASE WHEN SD.[plan_type] = 'yearly' THEN SD.PlanPrice ELSE SD.PlanPrice * 12 END) AS AnnualRecurringRevenue,
-        
-         
+            SUM(CASE WHEN SD.[plan_type] = 'monthly' THEN PlanPrice ELSE 0 END) AS MonthlyRecurringRevenue,
+            SUM(CASE WHEN SD.[plan_type] = 'yearly' THEN PlanPrice ELSE 0 END) AS AnnualRecurringRevenue,
             SUM(SD.PlanPrice) / NULLIF(AVG(SD.LifetimeDays), 0) AS CustomerLifetimeValue,
-        
-         
-            COUNT(CASE 
-                    WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1
-                    ELSE NULL
-                 END) AS UpgradeCount,
-        
-            COUNT(CASE 
-                    WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1
-                    ELSE NULL
-                 END) AS DowngradeCount,
-        
-            COUNT(CASE 
-                    WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1
-                    ELSE NULL
-                 END) AS SamePlanCount,
-        
-            
-            CAST(COUNT(CASE 
-                       WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1
-                       ELSE NULL
-                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS UpgradePercentage,
-        
-        
-            CAST(COUNT(CASE 
-                       WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1
-                       ELSE NULL
-                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS DowngradePercentage,
-        
-            
-            CAST(COUNT(CASE 
-                       WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1
-                       ELSE NULL
-                       END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS SamePlanPercentage
+            COUNT(CASE WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1 END) AS UpgradeCount,
+            COUNT(CASE WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1 END) AS DowngradeCount,
+            COUNT(CASE WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1 END) AS SamePlanCount,
+            CAST(COUNT(CASE WHEN SD.PlanPrice > SD.PreviousPlanPrice THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS UpgradePercentage,
+            CAST(COUNT(CASE WHEN SD.PlanPrice < SD.PreviousPlanPrice THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS DowngradePercentage,
+            CAST(COUNT(CASE WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS SamePlanPercentage
         FROM 
             SubscriptionData SD;`;
     }
 
     private listOfClientsQuery = async(page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
         const filters = [];
-        // Add your new filters here
-        if(companyId){
-            filters.push(`CM.company_id LIKE '%${companyId}%'`);
+        // Adjust filters to use the CTE's column names
+        if (companyId) {
+            filters.push(`company_id LIKE '%${companyId}%'`);
         }
         if (companyName) {
-            filters.push(`CM.company_name LIKE '%${companyName}%'`);
+            filters.push(`company_name LIKE '%${companyName}%'`);
         }
         if (planType) {
-            filters.push(`P.plan_type LIKE '%${planType}%'`);
+            filters.push(`plan_type LIKE '%${planType}%'`);
         }
         if (planActivation) {
-            filters.push(`SH.status LIKE '%${planActivation}%'`);
+            filters.push(`plan_activation LIKE '%${planActivation}%'`);
         }
         if (revenueType) {
-            filters.push(`P.[plan_type] LIKE '%${revenueType}%'`);
+            filters.push(`revenue_type LIKE '%${revenueType}%'`);
         }
-        if (totalRevenue) {
-            filters.push(`P.price LIKE '%${totalRevenue}%'`);
-        }
+        // if (totalRevenue) {
+        //     filters.push(`total_revenue = ${Number(totalRevenue)}`);
+        // }
         if (rate) {
-            filters.push(`Rates LIKE '%${rate}%'`);
+            filters.push(`CurrentPlanPrice LIKE '%${rate}%'`);
         }
         
-        // ... add more filters as needed
-
+        // Start building the query
         let query = `WITH SubscriptionData AS (
             SELECT 
                 CM.company_id,
@@ -1290,10 +1322,12 @@ if (userIds.length > 0) {
                 P.plan_type,
                 SH.status AS plan_activation,
                 P.[plan_type] AS revenue_type,
-                P.price AS total_revenue,
+                SUM(SH.plan_price) AS total_revenue,
                 ROW_NUMBER() OVER (PARTITION BY SH.userId ORDER BY SH.startDate DESC) AS RowNum,
                 LAG(P.price) OVER (PARTITION BY SH.userId ORDER BY SH.startDate) AS PreviousPlanPrice,
-                P.price AS CurrentPlanPrice
+                P.price AS CurrentPlanPrice,
+                SH.userId,  
+                SH.startDate  
             FROM 
                 SuperAdmin.dbo.SubscriptionHistory SH
             JOIN 
@@ -1301,44 +1335,52 @@ if (userIds.length > 0) {
             JOIN 
                 SuperAdmin.dbo.ClientManagement CM ON SH.userId = CM.user_id
             WHERE 
-                SH.status IN ('active', 'cancelled', 'expired')`;
-
+                SH.status IN ('active', 'cancelled', 'expired')
+            GROUP BY 
+                CM.company_id,
+                CM.company_name,
+                P.plan_type,
+                SH.status,
+                P.[plan_type],
+                P.price,
+                SH.userId,  
+                SH.startDate  
+        ) 
+        SELECT 
+            company_id,
+            company_name,
+            CASE 
+                WHEN MIN(plan_activation) = 'active' THEN 'active'
+                ELSE 'expired'
+            END AS plan_activation,
+            MAX(plan_type) AS plan_type,
+            SUM(total_revenue) AS total_revenue
+        FROM 
+            SubscriptionData`;
+        
         // Append filters to the query
         if (filters.length > 0) {
-            query += ` AND ${filters.join(" AND ")}`;
+            query += ` WHERE ${filters.join(" AND ")}`;
         }
+        query += ` GROUP BY 
+        company_id,
+        company_name`;
 
-        query += `),
-        PlanChange AS (
-            SELECT 
-                company_id,
-                company_name,
-                plan_type,
-                plan_activation,
-                revenue_type,
-                total_revenue,
-                CASE 
-                    WHEN CurrentPlanPrice > PreviousPlanPrice THEN 'Upgrades'
-                    WHEN CurrentPlanPrice < PreviousPlanPrice THEN 'Downgrades'
-                    ELSE 'Existing'
-                END AS Rates
-            FROM 
-                SubscriptionData
-            WHERE 
-                RowNum = 1 
-        )
-        SELECT 
-            *
-        FROM 
-            PlanChange`;
-
+        if (totalRevenue) {
+            query += ` HAVING SUM(total_revenue) = ${Number(totalRevenue)}`;
+        }
+        
+       
         const totalCountQuery = query;
         if (limit && page) {
             const { offset, limit: limitData } = calculatePagination(page, limit);
             query += ` ORDER BY company_id OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
-        return {totalCountQuery,query};
+        
+        return { totalCountQuery, query };
+        
     }
+    
 
     private listOfClientsCountQuery = () => {
         let query = `WITH SubscriptionData AS (
@@ -1689,4 +1731,20 @@ if (userIds.length > 0) {
         const totalResult = await executeQuery(totalQuery);
         return { feedbackAndSuggestion, totalCount: totalResult.rows[0][''] };
     };
+
+    getAdminEmailConfigration = async () => {
+        const query = `SELECT * FROM AdminEmailConfig`;
+        const data = await executeQuery(query);
+        return data.rows;
+    }
+
+    updateAdminEmailConfigration = async (requestData: any) => {
+        const query = `UPDATE AdminEmailConfig SET 
+        SmtpServer = '${requestData.SmtpServer}',
+        SmtpPort = ${requestData.SmtpPort},
+        SenderEmail = '${requestData.SenderEmail}',
+        Password = '${requestData.Password}',
+        EnableTLS = ${requestData.EnableTLS ? 1 : 0}`;
+        await executeQuery(query);
+    }
 }

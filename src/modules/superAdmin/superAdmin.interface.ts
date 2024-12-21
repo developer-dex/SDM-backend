@@ -49,6 +49,7 @@ export interface IGetAllUsersRequest {
     pan?: string;
     industry_type?: string;
     cost?: string;
+    plan_name?: string;
 }
 
 export interface ICreateClientRequest {

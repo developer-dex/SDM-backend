@@ -67,6 +67,7 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
+        const token_payload = req.token_payload;
         const {
             limit,
             page,
@@ -94,7 +95,8 @@ export class SuperAdminController {
                 role,
                 permissions,
                 password,
-                created_at
+                created_at,
+                token_payload.data
             );
             return res
                 .status(200)
@@ -303,6 +305,7 @@ export class SuperAdminController {
             pan,
             industry_type,
             cost,
+            plan_name
         } = req.query as unknown as IGetAllUsersRequest;
         try {
             const clients = await this.superAdminService.getAllClients(
@@ -320,7 +323,8 @@ export class SuperAdminController {
                 gst,
                 pan,
                 industry_type,
-                cost
+                cost,
+                plan_name
             );
             return res
                 .status(200)
@@ -537,7 +541,8 @@ export class SuperAdminController {
                 company_name,
                 company_pan,
                 user_email,
-                count
+                count,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -570,7 +575,7 @@ export class SuperAdminController {
         const requestData: ICreateLicenseRequest = req.body;
         console.log("requestData:::", requestData);
         try {
-            await this.superAdminService.createLicense(requestData);
+            await this.superAdminService.createLicense(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -601,7 +606,7 @@ export class SuperAdminController {
     ) => {
         const { licenseId } = req.params;
         try {
-            await this.superAdminService.deleteLicense(licenseId);
+            await this.superAdminService.deleteLicense(licenseId, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -632,7 +637,7 @@ export class SuperAdminController {
     ) => {
         const requestData: ICreateLicenseRequest = req.body;
         try {
-            await this.superAdminService.updateLicense(requestData);
+            await this.superAdminService.updateLicense(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -806,7 +811,8 @@ export class SuperAdminController {
                 loginTime,
                 logoutTime,
                 start_from,
-                end_to
+                end_to,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -1592,6 +1598,35 @@ export class SuperAdminController {
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Feedback and suggestion fetched successfully", feedbackAndSuggestion));
         } catch (error) {
             console.log("superAdmin getFeedbackAndSuggestion ERROR", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    getAdminEmailConfigration = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const adminEmailConfigration = await this.superAdminService.getAdminEmailConfigration();
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Admin email configration fetched successfully", adminEmailConfigration));
+        } catch (error) {
+            console.log("superAdmin getAdminEmailConfigration ERROR", error);
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
+
+    updateAdminEmailConfigration = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        const requestData = req.body;
+        try {
+            await this.superAdminService.updateAdminEmailConfigration(requestData);
+            return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Admin email configration updated successfully"));
+        } catch (error) {
+            console.log("superAdmin updateAdminEmailConfigration ERROR", error);
             return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
         }
     }

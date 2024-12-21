@@ -27,6 +27,12 @@ ClientDashboardApi.post("/login/internal", clientAdminController.loginInternal);
 
 ClientDashboardApi.use(authMiddleware.verifyjwtToken);
 
+// Client online status
+ClientDashboardApi.get("/online-status", clientAdminController.getClientOnlineStatus);
+
+// Client management
+ClientDashboardApi.get("/client-management", clientAdminController.getClientManagement);
+
 ClientDashboardApi.post(
     "/create-support-ticket",
     validator.body(createSupportTicketRequest),

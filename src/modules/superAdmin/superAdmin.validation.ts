@@ -63,6 +63,7 @@ export const createClientRequest = Joi.object({
     cost: Joi.number().required(),
     user_id: Joi.number().required(),
     id: Joi.number().optional(),
+    plan_id: Joi.number().optional(),
 });
 
 export const listingPlanRequest = Joi.object({

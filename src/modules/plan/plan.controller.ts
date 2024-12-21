@@ -20,7 +20,7 @@ export class PlanController {
         const requestData = req.body;
 
         try {
-            const createdPlan = await this.planService.createPlan(requestData);
+            const createdPlan = await this.planService.createPlan(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -50,9 +50,8 @@ export class PlanController {
         next: NextFunction
     ) => {
         try {
-            const { plan_id, features } = req.body;
-            console.log("features: ", features);
-            await this.planService.updatePlan(plan_id, features);
+            const { plan_id, features, price } = req.body;
+            await this.planService.updatePlan(plan_id, price, features, req.token_payload.data);
             return res
                 .status(200)
                 .send(

@@ -62,6 +62,101 @@ export class ClientAdminService {
         };
     };
 
+    getClientManagement = async (
+        DBName: string,
+        page?: number,
+        limit?: number,
+        ClientId?: number,
+        Name?: string,
+        IpMachineName?: string,
+        FolderName?: string,
+        UserName?: string,
+        Password?: string,
+        Quota?: number,
+        QuotaUnit?: string,
+        Description?: string,
+        EntryTime?: string,
+        Remarks?: string,
+        searchParameter?: string
+    ) => {
+        console.log("DBName:::", DBName);
+        let query = `SELECT * FROM ${DBName}.Clients`;
+        let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.Clients`;
+
+        const filters = [];
+        const searchFilters = [];
+
+        if (searchParameter) {
+            searchFilters.push(`ClientId LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Name LIKE '%${searchParameter}%'`);
+            searchFilters.push(`IpMachineName LIKE '%${searchParameter}%'`);
+            searchFilters.push(`FolderName LIKE '%${searchParameter}%'`);
+            searchFilters.push(`UserName LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Password LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Quota LIKE '%${searchParameter}%'`);
+            searchFilters.push(`QuotaUnit LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Description LIKE '%${searchParameter}%'`);
+            searchFilters.push(`EntryTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Remarks LIKE '%${searchParameter}%'`);
+        }
+
+        if (ClientId) {
+            filters.push(`ClientId = ${ClientId}`);
+        }
+        if (Name) {
+            filters.push(`Name LIKE '%${Name}%'`);
+        }
+        if (IpMachineName) {
+            filters.push(`IpMachineName LIKE '%${IpMachineName}%'`);
+        }
+        if (FolderName) {
+            filters.push(`FolderName LIKE '%${FolderName}%'`);
+        }
+        if (UserName) {
+            filters.push(`UserName LIKE '%${UserName}%'`);
+        }
+        if (Password) {
+            filters.push(`Password LIKE '%${Password}%'`);
+        }
+        if (Quota) {
+            filters.push(`Quota = ${Quota}`);
+        }
+        if (QuotaUnit) {
+            filters.push(`QuotaUnit = '${QuotaUnit}'`);
+        }
+        if (Description) {
+            filters.push(`Description LIKE '%${Description}%'`);
+        }
+        if (EntryTime) {
+            filters.push(this.getDateCondition(EntryTime, "EntryTime"));
+        }
+        if (Remarks) {
+            filters.push(`Remarks LIKE '%${Remarks}%'`);
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+            countQuery += ` WHERE ${filters.join(" AND ")}`;
+        }
+
+        if (searchFilters.length > 0) {
+            query += ` WHERE ${searchFilters.join(" OR ")}`;
+            countQuery += ` WHERE ${searchFilters.join(" OR ")}`;
+        }
+
+        if (page && limit) {
+            const { offset, limit: limitData } = calculatePagination(page, limit);
+            query += ` ORDER BY ClientID DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        console.log("query:::", query);
+
+        const result = await executeQuery(query);
+        const countResult = await executeQuery(countQuery);
+        const totalCount = countResult.rows[0].total_count;
+        return { data: result.rows, totalCount };
+    };
+
     getBackupSS = async (
         DBName: string,
         page: number,
@@ -124,7 +219,7 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             filters.push(`Status LIKE '%${Status}%'`);
         }
         if (EntryDateTime) {
-            filters.push(`EntryDateTime LIKE '%${EntryDateTime}%'`);
+            filters.push(this.getDateCondition(EntryDateTime, "EntryDateTime"));
         }
 
         if (filters.length > 0) {
@@ -358,7 +453,7 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         dataInKB?: string,
         dataInMB?: string,
         dataInGB?: string,
-        dataInTB?: string,
+        dataInTB?: string
     ) => {
         let query = `SELECT * FROM ${DBName}.JobFireEntries`;
         let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.JobFireEntries`;
@@ -420,7 +515,9 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
             filters.push(`Duration LIKE '%${duration}%'`);
         }
         if (nextRunDateTime) {
-            filters.push(this.getDateCondition(nextRunDateTime, "NextRunDateTime"));
+            filters.push(
+                this.getDateCondition(nextRunDateTime, "NextRunDateTime")
+            );
         }
         if (jobType) {
             filters.push(`JobType LIKE '%${jobType}%'`);
@@ -598,7 +695,7 @@ LEFT JOIN
         );
         const jobStatusPieChart = jobStatusPieChartResult.rows[0];
         // Total clients
-        const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.Users`;
+        const totalClientsQuery = `SELECT COUNT(*) AS total_clients FROM ${DBName}.Clients`;
         const totalClientsResult = await executeQuery(totalClientsQuery);
         const totalClients = totalClientsResult.rows[0].total_clients;
 
@@ -671,8 +768,13 @@ ORDER BY
         const bannerResult = await executeQuery(bannerQuery);
         const banner = bannerResult.rows;
         // add path to banner
-        const relativePath = formateFrontImagePath(banner[0]?.imagePath);
-        const fullImagePath = relativePath ? `${getEnvVar("LOCAL_URL")}/assets${relativePath}` : null;
+        let fullImagePath = null;
+        if (banner.length > 0) {
+            const relativePath = formateFrontImagePath(banner[0]?.imagePath);
+            fullImagePath = relativePath
+                ? `${getEnvVar("LOCAL_URL")}/assets${relativePath}`
+                : null;
+        }
 
         return {
             jobStatusPieChart,
@@ -835,10 +937,14 @@ ORDER BY
     updateEmailSchedule = async (DBName: string, userId: number, body: any) => {
         const isEmailInstant = body.Type === "instant";
         // body.EmailTo is coming in comma saprated value I want to remove extra space
-        const emailTo = body.EmailTo.split(",").map((email: string) => email.trim()).join(",");
-        const reportName = body.ReportName.split(",").map((report: string) => report.trim()).join(",");
+        const emailTo = body.EmailTo.split(",")
+            .map((email: string) => email.trim())
+            .join(",");
+        const reportName = body.ReportName.split(",")
+            .map((report: string) => report.trim())
+            .join(",");
         const query = `UPDATE EmailSchedule SET ReportName = '${reportName}', Type = '${body.Type}', EmailTo = '${emailTo}', Subject = '${body.Subject}', Body = '${body.Body}'${isEmailInstant ? `, LastRunDate = GETDATE()` : ""} WHERE Id = ${body.id}`;
-        
+
         await executeQuery(query);
         if (isEmailInstant) {
             this.instantEmailSchedule(DBName, userId, body);
@@ -880,12 +986,12 @@ ORDER BY
         const attachmentPaths = [];
 
         // split the ReportName by space and get the first word
-        const reportNames = (body.ReportName.split(",").map((report: string) => report.trim()).join(",")).split(",");
-        console.log("reportNames___________________", reportNames);
+        const reportNames = body.ReportName.split(",")
+            .map((report: string) => report.trim())
+            .join(",")
+            .split(",");
         for (const reportName of reportNames) {
-            console.log("singleReport___________", reportName)
             let query = `SELECT * FROM ${DBName}.${reportName}`;
-            console.log("query________________", query);
             if (reportName === "Clients" || reportName === "BackupJobs") {
             } else {
                 if (reportName === "BackupSSLogs") {
@@ -930,12 +1036,15 @@ ORDER BY
     ): Promise<{ fileName: string; filePath: string }> {
         // Add headers from the keys of the first object in the data array
         const headers = Object.keys(data[0]).join(","); // Get headers from the first row
-        const csv = [headers, ...data.map((row) => Object.values(row).join(","))].join("\n"); // Combine headers with data
+        const csv = [
+            headers,
+            ...data.map((row) => Object.values(row).join(",")),
+        ].join("\n"); // Combine headers with data
         const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
         const filePath = `src/assets/emailCsv/${fileName}`; // Define your path here
         // Ensure the directory exists
         await fs.promises.mkdir("src/assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
-    
+
         await fs.promises.writeFile(filePath, csv);
         return {
             fileName,

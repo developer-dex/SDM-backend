@@ -55,6 +55,87 @@ export class ClientAdminController {
         }
     };
 
+    getClientOnlineStatus = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getSoftwareStatus(
+                tokenPayload?.data.databaseName
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Client online status fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
+    getClientManagement = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        console.log("tokenPayload:::", tokenPayload);
+        const { page, limit, ClientId, Name, IpMachineName, FolderName, UserName, Password, Quota, QuotaUnit, Description, EntryTime, Remarks, searchParameter} = req.query;
+        try {
+            console.log("tokenPayload?.data.databaseName:::", tokenPayload?.data);
+            const result = await this.clientAdminService.getClientManagement(
+                tokenPayload?.data.databaseName,
+                Number(page),
+                Number(limit),
+                Number(ClientId),
+                Name as string,
+                IpMachineName as string,
+                FolderName as string,
+                UserName as string,
+                Password as string,
+                Number(Quota) as number,
+                QuotaUnit as string,
+                Description as string,
+                EntryTime as string,
+                Remarks as string,
+                searchParameter as string
+            );
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithData(
+                        true,
+                        StatusCodes.OK,
+                        "Client management fetched successfully",
+                        result
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    };
+
     getBackupSS = async (
         req: Request & { token_payload?: any },
         res: Response
@@ -311,7 +392,7 @@ export class ClientAdminController {
                 dataInKB,
                 dataInMB,
                 dataInGB,
-                dataInTB,   
+                dataInTB,
             } = req.query as unknown as paginationRequeset;
             const result = await this.clientAdminService.getJobFireStatistics(
                 tokenPayload?.data.databaseName,
@@ -332,7 +413,7 @@ export class ClientAdminController {
                 dataInKB,
                 dataInMB,
                 dataInGB,
-                dataInTB,
+                dataInTB
             );
             return res
                 .status(StatusCodes.OK)
@@ -881,19 +962,32 @@ export class ClientAdminController {
         const tokenPayload = req.token_payload;
         const { id } = req.params;
         try {
-            await this.clientAdminService.deleteEmailSchedule(
-                Number(id)
-            );
+            await this.clientAdminService.deleteEmailSchedule(Number(id));
             return res
                 .status(200)
-                .send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Email schedule deleted successfully"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Email schedule deleted successfully"
+                    )
+                );
         } catch (error) {
-            console.log("clientAdminController:::deleteEmailSchedule:::", error);
+            console.log(
+                "clientAdminController:::deleteEmailSchedule:::",
+                error
+            );
             return res
                 .status(400)
-                .send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
         }
-    }
+    };
 
     getEmailSchedule = async (
         req: Request & { token_payload?: any },
