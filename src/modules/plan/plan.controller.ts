@@ -154,6 +154,36 @@ export class PlanController {
             
         }
     }
+
+    deletePlan = async (
+        req: Request & { token_payload?: any },
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const { planId } = req.params;
+            await this.planService.deletePlan(planId);
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        true,
+                        StatusCodes.OK,
+                        "Plan deleted successfully"
+                    )
+                );
+        } catch (error) {
+            return res
+                .status(200)
+                .send(
+                    this.responseService.responseWithoutData(
+                        false,
+                        StatusCodes.INTERNAL_SERVER_ERROR,
+                        "Internal server error"
+                    )
+                );
+        }
+    }
 }
 
 export const planController = new PlanController();

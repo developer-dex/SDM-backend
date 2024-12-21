@@ -87,6 +87,7 @@ AdminDashboardApi.get(
 );
 AdminDashboardApi.post("/plan/change-status", planController.changePlanStatus);
 AdminDashboardApi.post("/offer", planController.createOffer);
+AdminDashboardApi.delete("/plan/:planId/delete", planController.deletePlan);
 
 // Support Ticket Routes
 AdminDashboardApi.get(
@@ -324,7 +325,7 @@ AdminDashboardApi.patch("/admin-profile",
 AdminDashboardApi.get("/contact-us", superAdminController.getContactUs);
 
 // Signup user listing
-AdminDashboardApi.get("/signup-users",  validator.query(pagination),superAdminController.getSignupUsers);
+AdminDashboardApi.get("/signup-users",superAdminController.getSignupUsers);
 
 // Testimonial Module
 AdminDashboardApi.get("/testimonial", validator.query(pagination), superAdminController.getTestimonial);

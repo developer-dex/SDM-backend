@@ -861,7 +861,8 @@ ORDER BY
     };
 
     getMyNotifications = async (DBName: string, userId: number) => {
-        const query = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt asnotificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by n.CreatedAt DESC`;
+        const query = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt as notificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by un.id DESC`;
+        console.log("NotificationQuery____", query)
         const result = await executeQuery(query);
         return result.rows;
     };
@@ -874,15 +875,23 @@ ORDER BY
 
     // Plan listing
     getPlanListing = async (userId: number) => {
-        let query = `SELECT * FROM Plans WHERE status = '${EPlanStatus.ACTIVE}'`;
+        
 
         // Currrent user subscription plan
-        const currentUserSubscriptionPlanQuery = `SELECT * FROM Subscription WHERE userId = ${userId}`;
+        const currentUserSubscriptionPlanQuery = `SELECT * FROM Subscription WHERE userId = ${userId} and status = 'active'`;
         const currentUserSubscriptionPlanResult = await executeQuery(
             currentUserSubscriptionPlanQuery
         );
         const currentUserSubscriptionPlan =
             currentUserSubscriptionPlanResult.rows[0];
+
+        let query;
+
+        if (currentUserSubscriptionPlan) {
+            query = `SELECT * FROM Plans WHERE id = ${currentUserSubscriptionPlan.planId} OR deletedAt IS NULL`;
+        } else {
+            query = `SELECT * FROM Plans WHERE deletedAt IS NULL`;
+        }
 
         const plans = await executeQuery(query);
         return { plans: plans.rows, currentUserSubscriptionPlan };

@@ -265,7 +265,7 @@ export class SuperAdminService {
         cost?: string,
         plan_name?: string
     ) => {
-        let query = `SELECT cm.company_name, cm.id, p.plan_name, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id, u.databaseName  FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id LEFT JOIN Plans p ON p.id = cm.plan_id`;
+        let query = `SELECT cm.company_name, cm.id, p.plan_name, p.id as plan_id, cm.company_address, cm.gst, cm.pan, cm.industry_type, cm.company_id, cm.plan_type, cm.cost, cm.status, cm.payment_method,cm.created_at, u.email, u.id as user_id, u.databaseName  FROM ClientManagement cm LEFT JOIN Users u ON cm.user_id = u.id LEFT JOIN Plans p ON p.id = cm.plan_id`;
 
         const filters = [];
         const searchFilters = [];
@@ -382,10 +382,12 @@ export class SuperAdminService {
             user_id,
         } = requestData;
         const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst, pan, industry_type, company_id, status, plan_type, cost, user_id, plan_id) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_type}', ${cost}, ${user_id}, ${plan_id})`;
-        return await executeQuery(query);
-    };
 
-    islicenceExist 
+        // Update the database name as company_id in user table
+        const updateUserQuery = `UPDATE Users SET databaseName = '${company_id}' WHERE id = ${user_id}`;
+        await executeQuery(updateUserQuery);
+        return await executeQuery(query);
+    }; 
 
     deleteClient = async (companyId: string) => {
         const query = `DELETE FROM ClientManagement WHERE company_id = '${companyId}'`;
@@ -408,6 +410,15 @@ export class SuperAdminService {
             plan_id,
         } = requestData;
         const query = `UPDATE ClientManagement SET company_name = '${company_name}', company_id = '${company_id}', company_address = '${company_address}', payment_method = '${payment_method}', gst = '${gst_number}', pan = '${pan_number}', industry_type = '${industry_type}', status = '${status}', plan_type = '${plan_type}', cost = ${cost}, plan_id = ${plan_id} WHERE id = '${id}'`;
+
+        // Find the existing client
+        const findClientQuery = `SELECT * FROM ClientManagement WHERE id = '${id}'`;
+        const client = await executeQuery(findClientQuery);
+        const user_id = client.rows[0].user_id;
+
+        // Update the database name as company_id in user table
+        const updateUserQuery = `UPDATE Users SET databaseName = '${company_id}' WHERE id = ${user_id}`;
+        await executeQuery(updateUserQuery);
         return await executeQuery(query);
     };
 
@@ -834,37 +845,41 @@ export class SuperAdminService {
 
     // Dashboard Temp
     dashboardDetails = async () => {
-        const query = `SELECT * FROM Users `;
-        const users = await executeQuery(query);
+        // const query = `SELECT * FROM Users `;
+        // const users = await executeQuery(query);
 
-        const NoDataInLast24Hours = [];
-        const DataInLast24Hours = [];
+        // const NoDataInLast24Hours = [];
+        // const DataInLast24Hours = [];
 
 
-        for (let i = 0; i < users.rows.length; i++) {
-            const databaseName = users.rows[i].databaseName;
-            const query = `SELECT 
-                '${databaseName}' AS SchemaName,
-                COUNT(*) AS RecordCount
-            FROM ${databaseName}.dbo.PingPathLogs
-            WHERE EntryDateTime >= DATEADD(HOUR, -24, GETDATE())`;
-            const data = await executeQuery(query);
+        // for (let i = 0; i < users.rows.length; i++) {
+        //     const databaseName = users.rows[i].databaseName;
+        //     const query = `SELECT 
+        //         '${databaseName}' AS SchemaName,
+        //         COUNT(*) AS RecordCount
+        //     FROM ${databaseName}.dbo.PingPathLogs
+        //     WHERE EntryDateTime >= DATEADD(HOUR, -24, GETDATE())`;
+        //     const data = await executeQuery(query);
 
-            // Check the count and push to the respective arrays
-            if (data.rows[0].RecordCount === 0) {
-                NoDataInLast24Hours.push(databaseName);
-            } else {
-                DataInLast24Hours.push(databaseName);
-            }
-        }
+        //     // Check the count and push to the respective arrays
+        //     if (data.rows[0].RecordCount === 0) {
+        //         NoDataInLast24Hours.push(databaseName);
+        //     } else {
+        //         DataInLast24Hours.push(databaseName);
+        //     }
+        // }
 
-//         const supportTicketDataQuery = `SELECT 
-//     COUNT(*) AS total_tickets,
-//     COUNT(CASE WHEN status = 'open' THEN 1 END) AS open_tickets,
-//     COUNT(CASE WHEN status = 'closed' THEN 1 END) AS closed_tickets,
-//     ROUND((COUNT(CASE WHEN is_on_time = 1 THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)),2) AS response_on_time_percentage
-// FROM 
-//     SupportTickets;`;
+        const userCountsQuery = `
+            SELECT 
+                COUNT(*) AS totalUsers,
+                COUNT(CASE WHEN status = 'active' THEN 1 END) AS activeUsers,
+                COUNT(CASE WHEN status = 'inactive' THEN 1 END) AS inactiveUsers
+            FROM ClientManagement
+        `;
+        const userCountsData = await executeQuery(userCountsQuery);
+        const totalUserInClientManagementCount = userCountsData.rows[0].totalUsers;
+        const ActiveAndInactiveClientManagementUserCountCount = userCountsData.rows[0].activeUsers;
+        const InactiveClientManagementUserCountCount = userCountsData.rows[0].inactiveUsers;
 
         const latestSupportTicketDataQuery = `SELECT 
     cm.company_name,
@@ -947,9 +962,9 @@ const query2 = `
 
         // Return the counts in the final result
         return {
-            onlineClients: DataInLast24Hours.length,
-            offlineClients: NoDataInLast24Hours.length,
-            totalUsers: users.rows.length,
+            onlineClients: ActiveAndInactiveClientManagementUserCountCount,
+            offlineClients: InactiveClientManagementUserCountCount,
+            totalUsers: totalUserInClientManagementCount,
             ticketAndLicenseData: result.rows,
             latestSupportTicketData: latestSupportTicketData.rows,
             plansOverviewData: plansOverviewData.rows,
@@ -1633,8 +1648,24 @@ if (userIds.length > 0) {
         return { totalCount: totalCount.rows[0][''], data: data.rows };
     }
 
-    getSignupUsers = async (page: number, limit: number) => {
+    getSignupUsers = async (page: number, limit: number, full_name?: string, email?: string, password?: string) => {
         let query = `SELECT * FROM Users`;
+
+        const filters = [];
+        if (full_name) {
+            filters.push(`full_name LIKE '${full_name}'`);
+        }
+        if (email) {
+            filters.push(`email LIKE '${email}'`);
+        }
+        if (password) {
+            filters.push(`password LIKE '${password}'`);
+        }
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
+
         if (limit && page) {
             const { offset, limit: limitData } = calculatePagination(page, limit);
             query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
@@ -1706,10 +1737,38 @@ if (userIds.length > 0) {
         return data.rows;
     }
 
-    getFeedbackAndSuggestion = async (page: number, limit: number) => {
+    getFeedbackAndSuggestion = async (page: number, limit: number, username?: string, email?: string, subject?: string, type?: string, message?: string, createdAt?: string) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT * FROM FeedbackAndSuggestion`;
+
+        const filters = [];
+        if (username) {
+            filters.push(`Username LIKE '${username}'`);
+        }
+        if (email) {
+            filters.push(`Email LIKE '${email}'`);
+        }
+        if (subject) {
+            filters.push(`Subject LIKE '${subject}'`);
+        }
+        if (type) {
+            filters.push(`Type = '${type}'`);
+        }
+        if (message) {
+            filters.push(`Message LIKE '${message}'`);
+        }
+        if (createdAt) {
+            filters.push(this.getDateCondition(
+                createdAt,
+                "CreatedAt"
+            ))
+        }
+
         const totalQuery = `SELECT COUNT(*) FROM FeedbackAndSuggestion`;
+
+        if (filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+        }
 
         if (page && limit) {
             query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;

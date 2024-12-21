@@ -77,12 +77,12 @@ export class PlanService {
     }
 
     listing = async (isAdminSide: boolean) => {
-        let query = 'SELECT * FROM Plans';
+        let query = 'SELECT * FROM Plans WHERE deletedAt IS NULL';
         if (!isAdminSide) {
-            query += ` WHERE status = '${EPlanStatus.ACTIVE}'`;
+            query += ` AND status = '${EPlanStatus.ACTIVE}'`;
         }
 
-        console.log("query: ", query);
+        console.log("query:________ ", query);
         const plans = await executeQuery(query);
         return plans.rows;
     };
@@ -117,5 +117,10 @@ export class PlanService {
         };
         // const offer: any = await this.razorpay.offer.create(offerData);
         // return offer;
+    }
+
+    deletePlan = async (planId: string) => {
+        const query = `UPDATE Plans SET deletedAt = GETDATE() WHERE id = '${planId}'`;
+        return await executeQuery(query);
     }
 }

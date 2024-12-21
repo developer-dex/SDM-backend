@@ -1476,12 +1476,15 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { page, limit } = req.query as unknown as {
+        const { page, limit, full_name, email, password } = req.query as unknown as {
             page: number;
             limit: number;
+            full_name?: string;
+            email?: string;
+            password?: string;
         };
         try {
-            const signupUsers = await this.superAdminService.getSignupUsers(page, limit);
+            const signupUsers = await this.superAdminService.getSignupUsers(page, limit, full_name, email, password);
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Signup users fetched successfully", signupUsers));
         } catch (error) {
             console.log("superAdmin getSignupUsers ERROR", error);
@@ -1589,12 +1592,18 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
-        const { page, limit } = req.query as unknown as {
+        const { page, limit, Username, Email, Subject, Type, Message, CreatedAt } = req.query as unknown as {
             page: number;
             limit: number;
+            Username?: string;
+            Email?: string;
+            Subject?: string;
+            Type?: string;
+            Message?: string;
+            CreatedAt?: string;
         };
         try {
-            const feedbackAndSuggestion = await this.superAdminService.getFeedbackAndSuggestion(page, limit);
+            const feedbackAndSuggestion = await this.superAdminService.getFeedbackAndSuggestion(page, limit, Username, Email, Subject, Type, Message, CreatedAt);
             return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Feedback and suggestion fetched successfully", feedbackAndSuggestion));
         } catch (error) {
             console.log("superAdmin getFeedbackAndSuggestion ERROR", error);
