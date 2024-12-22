@@ -18,6 +18,7 @@ export class WebsiteFrontImageService {
         requestData: Record<string, any>,
         file: Express.Multer.File
     ) => {
+        console.log("file path", file.path);
         const query = `SELECT * FROM FrontImage WHERE category = '${requestData.category}'`;
         const isExistImagePath = await executeQuery(query);
 
@@ -40,12 +41,12 @@ export class WebsiteFrontImageService {
 
         if (frontImage.rows[0]) {
             // Construct the full URL using the base URL from config and the image path
-            const relativePath = formateFrontImagePath(
-                frontImage.rows[0].imagePath
-            );
+            // const relativePath = formateFrontImagePath(
+            //     frontImage.rows[0].imagePath
+            // );
 
             return {
-                image_url: `${getEnvVar("LOCAL_URL")}/assets${relativePath}`,
+                image_url: `${getEnvVar("LOCAL_URL")}/${frontImage.rows[0].imagePath}`,
             };
         }
         return null;
@@ -77,8 +78,8 @@ export class WebsiteFrontImageService {
         const query = `SELECT * FROM FrontImage`;
         const frontImages = await retrieveData(query);
         const frontImagesWithFullUrl = frontImages.rows.map((frontImage) => {
-            const relativePath = formateFrontImagePath(frontImage.imagePath);
-            const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+            // const relativePath = formateFrontImagePath(frontImage.imagePath);
+            const fullImagePath = `${getEnvVar("LOCAL_URL")}/${frontImage.imagePath}`;
 
             return {
                 ...frontImage,
@@ -106,6 +107,8 @@ export class WebsiteFrontImageService {
         // Prepare a single query to insert the data for each user
         const insertValues = userIds.map(id => `(${id}, '${file.path}')`).join(',');
         const insertQuery = `INSERT INTO ClientWebsiteBanners (user_id, imagePath) VALUES ${insertValues}`;
+
+        console.log("insertQuery", insertQuery);
         await executeQuery(insertQuery);
     };
 
@@ -124,7 +127,7 @@ export class WebsiteFrontImageService {
         const result = await executeQuery(query);
         const resultWithFullUrl = result.rows.map((row) => {
             const relativePath = formateFrontImagePath(row.imagePath);
-            const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+            const fullImagePath = `${getEnvVar("LOCAL_URL")}/${row.imagePath}`;
             return { ...row, imagePath: fullImagePath };
         });
         return resultWithFullUrl;
@@ -201,7 +204,7 @@ export class WebsiteFrontImageService {
                 const relativePath = formateFrontImagePath(
                     trainingFile.filePath
                 );
-                const fullImagePath = `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+                const fullImagePath = `${getEnvVar("LOCAL_URL")}/${trainingFile.filePath}`;
 
                 return {
                     ...trainingFile,

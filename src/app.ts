@@ -9,6 +9,12 @@ import { databaseTestConnection } from "./config/test";
 import WebsiteApi from "./routers/website";
 import cron from "node-cron";
 import { expiredLicenseCron, deleteExpiredNotification, expiredSubscription, autoScheduleEmails } from "./crons";
+import path from "path";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 
 /**
  * Make express app
@@ -20,13 +26,19 @@ app.set("view engine", "ejs");
  * Serve static files
  */
 // Serve static files from the UPLOAD_PATH directory
-app.use("/assets", express.static(UPLOAD_PATH));
-app.use("/assets", express.static(CLIENT_WEBSITE_BANNER_PATH));
-app.use("/assets", express.static(TRAINING_FILES_PATH));
-app.use("/assets", express.static(ADMIN_PROFILE_PATH));
-app.use("/assets", express.static(TESTIMONIAL_IMAGE_PATH));
-app.use("/assets", express.static(INTEGRATION_IMAGES_PATH));
-app.use("/assets", express.static(FEEDBACK_AND_SUGGESTION_IMAGE_PATH));
+// app.use("/assets", express.static(UPLOAD_PATH));
+// app.use("/assets", express.static(CLIENT_WEBSITE_BANNER_PATH));
+// app.use("/assets", express.static(TRAINING_FILES_PATH));
+// app.use("/assets", express.static(ADMIN_PROFILE_PATH));
+// app.use("/assets", express.static(TESTIMONIAL_IMAGE_PATH));
+// app.use("/assets", express.static(INTEGRATION_IMAGES_PATH));
+// app.use("/assets", express.static(FEEDBACK_AND_SUGGESTION_IMAGE_PATH));
+
+// app.use('/assets', express.static(path.join(__dirname, 'assets')));
+
+app.use('/assets', express.static(path.join(__dirname, '../assets')));
+
+console.log("path___", path.join(__dirname, '../@assets'))
 /**
  * Website Database Connection
  */

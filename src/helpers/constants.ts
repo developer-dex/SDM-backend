@@ -1,12 +1,12 @@
 import getEnvVar from "./util";
-export const UPLOAD_PATH = "src/assets/frontImages";
-export const CLIENT_WEBSITE_BANNER_PATH = "src/assets/clientWebsiteBanners";
-export const TRAINING_FILES_PATH = "src/assets/trainingFiles";
-export const TESTIMONIAL_IMAGE_PATH = "src/assets/testimonialImages";
-export const INTEGRATION_IMAGES_PATH = "src/assets/integrationImages";
+export const UPLOAD_PATH = "assets/frontImages";
+export const CLIENT_WEBSITE_BANNER_PATH = "assets/clientWebsiteBanners";
+export const TRAINING_FILES_PATH = "assets/trainingFiles";
+export const TESTIMONIAL_IMAGE_PATH = "assets/testimonialImages";
+export const INTEGRATION_IMAGES_PATH = "assets/integrationImages";
 export const FEEDBACK_AND_SUGGESTION_IMAGE_PATH =
-    "src/assets/feedbackAndSuggestionImages";
-export const ADMIN_PROFILE_PATH = "src/assets/adminProfiles";
+    "assets/feedbackAndSuggestionImages";
+export const ADMIN_PROFILE_PATH = "assets/adminProfiles";
 export const RESET_PASSWORD_FRONT_URL =
     getEnvVar("FRONTEND_URL") + "/reset-password";
 

@@ -8,6 +8,7 @@ import { executeQuery } from "../config/databaseConfig";
 import { Actions } from "./constants";
 import { createObjectCsvWriter } from "csv-writer";
 import satelize from "satelize";
+import moment from "moment";
 
 export default function getEnvVar(envVarName: string | number): string {
     const value = process.env[envVarName];
@@ -28,19 +29,15 @@ export const generateOtp = (digit: number) => {
 };
 
 export const createMulterMiddleware = (uploadPath: string) => {
-    if (!fs.existsSync(uploadPath)) {
-        console.log("INNN_____uploadPath:::", uploadPath);
-        fs.mkdirSync(uploadPath, { recursive: true });
-    }
-
-    console.log("OUT____uploadPath:::", uploadPath);
+    // ... existing code ...
 
     const storage = multer.diskStorage({
         destination: function (req, file, cb) {
             cb(null, uploadPath);
         },
         filename: function (req, file, cb) {
-            cb(null, Date.now() + path.extname(file.originalname));
+            const timestamp = moment().format("YYYYMMDD_HHmmss"); // Get current timestamp
+            cb(null, `${timestamp}_${file.originalname}`); // Append timestamp to original file name
         },
     });
 
@@ -52,6 +49,7 @@ export const createMulterMiddleware = (uploadPath: string) => {
 export const removeFile = (filePath: string) => {
     console.log("remove filePath: ", filePath);
     if (fs.existsSync(filePath)) {
+        console.log("remove filePath: ", filePath);
         fs.unlinkSync(filePath);
     }
 };
@@ -154,8 +152,6 @@ export const generateLicenseKey = (
     const issueDateObj = new Date(issueDate);
     const dayOfPurchase = String(issueDateObj.getDate()).padStart(2, "0"); // Day of purchase
 
-
-
     const monthYearOfPurchase =
         String(issueDateObj.getMonth() + 1).padStart(2, "0") +
         String(issueDateObj.getFullYear()).slice(-2); // MMYY
@@ -165,21 +161,19 @@ export const generateLicenseKey = (
     const dayOfExpiry = String(expirationDateObj.getDate()).padStart(2, "0"); // Day of expiry
 
     // Split dayOfExpiry into individual digits
-    const [firstDigit, secondDigit] = dayOfExpiry.split('');
+    const [firstDigit, secondDigit] = dayOfExpiry.split("");
 
-    console.log("dayOfExpirydayOfExpiry____", dayOfExpiry)
+    console.log("dayOfExpirydayOfExpiry____", dayOfExpiry);
     const expiryDateMMYY =
         String(expirationDateObj.getMonth() + 1).padStart(2, "0") +
         String(expirationDateObj.getFullYear()).slice(-2); // MMYY
 
-        console.log("expiryDateMMYY", expiryDateMMYY);
-         // Formatting userCount to 5 digits
+    console.log("expiryDateMMYY", expiryDateMMYY);
+    // Formatting userCount to 5 digits
     const formattedUserCount = String(userCount || 0).padStart(5, "0"); // Format userCount to 5 digits
 
-
     // Constructing the license key
-    const updatedLicenseKey =
-     `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${firstDigit}-${secondDigit}${expiryDateMMYY}-${formattedUserCount}`;
+    const updatedLicenseKey = `${planCode}${firstTwoLetters}-${thirdToSeventhLetters}-${eighthToTenthLetters}${dayOfPurchase}-${monthYearOfPurchase}${firstDigit}-${secondDigit}${expiryDateMMYY}-${formattedUserCount}`;
 
     return updatedLicenseKey;
 };
@@ -187,11 +181,11 @@ export const generateLicenseKey = (
 export const createCsvFile = async (data: any[], header: any[]) => {
     // Define the CSV writer
 
-    // insed of fileName I want current timestamp   
+    // insed of fileName I want current timestamp
     const fileName = `${Date.now()}.csv`;
     const path = `src/public/${fileName}`;
     const csvWriter = createObjectCsvWriter({
-        path: path, 
+        path: path,
         header: header,
     });
 
@@ -202,11 +196,10 @@ export const createCsvFile = async (data: any[], header: any[]) => {
     // setTimeout(() => {
     //     fs.unlinkSync('src/public/support_ticket_titles.csv');
     // }, 5000);
-}
+};
 
-
-export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
+export const sleep = (ms: number) =>
+    new Promise((resolve) => setTimeout(resolve, ms));
 
 export const currentLocation = (ipAddress: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -221,12 +214,13 @@ export const currentLocation = (ipAddress: string): Promise<string> => {
     });
 };
 
-
 export const getIpAddressFromRequest = (req: any) => {
-    let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    ipAddress = req.ip.includes('::ffff:') ? req.ip.split('::ffff:')[1] : req.ip;
+    let ipAddress = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    ipAddress = req.ip.includes("::ffff:")
+        ? req.ip.split("::ffff:")[1]
+        : req.ip;
     return ipAddress;
-}
+};
 
 export const getThePageNameFromCategory = (category: string) => {
     switch (category) {
@@ -247,4 +241,12 @@ export const getThePageNameFromCategory = (category: string) => {
         case "features":
             return "Features";
     }
-}
+};
+
+export const finalPathToSave = (file: string) => {
+    // Split the string into an array
+    const parts = file.split("/");
+
+    // Remove the first element and join the rest back into a string
+    return parts.slice(1).join("/");
+};

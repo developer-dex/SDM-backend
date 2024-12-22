@@ -12,6 +12,7 @@ import { ResponseService } from "../../helpers/response.service";
 import getEnvVar, {
     calculatePagination,
     createCsvFile,
+    finalPathToSave,
     formateFrontImagePath,
     generateLicenseKey,
 } from "../../helpers/util";
@@ -1598,13 +1599,13 @@ if (userIds.length > 0) {
     }
 
     updateAdminProfile = async (adminId: number,file: Express.Multer.File) => {
-        console.log("file:::", file.path);
-        console.log("adminId:::", adminId);
-        const query = `UPDATE Admin SET profilePhoto = '${file.path}' WHERE id = ${adminId}`;
+        const filePath = file.path
+        console.log("filePathfilePathv_____", filePath)
+        const query = `UPDATE Admin SET profilePhoto = '${filePath}' WHERE id = ${adminId}`;
         const data = await executeQuery(query); 
 
-        const profilePhoto = formateFrontImagePath(file.path);
-        return { profilePhoto: `${getEnvVar("LOCAL_URL")}/assets${profilePhoto}` };
+        // const profilePhoto = formateFrontImagePath(file.path);
+        return { profilePhoto: `${getEnvVar("LOCAL_URL")}/${file.path}` };
     }
 
     getContactUs = async (page: number, limit: number, name?: string, phoneNo?: string, email?: string, subject?: string, message?: string, createdAt?: string) => {
@@ -1689,7 +1690,7 @@ if (userIds.length > 0) {
         const data = await executeQuery(query);
         const testimonialData = data.rows.map((testimonial: any) => {
             const relativePath = formateFrontImagePath(testimonial.Image);
-            testimonial.Image = `${baseUrl}/assets${relativePath}`;
+            testimonial.Image = `${baseUrl}/${testimonial.Image}`;
             return testimonial;
         });
 
@@ -1725,7 +1726,7 @@ if (userIds.length > 0) {
         const data = await executeQuery(query);
         const integrationImages = data.rows.map((image: any) => {
             const relativePath = formateFrontImagePath(image.Image);
-            image.Image = `${baseUrl}/assets${relativePath}`;
+            image.Image = `${baseUrl}/${image.Image}`;
             return image;
         });
         return integrationImages;
@@ -1778,7 +1779,7 @@ if (userIds.length > 0) {
         const changeImagesPath = (imagePath: string) => {
             if(!imagePath) return null;
             const relativePath = formateFrontImagePath(imagePath);
-            return `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+            return `${getEnvVar("LOCAL_URL")}/${imagePath}`;
         }
 
         const feedbackAndSuggestion = result.rows.map((item: any) => {

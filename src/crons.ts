@@ -118,9 +118,9 @@ const generateCSVFile = async (
 ): Promise<{ fileName: string; filePath: string }> => {
     const csv = data.map((row) => Object.values(row).join(",")).join("\n");
     const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
-    const filePath = `src/assets/emailCsv/${fileName}`; // Define your path here
+    const filePath = `assets/emailCsv/${fileName}`; // Define your path here
      // Ensure the directory exists
-     await fs.promises.mkdir('src/assets/emailCsv', { recursive: true }); // Create directory if it doesn't exist
+     await fs.promises.mkdir('assets/emailCsv', { recursive: true }); // Create directory if it doesn't exist
     
     await fs.promises.writeFile(filePath, csv);
     return {

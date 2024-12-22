@@ -8,5 +8,6 @@
         "outDir": "build",
         "types": ["node"],
         "lib": ["es2020"] // Ensure this includes es2020 or later
-    }
+    },
+     "include": ["src/**/*"],
 }

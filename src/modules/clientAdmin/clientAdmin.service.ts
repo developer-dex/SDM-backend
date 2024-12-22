@@ -753,11 +753,11 @@ ORDER BY
             SELECT 
                 SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
                 CASE 
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 2), ' TB')
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1073741824.0, 2), ' GB')
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1048576 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1048576.0, 2), ' MB')
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN CONCAT(ROUND(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 2), ' MB')
-                    ELSE CONCAT(SUM(CAST(DataInKB AS NUMERIC)), ' KB')
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 'N2') + ' TB'
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1073741824.0, 'N2') + ' GB'
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1048576 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1048576.0, 'N2') + ' MB'
+                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 'N2') + ' MB'
+                    ELSE FORMAT(SUM(CAST(DataInKB AS NUMERIC)), 'N2') + ' KB'
                 END AS TotalDataInReadableFormat
             FROM ${DBName}.JobFireEntries`;
         const totalDataBackupResult = await executeQuery(totalDataBackupQuery);
@@ -769,10 +769,10 @@ ORDER BY
         const banner = bannerResult.rows;
         // add path to banner
         let fullImagePath = null;
-        if (banner.length > 0) {
-            const relativePath = formateFrontImagePath(banner[0]?.imagePath);
+        if (banner && banner.length > 0 && banner[0]) {
+            const relativePath = formateFrontImagePath(banner[0].imagePath);
             fullImagePath = relativePath
-                ? `${getEnvVar("LOCAL_URL")}/assets${relativePath}`
+                ? `${getEnvVar("LOCAL_URL")}/${banner[0].imagePath}`
                 : null;
         }
 
@@ -1050,9 +1050,9 @@ ORDER BY
             ...data.map((row) => Object.values(row).join(",")),
         ].join("\n"); // Combine headers with data
         const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
-        const filePath = `src/assets/emailCsv/${fileName}`; // Define your path here
+        const filePath = `assets/emailCsv/${fileName}`; // Define your path here
         // Ensure the directory exists
-        await fs.promises.mkdir("src/assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
+        await fs.promises.mkdir("assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
 
         await fs.promises.writeFile(filePath, csv);
         return {
@@ -1094,7 +1094,7 @@ ORDER BY
         const changeImagesPath = (imagePath: string) => {
             if (!imagePath) return null;
             const relativePath = formateFrontImagePath(imagePath);
-            return `${getEnvVar("LOCAL_URL")}/assets${relativePath}`;
+            return `${getEnvVar("LOCAL_URL")}/${imagePath}`;
         };
 
         const feedbackAndSuggestion = result.rows.map((item: any) => {
