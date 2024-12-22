@@ -1,19 +1,25 @@
 import nodeMailer from "nodemailer";
 import getEnvVar from "./util";
 import fs from "fs";
+import { executeQuery } from "../config/databaseConfig";
 
 export default async function sendCsvToMail(email: any, subject: any, text: any, path?: string, fileName?: string) {
+
+    const adminEmailConfigQuery = `SELECT * FROM AdminEmailConfig WHERE id = 1`;
+    const adminEmailConfig = await executeQuery(adminEmailConfigQuery);
+
+    console.log(adminEmailConfig.rows[0]);
     const transporter = nodeMailer.createTransport({
         service: "gmail",
         auth: {
-            user: getEnvVar("EMAIL"),
-            pass: getEnvVar("PASSWORD"),
+            user: adminEmailConfig.rows[0].SenderEmail,
+            pass: adminEmailConfig.rows[0].Password,
         },
     });
 
 
     const mailOptions = {
-        from: getEnvVar("EMAIL"),
+        from: adminEmailConfig.rows[0].SenderEmail,
         to: email,
         subject: subject,
         text: text,

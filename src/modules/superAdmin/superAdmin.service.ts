@@ -477,7 +477,7 @@ export class SuperAdminService {
             filters.push(`l.license_type LIKE '%${license_type}%'`);
         }
         if (status) {
-            filters.push(`l.status LIKE '%${status}%'`);
+            filters.push(`l.status = '${status}'`);
         }
         if (company_id) {
             filters.push(`l.company_id LIKE '%${company_id}%'`);
@@ -514,7 +514,7 @@ export class SuperAdminService {
         const totalCountQuery = `SELECT COUNT(*) as count FROM Licenses`;
         const totalCountData = await executeQuery(totalCountQuery);
 
-        if (isExportToEmail) {
+        if (recipientEmail) {
             const header = [
                 { id: "ID", title: "ID" },
                 { id: "issue_date", title: "Issue Date" },
