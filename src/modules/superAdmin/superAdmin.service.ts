@@ -385,7 +385,8 @@ export class SuperAdminService {
         const query = `INSERT INTO ClientManagement (company_name, company_address, payment_method, gst, pan, industry_type, company_id, status, plan_type, cost, user_id, plan_id) VALUES ('${company_name}', '${company_address}', '${payment_method}', '${gst_number}', '${pan_number}', '${industry_type}', '${company_id}', '${status}', '${plan_type}', ${cost}, ${user_id}, ${plan_id})`;
 
         // Update the database name as company_id in user table
-        const updateUserQuery = `UPDATE Users SET databaseName = '${company_id}' WHERE id = ${user_id}`;
+        const companyId = company_id.split("-").join("");
+        const updateUserQuery = `UPDATE Users SET databaseName = '${companyId}' WHERE id = ${user_id}`;
         await executeQuery(updateUserQuery);
         return await executeQuery(query);
     }; 
@@ -418,7 +419,9 @@ export class SuperAdminService {
         const user_id = client.rows[0].user_id;
 
         // Update the database name as company_id in user table
-        const updateUserQuery = `UPDATE Users SET databaseName = '${company_id}' WHERE id = ${user_id}`;
+        const companyId = company_id.split("-").join("");
+        console.log("companyId", company_id.split("-").join(""));
+        const updateUserQuery = `UPDATE Users SET databaseName = '${companyId}' WHERE id = ${user_id}`;
         await executeQuery(updateUserQuery);
         return await executeQuery(query);
     };

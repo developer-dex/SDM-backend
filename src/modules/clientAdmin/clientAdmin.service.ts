@@ -25,6 +25,13 @@ export class ClientAdminService {
 
         console.log("findUserWithTokenResult", findUserWithTokenResult);
 
+        if(findUserWithTokenResult.rows[0].databaseName) {
+            const isDatabaseisExist = await this.isDatabaseisExist(findUserWithTokenResult.rows[0].databaseName);
+            console.log("isDatabaseisExist", isDatabaseisExist);
+            if(!isDatabaseisExist) {
+                return false;
+            }
+        }
         if (
             !findUserWithTokenResult ||
             !findUserWithTokenResult.rows ||
@@ -60,6 +67,15 @@ export class ClientAdminService {
             permissions: clientAdminPermissions,
             softwareStatus: softwareStatus,
         };
+    };
+
+    isDatabaseisExist = async (DBName: string) => {
+        const query = `IF EXISTS (SELECT * FROM sys.databases WHERE name = '${DBName}')
+    SELECT 1 AS DatabaseExists
+ELSE
+    SELECT 0 AS DatabaseExists`;
+        const result = await executeQuery(query);
+        return result.rows[0].DatabaseExists;
     };
 
     getClientManagement = async (
