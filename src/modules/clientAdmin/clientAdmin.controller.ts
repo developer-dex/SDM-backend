@@ -1025,6 +1025,21 @@ export class ClientAdminController {
         }
     };
 
+    sendEmail = async (req: Request & { token_payload?: any }, res: Response) => {
+        const tokenPayload = req.token_payload;
+        const { id } = req.body
+        console.log("tokenPayload", tokenPayload);
+        try {
+            await this.clientAdminService.sendEmail(Number(id), tokenPayload?.data.id, tokenPayload?.data.databaseName);
+        return res
+            .status(200)
+            .send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Email sent successfully"));
+        } catch (error) {
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+        
+    }
+
     createFeedbackAndSuggestion = async (
         req: Request & { token_payload?: any },
         res: Response

@@ -1,3 +1,4 @@
+import moment from "moment";
 import { executeQuery } from "./config/databaseConfig";
 import { sendMultipleCsvToMail } from "./helpers/sendMail";
 import fs from 'fs';
@@ -117,7 +118,7 @@ const generateCSVFile = async (
     data: any[]
 ): Promise<{ fileName: string; filePath: string }> => {
     const csv = data.map((row) => Object.values(row).join(",")).join("\n");
-    const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
+    const fileName = `${reportName}-${moment().format("YYYY-MM-DD HH:mm:ss")}.csv`;
     const filePath = `assets/emailCsv/${fileName}`; // Define your path here
      // Ensure the directory exists
      await fs.promises.mkdir('assets/emailCsv', { recursive: true }); // Create directory if it doesn't exist

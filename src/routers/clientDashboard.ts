@@ -151,6 +151,11 @@ ClientDashboardApi.post(
     validator.body(createEmailScheduleRequest),
     clientAdminController.createEmailSchedule
 );
+
+ClientDashboardApi.post(
+    "/email-schedule/send-email",
+    clientAdminController.sendEmail
+);
 ClientDashboardApi.get(
     "/email-schedule",
     validator.query(paginationRequest),

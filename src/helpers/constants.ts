@@ -1,3 +1,4 @@
+import { create } from "domain";
 import getEnvVar from "./util";
 export const UPLOAD_PATH = "assets/frontImages";
 export const CLIENT_WEBSITE_BANNER_PATH = "assets/clientWebsiteBanners";
@@ -26,6 +27,16 @@ export const Modules = {
     BANNER_MANAGEMENT: "Banner Management",
     ANALYTICS: "Analytics",
     LICENSE_MANAGEMENT: "License Management",
+    CLIENT_MANAGEMENT: "Client Management",
+    WEBSITE_BANNER: "Website banner",
+    TRAINING_FILES: "Training files",
+    TESTIMONIAL: "Testimonial",
+    INTEGRATION: "Integration",
+    FEEDBACK_AND_SUGGESTION: "Feedback and suggestion",
+    CONTACT_US: "Contact us",
+    CLIENT_BANNER: "Client banner",
+    TICKETS_MANAGEMENT: "Tickets Management",
+    FAQ_MANAGEMENT: "FAQ Management",
 };
 
 export const Actions = {
@@ -64,5 +75,51 @@ export const Actions = {
         CREATE: "Create License",
         UPDATE: "Update License",
         DELETE: "Delete License",
+    },
+    CLIENT_MANAGEMENT: {
+        CREATE: "Create Client",
+        UPDATE: "Update Client",
+        DELETE: "Delete Client",
+    },
+    NOTIFICATION: {
+        CREATE: "Create Notification",
+        SEND: "Send Notification",
+        DELETE: "Delete Notification",
+    },
+    WEBSITE_BANNER: {
+        UPDATE: "Update Website Banner",
+    },
+    CLIENT_BANNER: {
+        ADD: "Add Client Banner",
+        UPDATE: "Update Client Banner",
+        DELETE: "Delete Client Banner",
+    },
+    TRAINING_FILES: {
+        ADD: "Add Training File",
+        UPDATE: "Update Training File",
+        DELETE: "Delete Training File",
+    },
+    TESTIMONIAL: {
+        ADD: "Add Testimonial",
+        UPDATE: "Update Testimonial",
+        DELETE: "Delete Testimonial",
+    },
+    TICKETS_MANAGEMENT: {
+        CREATE: "Create Ticket",
+        UPDATE: "Update Ticket",
+        DELETE: "Delete Ticket",
+    },
+    FAQ_MANAGEMENT: {
+        CREATE: "Create FAQ",
+        UPDATE: "Update FAQ",
+        DELETE: "Delete FAQ",
+    },
+    FEEDBACK_AND_SUGGESTION: {
+        CREATE: "Create Feedback and Suggestion",
+        UPDATE: "Update Feedback and Suggestion",
+        DELETE: "Delete Feedback and Suggestion",
+    },
+    INTEGRATION: {
+        ADD: "Add Integration Images",
     },
 };

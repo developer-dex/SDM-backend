@@ -6,6 +6,7 @@ import { retrieveData, executeQuery } from "../../config/databaseConfig";
 import { v4 as uuidv4 } from 'uuid';
 import { Actions, Modules } from "../../helpers/constants";
 import { createAuditTrail } from "../../common/function";
+import moment from "moment";
 
 
 export class PlanService {
@@ -46,7 +47,7 @@ export class PlanService {
             const data = {
                 id: token_payload?.id,
                 username: token_payload?.username,
-                loginTime: new Date().toISOString(),
+                loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
                 role: token_payload?.role,
                 module: Modules.PRICING_PLAN,
                 action: Actions.PRICING_PLAN.CREATE,
@@ -67,7 +68,7 @@ export class PlanService {
         const data = {
             id: token_payload?.id,
             username: token_payload?.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload?.role,
             module: Modules.PRICING_PLAN,
             action: Actions.PRICING_PLAN.UPDATE,

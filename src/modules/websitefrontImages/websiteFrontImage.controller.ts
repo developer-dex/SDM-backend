@@ -13,7 +13,7 @@ export class WebsiteFrontImageController {
     }
 
     updateFrontImage = async (
-        req: Request,
+        req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
@@ -22,7 +22,8 @@ export class WebsiteFrontImageController {
         try {
             await this.websiteFrontImageService.updateWebsiteFrontImage(
                 requestData,
-                frontImage
+                frontImage,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -114,7 +115,7 @@ export class WebsiteFrontImageController {
 
     // Client Website Banner
     uploadClientWebsiteBanner = async (
-        req: Request,
+        req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
@@ -135,7 +136,8 @@ export class WebsiteFrontImageController {
             // }
             await this.websiteFrontImageService.uploadClientWebsiteBanner(
                 requestData,
-                bannerImage
+                bannerImage,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -198,14 +200,15 @@ export class WebsiteFrontImageController {
     };
 
     deleteClientWebsiteBanner = async (
-        req: Request,
+        req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
         const bannerId = parseInt(req.params.bannerId);
         try {
             await this.websiteFrontImageService.deleteClientWebsiteBanner(
-                bannerId
+                bannerId,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -230,7 +233,7 @@ export class WebsiteFrontImageController {
     };
 
     updateClientWebsiteBanner = async (
-        req: Request,
+        req: Request & { token_payload?: any },
         res: Response,
         next: NextFunction
     ) => {
@@ -239,7 +242,8 @@ export class WebsiteFrontImageController {
         try {
             await this.websiteFrontImageService.updateClientWebsiteBanner(
                 banner_id,
-                bannerImage
+                bannerImage,
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -277,7 +281,8 @@ export class WebsiteFrontImageController {
                 trainingFile,
                 tokenPayload?.data.id,
                 issue_date,
-                file_name
+                file_name,
+                tokenPayload?.data
             );
             return res
                 .status(200)
@@ -331,10 +336,10 @@ export class WebsiteFrontImageController {
         }
     }
 
-    deleteTrainingFiles = async (req: Request, res: Response, next: NextFunction) => {
+    deleteTrainingFiles = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
         try {
             const fileId = parseInt(req.params.fileId);
-            await this.websiteFrontImageService.deleteTrainingFiles(fileId);
+            await this.websiteFrontImageService.deleteTrainingFiles(fileId, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -349,12 +354,12 @@ export class WebsiteFrontImageController {
         }
     }
 
-    updateTrainingFiles = async (req: Request, res: Response, next: NextFunction) => {
+    updateTrainingFiles = async (req: Request & { token_payload?: any }, res: Response, next: NextFunction) => {
         const fileId = parseInt(req.params.fileId);
         const file = req.file;
         const { issue_date, filename } = req.body;
         try {
-            await this.websiteFrontImageService.updateTrainingFiles(fileId, file, issue_date, filename);
+            await this.websiteFrontImageService.updateTrainingFiles(fileId, file, issue_date, filename, req.token_payload.data);
             return res
                 .status(200)
                 .send(

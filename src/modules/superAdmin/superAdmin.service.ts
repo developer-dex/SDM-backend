@@ -54,13 +54,14 @@ export class SuperAdminService {
             result.rows[0].role
         );
 
-        let profilePhoto = result.rows[0].profilePhoto ? formateFrontImagePath(result.rows[0].profilePhoto) : null;
-        
+        let profilePhoto = result.rows[0].profilePhoto
+            ? formateFrontImagePath(result.rows[0].profilePhoto)
+            : null;
 
         const data = {
             id: result.rows[0].id,
             username: result.rows[0].full_name,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: result.rows[0].role,
             module: Modules.ADMIN_DASHBOARD,
             action: Actions.ADMIN_DASHBOARD.LOGIN,
@@ -167,7 +168,7 @@ export class SuperAdminService {
             const data = {
                 id: token_payload?.id,
                 username: token_payload?.username,
-                loginTime: new Date().toISOString(),
+                loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
                 role: token_payload?.role,
                 module: Modules.USER_MANAGEMENT,
                 action: Actions.USER_MANAGEMENT.EXPORT_TO_EMAIL,
@@ -187,7 +188,7 @@ export class SuperAdminService {
         const data = {
             id: token_payload.id,
             username: token_payload.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.DELETE,
@@ -213,7 +214,7 @@ export class SuperAdminService {
         const data = {
             id: token_payload.id,
             username: token_payload.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.UPDATE,
@@ -229,7 +230,7 @@ export class SuperAdminService {
         const data = {
             id: token_payload.id,
             username: token_payload.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload.role,
             module: Modules.USER_MANAGEMENT,
             action: Actions.USER_MANAGEMENT.CREATE,
@@ -282,8 +283,8 @@ export class SuperAdminService {
             searchFilters.push(`cm.company_id LIKE '%${searchParameter}%'`);
             searchFilters.push(`cm.cost LIKE '%${searchParameter}%'`);
             searchFilters.push(`cm.payment_method LIKE '%${searchParameter}%'`);
-            searchFilters.push(`cm.status LIKE '%${searchParameter}%'`)
-            searchFilters.push(`p.plan_name LIKE '%${searchParameter}%'`)
+            searchFilters.push(`cm.status LIKE '%${searchParameter}%'`);
+            searchFilters.push(`p.plan_name LIKE '%${searchParameter}%'`);
         }
         if (company_name) {
             filters.push(`cm.company_name LIKE '%${company_name}%'`);
@@ -367,7 +368,10 @@ export class SuperAdminService {
         };
     };
 
-    createClient = async (requestData: ICreateClientRequest) => {
+    createClient = async (
+        requestData: ICreateClientRequest,
+        token_payload: any
+    ) => {
         const {
             company_name,
             company_address,
@@ -387,16 +391,38 @@ export class SuperAdminService {
         // Update the database name as company_id in user table
         const companyId = company_id.split("-").join("");
         const updateUserQuery = `UPDATE Users SET databaseName = '${companyId}' WHERE id = ${user_id}`;
-        await executeQuery(updateUserQuery);
-        return await executeQuery(query);
-    }; 
 
-    deleteClient = async (companyId: string) => {
-        const query = `DELETE FROM ClientManagement WHERE company_id = '${companyId}'`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.CLIENT_MANAGEMENT,
+            action: Actions.CLIENT_MANAGEMENT.CREATE,
+        };
+        await createAuditTrail(data);
+        await executeQuery(updateUserQuery);
         return await executeQuery(query);
     };
 
-    updateClient = async (requestData: ICreateClientRequest) => {
+    deleteClient = async (companyId: string, token_payload: any) => {
+        const query = `DELETE FROM ClientManagement WHERE company_id = '${companyId}'`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.CLIENT_MANAGEMENT,
+            action: Actions.CLIENT_MANAGEMENT.DELETE,
+        };
+        await createAuditTrail(data);
+        return await executeQuery(query);
+    };
+
+    updateClient = async (
+        requestData: ICreateClientRequest,
+        token_payload: any
+    ) => {
         const {
             company_name,
             company_address,
@@ -423,6 +449,15 @@ export class SuperAdminService {
         console.log("companyId", company_id.split("-").join(""));
         const updateUserQuery = `UPDATE Users SET databaseName = '${companyId}' WHERE id = ${user_id}`;
         await executeQuery(updateUserQuery);
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.CLIENT_MANAGEMENT,
+            action: Actions.CLIENT_MANAGEMENT.UPDATE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
     };
 
@@ -542,7 +577,7 @@ export class SuperAdminService {
             const auditData = {
                 id: token_payload?.id,
                 username: token_payload?.username,
-                loginTime: new Date().toISOString(),
+                loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
                 role: token_payload?.role,
                 module: Modules.LICENSE_MANAGEMENT,
                 action: Actions.LICENSE_MANAGEMENT.EXPORT_TO_EMAIL,
@@ -555,7 +590,10 @@ export class SuperAdminService {
         };
     };
 
-    createLicense = async (requestData: ICreateLicenseRequest, token_payload: any) => {
+    createLicense = async (
+        requestData: ICreateLicenseRequest,
+        token_payload: any
+    ) => {
         const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name, u.id FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
@@ -573,15 +611,15 @@ export class SuperAdminService {
         }
         const { issue_date, expiry_date, status, count } = requestData;
 
-        console.log("user.rows[0].plan_type", user.rows[0].plan_type)
+        console.log("user.rows[0].plan_type", user.rows[0].plan_type);
 
-      if(!user.rows[0].plan_type){
-        return this.responseService.responseWithoutData(
-            false,
-            StatusCodes.BAD_REQUEST,
-            "User not subscribed to any plan"
-        );
-      }
+        if (!user.rows[0].plan_type) {
+            return this.responseService.responseWithoutData(
+                false,
+                StatusCodes.BAD_REQUEST,
+                "User not subscribed to any plan"
+            );
+        }
 
         // Ensure that the required fields are defined
         if (!user.rows[0].id || !issue_date || !expiry_date) {
@@ -598,12 +636,12 @@ export class SuperAdminService {
 
         console.log("license_key:::", license_key);
         const query = `INSERT INTO Licenses (user_id, issue_date, expiration_date, license_key, license_type, status, company_id, company_name, company_pan, count) VALUES ('${user.rows[0].id}', '${issue_date}', '${expiry_date}', '${license_key}', '${user.rows[0].plan_type}', '${status}', '${user.rows[0].company_id}', '${user.rows[0].company_name}', '${user.rows[0].pan}', ${count})`;
-        
+
         await executeQuery(query);
         const data = {
             id: token_payload?.id,
             username: token_payload?.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload?.role,
             module: Modules.LICENSE_MANAGEMENT,
             action: Actions.LICENSE_MANAGEMENT.CREATE,
@@ -616,7 +654,7 @@ export class SuperAdminService {
         const data = {
             id: token_payload?.id,
             username: token_payload?.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload?.role,
             module: Modules.LICENSE_MANAGEMENT,
             action: Actions.LICENSE_MANAGEMENT.DELETE,
@@ -625,14 +663,17 @@ export class SuperAdminService {
         return await executeQuery(query);
     };
 
-    updateLicense = async (requestData: ICreateLicenseRequest, token_payload: any) => {
+    updateLicense = async (
+        requestData: ICreateLicenseRequest,
+        token_payload: any
+    ) => {
         const findUserQuery = `SELECT cm.company_id, cm.company_name, cm.pan, cm.plan_type, p.plan_name FROM Users u 
         LEFT JOIN ClientManagement cm ON cm.user_id = u.id 
         LEFT JOIN Subscription s ON s.userId = u.id
         LEFT JOIN Plans p ON p.id = s.planId
         WHERE u.id = '${requestData.user_id}'`;
 
-        console.log("findUserQuery", findUserQuery)
+        console.log("findUserQuery", findUserQuery);
         const user = await executeQuery(findUserQuery);
         if (user.rows.length === 0) {
             return this.responseService.responseWithoutData(
@@ -641,8 +682,9 @@ export class SuperAdminService {
                 "User not found"
             );
         }
-        console.log("user[0]user[0]user[0]", user.rows[0].plan_type)
-        const { license_id, issue_date, expiry_date, status, count } = requestData;
+        console.log("user[0]user[0]user[0]", user.rows[0].plan_type);
+        const { license_id, issue_date, expiry_date, status, count } =
+            requestData;
         const license_key = generateLicenseKey(
             user.rows[0].plan_type,
             user.rows[0].pan,
@@ -655,7 +697,7 @@ export class SuperAdminService {
         const data = {
             id: token_payload?.id,
             username: token_payload?.username,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: token_payload?.role,
             module: Modules.LICENSE_MANAGEMENT,
             action: Actions.LICENSE_MANAGEMENT.UPDATE,
@@ -693,7 +735,7 @@ export class SuperAdminService {
         const query = `SELECT * FROM ClientManagement WHERE user_id = '${userId}'`;
         const data = await executeQuery(query);
         return data.rows.length > 0;
-    }
+    };
 
     // Audit Logs
 
@@ -706,7 +748,7 @@ export class SuperAdminService {
         console.log("user_id:::", id, username, loginTime, role);
         let logoutQueryAdd = "";
         if (requestData.action === "logout") {
-            const currentTime = new Date().toISOString();
+            const currentTime = moment().format("YYYY-MM-DD HH:mm:ss");
             logoutQueryAdd = `, logout_time = '${currentTime}'`;
         }
         const query = `INSERT INTO AuditTrail (module, action, user_id, username, login_time, role ${logoutQueryAdd}) VALUES ('${requestData.module}', '${requestData.action}', '${id}', '${username}', '${loginTime}', '${role}')`;
@@ -802,7 +844,7 @@ export class SuperAdminService {
             page
             // && (isExportToEmail && !isExportToEmail)
         ) {
-            query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+            query += ` ORDER BY id desc OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
         console.log("query:::", query);
@@ -834,7 +876,7 @@ export class SuperAdminService {
             const auditData = {
                 id: token_payload?.id,
                 username: token_payload?.username,
-                loginTime: new Date().toISOString(),
+                loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
                 role: token_payload?.role,
                 module: Modules.AUDIT_LOGS,
                 action: Actions.AUDIT_TRAIL.EXPORT_TO_EMAIL,
@@ -855,10 +897,9 @@ export class SuperAdminService {
         // const NoDataInLast24Hours = [];
         // const DataInLast24Hours = [];
 
-
         // for (let i = 0; i < users.rows.length; i++) {
         //     const databaseName = users.rows[i].databaseName;
-        //     const query = `SELECT 
+        //     const query = `SELECT
         //         '${databaseName}' AS SchemaName,
         //         COUNT(*) AS RecordCount
         //     FROM ${databaseName}.dbo.PingPathLogs
@@ -881,9 +922,12 @@ export class SuperAdminService {
             FROM ClientManagement
         `;
         const userCountsData = await executeQuery(userCountsQuery);
-        const totalUserInClientManagementCount = userCountsData.rows[0].totalUsers;
-        const ActiveAndInactiveClientManagementUserCountCount = userCountsData.rows[0].activeUsers;
-        const InactiveClientManagementUserCountCount = userCountsData.rows[0].inactiveUsers;
+        const totalUserInClientManagementCount =
+            userCountsData.rows[0].totalUsers;
+        const ActiveAndInactiveClientManagementUserCountCount =
+            userCountsData.rows[0].activeUsers;
+        const InactiveClientManagementUserCountCount =
+            userCountsData.rows[0].inactiveUsers;
 
         const latestSupportTicketDataQuery = `SELECT 
     cm.company_name,
@@ -909,17 +953,17 @@ GROUP BY
 ORDER BY 
     subscription_count DESC`;
 
-//     const licenseOverviewQuery = `SELECT 
-//     COUNT(*) AS total_licenses,
-//     COUNT(CASE WHEN status = 'Active' THEN 1 END) AS running_licenses,
-//     COUNT(CASE WHEN status = 'Inactive' THEN 1 END) AS expired_licenses,
-//     COUNT(CASE WHEN expiration_date >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) 
-//                 AND expiration_date < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0) 
-//                 THEN 1 END) AS licenses_expiring_this_month
-// FROM 
-//     Licenses`
+        //     const licenseOverviewQuery = `SELECT
+        //     COUNT(*) AS total_licenses,
+        //     COUNT(CASE WHEN status = 'Active' THEN 1 END) AS running_licenses,
+        //     COUNT(CASE WHEN status = 'Inactive' THEN 1 END) AS expired_licenses,
+        //     COUNT(CASE WHEN expiration_date >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
+        //                 AND expiration_date < DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()) + 1, 0)
+        //                 THEN 1 END) AS licenses_expiring_this_month
+        // FROM
+        //     Licenses`
 
-const query2 = `
+        const query2 = `
             WITH 
             SupportTicketCounts AS (
                 SELECT 
@@ -949,7 +993,7 @@ const query2 = `
                 (SELECT expired_licenses FROM LicenseCounts) AS expiredLicenses,
                 (SELECT licenses_expiring_this_month FROM LicenseCounts) AS licensesExpiringThisMonth;
         `;
-        
+
         // const result = await executeQuery(query2);
 
         // const [latestSupportTicketData, plansOverviewData, result] = await Promise.all([
@@ -958,11 +1002,11 @@ const query2 = `
         //     executeQuery(query2)
         // ]);
 
-        const latestSupportTicketData = await executeQuery(latestSupportTicketDataQuery);
+        const latestSupportTicketData = await executeQuery(
+            latestSupportTicketDataQuery
+        );
         const plansOverviewData = await executeQuery(plansOverviewQuery);
         const result = await executeQuery(query2);
-        
-
 
         // Return the counts in the final result
         return {
@@ -980,7 +1024,10 @@ const query2 = `
     getAllSupportTicketTitles = async (page?: number, limit?: number) => {
         let query = `SELECT * FROM SupportTicketTitles`;
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
 
@@ -993,46 +1040,107 @@ const query2 = `
         };
     };
 
-    addSupportTicketTitle = async (requestData: any) => {
+    addSupportTicketTitle = async (requestData: any, token_payload: any) => {
         const query = `INSERT INTO SupportTicketTitles (title) VALUES ('${requestData.title}')`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.TICKETS_MANAGEMENT,
+            action: Actions.TICKETS_MANAGEMENT.CREATE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
     };
 
-    deleteSupportTicketTitle = async (titleId: number) => {
+    deleteSupportTicketTitle = async (titleId: number, token_payload: any) => {
         const query = `DELETE FROM SupportTicketTitles WHERE id = '${titleId}'`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.TICKETS_MANAGEMENT,
+            action: Actions.TICKETS_MANAGEMENT.DELETE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
     };
 
-    updateSupportTicketTitle = async (requestData: any) => {
+    updateSupportTicketTitle = async (requestData: any, token_payload: any) => {
         const query = `UPDATE SupportTicketTitles SET title = '${requestData.title}' WHERE id = '${requestData.titleId}'`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.TICKETS_MANAGEMENT,
+            action: Actions.TICKETS_MANAGEMENT.UPDATE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
     };
 
     // Analytics
-    getAnalytics = async (page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
-        
+    getAnalytics = async (
+        page: number,
+        limit: number,
+        companyId?: string,
+        companyName?: string,
+        planType?: string,
+        planActivation?: string,
+        revenueType?: string,
+        totalRevenue?: string,
+        startDate?: string,
+        endDate?: string,
+        rate?: string
+    ) => {
         // const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
-        const {totalCountQuery, query} = await this.listOfClientsQuery(page, limit, companyId, companyName, planType, planActivation, revenueType, totalRevenue, startDate, endDate, rate);
+        const { totalCountQuery, query } = await this.listOfClientsQuery(
+            page,
+            limit,
+            companyId,
+            companyName,
+            planType,
+            planActivation,
+            revenueType,
+            totalRevenue,
+            startDate,
+            endDate,
+            rate
+        );
         const listOfClients = await executeQuery(query);
         const totalCount = await executeQuery(totalCountQuery);
-        return { listOfClients: listOfClients.rows, totalCount: totalCount.rows.length};
-    }
+        return {
+            listOfClients: listOfClients.rows,
+            totalCount: totalCount.rows.length,
+        };
+    };
 
     getAnalyticsCard = async () => {
-        const revenueAndSubscriptionMatrices = await executeQuery(this.revenueAndSubscriptionMatricesQuery());
-        return {revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows}
-    }
+        const revenueAndSubscriptionMatrices = await executeQuery(
+            this.revenueAndSubscriptionMatricesQuery()
+        );
+        return {
+            revenueAndSubscriptionMatrices: revenueAndSubscriptionMatrices.rows,
+        };
+    };
 
     getWebsiteAnalytics = async (page: number, limit: number) => {
-
         // Total Count
         const totalCountQuery = `SELECT COUNT(*) FROM Analytics`;
         const totalCountData = await executeQuery(totalCountQuery);
-        const totalCount = totalCountData.rows[0][''];
+        const totalCount = totalCountData.rows[0][""];
 
-        const websiteAnalytics = await executeQuery(this.websiteAnalyticsQuery(page, limit));
-        return {websiteAnalytics: websiteAnalytics.rows, totalCount: totalCount};
-    }
+        const websiteAnalytics = await executeQuery(
+            this.websiteAnalyticsQuery(page, limit)
+        );
+        return {
+            websiteAnalytics: websiteAnalytics.rows,
+            totalCount: totalCount,
+        };
+    };
 
     checkClientIsAccessable = async (id: number) => {
         const query = `SELECT * FROM Client where id = '${id}'`;
@@ -1061,9 +1169,11 @@ const query2 = `
         return data.rows;
     };
 
-
     // Notification
-    createNotification = async (requestData: ICreateNotificationRequest) => {
+    createNotification = async (
+        requestData: ICreateNotificationRequest,
+        token_payload: any
+    ) => {
         console.log("requestData:::", requestData);
         const createNotification = `INSERT INTO Notifications (Title, MessageBody, NotificationType, ExpirationDate, DeliverySettings) VALUES ('${requestData.title}', '${requestData.message}', '${requestData.type}', '${requestData.expiry_date}', 'instant')`;
         console.log("createNotification:::", createNotification);
@@ -1071,18 +1181,34 @@ const query2 = `
 
         // extract last notification id
         const latestNotificationIdQuery = `SELECT MAX(id) FROM Notifications`;
-        const latestNotificationId = await executeQuery(latestNotificationIdQuery);
-        const notificationId = latestNotificationId.rows[0]['']; // Access the value using the empty string key
+        const latestNotificationId = await executeQuery(
+            latestNotificationIdQuery
+        );
+        const notificationId = latestNotificationId.rows[0][""]; // Access the value using the empty string key
 
         console.log("latestNotificationId:::", latestNotificationId);
 
-             // Assuming requestData.user_ids is an array of user IDs
-             const userIds = requestData.user_ids.map(userId => `(${notificationId}, ${userId})`).join(", "); // Create a string of tuples
-             console.log("userIds:::", userIds);
-             const createNotificationLinedUsers = `INSERT INTO NotificationLinkedUsers (NotificationId, UserId) VALUES ${userIds}`;
-             console.log("createNotificationLinedUsers:::", createNotificationLinedUsers);
+        // Assuming requestData.user_ids is an array of user IDs
+        const userIds = requestData.user_ids
+            .map((userId) => `(${notificationId}, ${userId})`)
+            .join(", "); // Create a string of tuples
+        console.log("userIds:::", userIds);
+        const createNotificationLinedUsers = `INSERT INTO NotificationLinkedUsers (NotificationId, UserId) VALUES ${userIds}`;
+        console.log(
+            "createNotificationLinedUsers:::",
+            createNotificationLinedUsers
+        );
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.NOTIFICATION,
+            action: Actions.NOTIFICATION.CREATE,
+        };
+        await createAuditTrail(data);
         await executeQuery(createNotificationLinedUsers);
-    }
+    };
 
     getNotifications = async (notificationId: number) => {
         console.log("getNotifications:::");
@@ -1104,13 +1230,25 @@ LEFT JOIN
     Users ON NotificationLinkedUsers.UserId = Users.id 
 WHERE 
     Notifications.id = '${notificationId}' AND Notifications.deletedAt is null`;
-        
+
         const results = await executeQuery(query); // Assume this gets the flat result set
         const notificationsMap = {};
-        
-        results.rows.forEach(row => {
-            const { NotificationId, Title, MessageBody, NotificationType, ExpirationDate, DeliverySettings, UserId, username, email, full_name, role } = row;
-        
+
+        results.rows.forEach((row) => {
+            const {
+                NotificationId,
+                Title,
+                MessageBody,
+                NotificationType,
+                ExpirationDate,
+                DeliverySettings,
+                UserId,
+                username,
+                email,
+                full_name,
+                role,
+            } = row;
+
             if (!notificationsMap[NotificationId]) {
                 notificationsMap[NotificationId] = {
                     NotificationId,
@@ -1119,19 +1257,19 @@ WHERE
                     NotificationType,
                     ExpirationDate,
                     DeliverySettings,
-                    userData: []
+                    userData: [],
                 };
             }
-        
+
             if (UserId) {
                 notificationsMap[NotificationId].userData.push({
                     id: UserId,
                     username,
-                    email
+                    email,
                 });
             }
         });
-        return {data: Object.values(notificationsMap)};
+        return { data: Object.values(notificationsMap) };
     };
 
     getNotificationList = async (page: number, limit: number) => {
@@ -1140,24 +1278,33 @@ WHERE
         // total count query
         const totalCountQuery = `SELECT COUNT(*) FROM Notifications where deletedAt is null`;
         const totalCountData = await executeQuery(totalCountQuery);
-        const totalCount = totalCountData.rows[0][''];
+        const totalCount = totalCountData.rows[0][""];
         if (limit && page) {
             query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         const data = await executeQuery(query);
         return {
             notifications: data.rows,
-            totalCount: totalCount
+            totalCount: totalCount,
         };
-    }
+    };
 
-    deleteNotification = async (notificationId: number) => {
+    deleteNotification = async (notificationId: number, token_payload: any) => {
         // Update the deletedAt timestamp instead of deleting the notification
         const query = `UPDATE Notifications SET deletedAt = GETDATE() WHERE id = '${notificationId}'`;
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.NOTIFICATION,
+            action: Actions.NOTIFICATION.DELETE,
+        };
+        await createAuditTrail(data);
         return await executeQuery(query);
-    }
+    };
 
-    sendNotification = async (requestData: any) => {
+    sendNotification = async (requestData: any, token_payload: any) => {
         // First get the notification details from Notifications table usng requestData.notificationId
         const notificationDetailsQuery = `SELECT 
     n.id AS NotificationId,
@@ -1173,26 +1320,37 @@ LEFT JOIN
     NotificationLinkedUsers nlu ON nlu.NotificationId = n.id where n.id = ${requestData.notificationId}
 GROUP BY 
     n.id, n.Title, n.MessageBody, n.NotificationType, n.ExpirationDate, n.DeliverySettings;
-`
-      // Execute the query to get notification details
-const notificationDetails = await executeQuery(notificationDetailsQuery);
-const userIds = notificationDetails.rows[0]?.UserIds.split(',') || [];
-const expireDate = notificationDetails.rows[0]?.ExpirationDate;
-const formattedExpireDate = moment(expireDate).format('YYYY-MM-DD');
+`;
+        // Execute the query to get notification details
+        const notificationDetails = await executeQuery(
+            notificationDetailsQuery
+        );
+        const userIds = notificationDetails.rows[0]?.UserIds.split(",") || [];
+        const expireDate = notificationDetails.rows[0]?.ExpirationDate;
+        const formattedExpireDate = moment(expireDate).format("YYYY-MM-DD");
 
-
-console.log("userIds:::", userIds);
-console.log("formattedExpireDate:::", formattedExpireDate);
-
-// Construct a single insert query
-if (userIds.length > 0) {
-    const values = userIds.map(userId => `(${requestData.notificationId}, ${userId}, 0, GETDATE(), '${formattedExpireDate}')`).join(', ');
-    const insertQuery = `INSERT INTO SuperAdmin.dbo.UsersNotifications (NotificationId, UserId, IsRead, SentAt, ExpireDate) 
+        // Construct a single insert query
+        if (userIds.length > 0) {
+            const values = userIds
+                .map(
+                    (userId) =>
+                        `(${requestData.notificationId}, ${userId}, 0, GETDATE(), '${formattedExpireDate}')`
+                )
+                .join(", ");
+            const insertQuery = `INSERT INTO SuperAdmin.dbo.UsersNotifications (NotificationId, UserId, IsRead, SentAt, ExpireDate) 
                          VALUES ${values}`;
-    await executeQuery(insertQuery);
-}
-
-    }
+            await executeQuery(insertQuery);
+        }
+        const data = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.NOTIFICATION,
+            action: Actions.NOTIFICATION.SEND,
+        };
+        await createAuditTrail(data);
+    };
 
     private generateLogInSignUpResponse = (
         userId: number,
@@ -1202,7 +1360,7 @@ if (userIds.length > 0) {
         let jwtTokenPayload: Record<string, any> = {
             id: userId,
             username: userName,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             role: role,
             login_type: "admin",
         };
@@ -1306,9 +1464,21 @@ if (userIds.length > 0) {
             CAST(COUNT(CASE WHEN SD.PlanPrice = SD.PreviousPlanPrice THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0) AS DECIMAL(10, 2)) AS SamePlanPercentage
         FROM 
             SubscriptionData SD;`;
-    }
+    };
 
-    private listOfClientsQuery = async(page: number, limit: number, companyId?: string, companyName?: string, planType?: string, planActivation?: string, revenueType?: string, totalRevenue?: string, startDate?: string, endDate?: string, rate?: string) => {
+    private listOfClientsQuery = async (
+        page: number,
+        limit: number,
+        companyId?: string,
+        companyName?: string,
+        planType?: string,
+        planActivation?: string,
+        revenueType?: string,
+        totalRevenue?: string,
+        startDate?: string,
+        endDate?: string,
+        rate?: string
+    ) => {
         const filters = [];
         // Adjust filters to use the CTE's column names
         if (companyId) {
@@ -1332,7 +1502,7 @@ if (userIds.length > 0) {
         if (rate) {
             filters.push(`CurrentPlanPrice LIKE '%${rate}%'`);
         }
-        
+
         // Start building the query
         let query = `WITH SubscriptionData AS (
             SELECT 
@@ -1376,7 +1546,7 @@ if (userIds.length > 0) {
             SUM(total_revenue) AS total_revenue
         FROM 
             SubscriptionData`;
-        
+
         // Append filters to the query
         if (filters.length > 0) {
             query += ` WHERE ${filters.join(" AND ")}`;
@@ -1388,18 +1558,18 @@ if (userIds.length > 0) {
         if (totalRevenue) {
             query += ` HAVING SUM(total_revenue) = ${Number(totalRevenue)}`;
         }
-        
-       
+
         const totalCountQuery = query;
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY company_id OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
-        
+
         return { totalCountQuery, query };
-        
-    }
-    
+    };
 
     private listOfClientsCountQuery = () => {
         let query = `WITH SubscriptionData AS (
@@ -1446,45 +1616,74 @@ if (userIds.length > 0) {
             PlanChange`;
 
         return query;
-    }
+    };
 
     private websiteAnalyticsQuery = (page: number, limit: number) => {
         let query = `SELECT * FROM Analytics`;
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         return query;
-    }
+    };
 
     getFaq = async () => {
         const query = `SELECT * FROM FAQ order by CreatedDate desc`;
         const data = await executeQuery(query);
         return data.rows;
-    }
+    };
 
-    createFaq = async (question: string, answer: string) => {
+    createFaq = async (question: string, answer: string, token_payload: any) => {
         const query = `INSERT INTO FAQ (Question, Answer) VALUES ('${question}', '${answer}')`;
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.FAQ_MANAGEMENT,
+            action: Actions.FAQ_MANAGEMENT.CREATE,
+        };
+        await createAuditTrail(data2);
         const data = await executeQuery(query);
         return data.rows;
-    }
+    };
 
-    updateFaq = async (requestData: any) => {
+    updateFaq = async (requestData: any, token_payload: any) => {
         const query = `UPDATE FAQ SET Question = '${requestData.question}', Answer = '${requestData.answer}' WHERE id = ${requestData.faqId}`;
         const data = await executeQuery(query);
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.FAQ_MANAGEMENT,
+            action: Actions.FAQ_MANAGEMENT.UPDATE,
+        };
+        await createAuditTrail(data2);
         return data.rows;
-    }
+    };
 
-    deleteFaq = async (faqId: number) => {
+    deleteFaq = async (faqId: number, token_payload: any) => {
         const query = `DELETE FROM FAQ WHERE id = ${faqId}`;
         const data = await executeQuery(query);
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.FAQ_MANAGEMENT,
+            action: Actions.FAQ_MANAGEMENT.DELETE,
+        };
+        await createAuditTrail(data2);
         return data.rows;
-    }
+    };
 
     getClientDashboard = async (DBName: string, userId: number) => {
-
         const dbConnect = await initializeDatabasePool();
-        console.log("dbConnectdbConnect___", dbConnect)
+        console.log("dbConnectdbConnect___", dbConnect);
 
         // Prepare all queries
         const jobStatusPieChartQuery = `SELECT 
@@ -1569,7 +1768,7 @@ if (userIds.length > 0) {
             supportTicketCountResult,
             totalDataBackupResult,
             bannerResult,
-            softwareStatusResult
+            softwareStatusResult,
         ] = await Promise.all([
             executeQuery2(jobStatusPieChartQuery, dbConnect),
             executeQuery2(totalClientsQuery, dbConnect),
@@ -1578,7 +1777,7 @@ if (userIds.length > 0) {
             executeQuery2(supportTicketCountQuery, dbConnect),
             executeQuery2(totalDataBackupQuery, dbConnect),
             executeQuery2(bannerQuery, dbConnect),
-            executeQuery2(softwareStatusQuery, dbConnect)
+            executeQuery2(softwareStatusQuery, dbConnect),
         ]);
 
         const jobStatusPieChart = jobStatusPieChartResult.rows[0];
@@ -1591,28 +1790,47 @@ if (userIds.length > 0) {
         let fullImagePath = null;
         // add path to banner
         if (bannerResult.rows[0] && bannerResult.rows[0]?.imagePath) {
-            const relativePath = formateFrontImagePath(bannerResult.rows[0]?.imagePath);
+            const relativePath = formateFrontImagePath(
+                bannerResult.rows[0]?.imagePath
+            );
             console.log("relativePath: ", relativePath);
             fullImagePath = `${getEnvVar("LOCAL_URL")}/assets/clientWebsiteBanners${relativePath}`;
         }
 
         const softwareStatus = softwareStatusResult.rows[0];
 
-        return { jobStatusPieChart, totalClients, jobOnlineOffline, supportTicketCount, latestSupportTicketData, totalDataBackup, banner: fullImagePath, softwareStatus };
-    }
+        return {
+            jobStatusPieChart,
+            totalClients,
+            jobOnlineOffline,
+            supportTicketCount,
+            latestSupportTicketData,
+            totalDataBackup,
+            banner: fullImagePath,
+            softwareStatus,
+        };
+    };
 
-    updateAdminProfile = async (adminId: number,file: Express.Multer.File) => {
-        const filePath = file.path
-        console.log("filePathfilePathv_____", filePath)
+    updateAdminProfile = async (adminId: number, file: Express.Multer.File) => {
+        const filePath = file.path;
+        console.log("filePathfilePathv_____", filePath);
         const query = `UPDATE Admin SET profilePhoto = '${filePath}' WHERE id = ${adminId}`;
-        const data = await executeQuery(query); 
+        const data = await executeQuery(query);
 
         // const profilePhoto = formateFrontImagePath(file.path);
         return { profilePhoto: `${getEnvVar("LOCAL_URL")}/${file.path}` };
-    }
+    };
 
-    getContactUs = async (page: number, limit: number, name?: string, phoneNo?: string, email?: string, subject?: string, message?: string, createdAt?: string) => {
-        
+    getContactUs = async (
+        page: number,
+        limit: number,
+        name?: string,
+        phoneNo?: string,
+        email?: string,
+        subject?: string,
+        message?: string,
+        createdAt?: string
+    ) => {
         let query = `SELECT * FROM ContactUs`;
 
         const filters = [];
@@ -1632,10 +1850,7 @@ if (userIds.length > 0) {
             filters.push(`Message ILIKE '${message}'`);
         }
         if (createdAt) {
-            filters.push(this.getDateCondition(
-                createdAt,
-                "createdAt"
-            ))
+            filters.push(this.getDateCondition(createdAt, "createdAt"));
         }
 
         if (filters.length > 0) {
@@ -1643,16 +1858,25 @@ if (userIds.length > 0) {
         }
 
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         const totalCountQuery = `SELECT COUNT(*) FROM ContactUs`;
         const totalCount = await executeQuery(totalCountQuery);
         const data = await executeQuery(query);
-        return { totalCount: totalCount.rows[0][''], data: data.rows };
-    }
+        return { totalCount: totalCount.rows[0][""], data: data.rows };
+    };
 
-    getSignupUsers = async (page: number, limit: number, full_name?: string, email?: string, password?: string) => {
+    getSignupUsers = async (
+        page: number,
+        limit: number,
+        full_name?: string,
+        email?: string,
+        password?: string
+    ) => {
         let query = `SELECT * FROM Users`;
 
         const filters = [];
@@ -1671,22 +1895,27 @@ if (userIds.length > 0) {
         }
 
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY createdAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
         const totalCountQuery = `SELECT COUNT(*) FROM Users`;
         const totalCount = await executeQuery(totalCountQuery);
         const data = await executeQuery(query);
-        return { totalCount: totalCount.rows[0][''], data: data.rows };
-    }
+        return { totalCount: totalCount.rows[0][""], data: data.rows };
+    };
 
     getTestimonial = async (page?: number, limit?: number) => {
         let query = `SELECT * FROM Testimonials`;
         if (limit && page) {
-            const { offset, limit: limitData } = calculatePagination(page, limit);
+            const { offset, limit: limitData } = calculatePagination(
+                page,
+                limit
+            );
             query += ` ORDER BY CreatedAt DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
         }
-
 
         // Add the base URL IN the image path
         const baseUrl = getEnvVar("LOCAL_URL");
@@ -1699,28 +1928,55 @@ if (userIds.length > 0) {
 
         const totalDataQuery = `SELECT COUNT(*) FROM Testimonials`;
         const totalData = await executeQuery(totalDataQuery);
-        return { totalData: totalData.rows[0][''], data: testimonialData };
-    }
+        return { totalData: totalData.rows[0][""], data: testimonialData };
+    };
 
-    addTestimonial = async (requestData: any, image: Express.Multer.File) => {
+    addTestimonial = async (requestData: any, image: Express.Multer.File, token_payload: any) => {
         const query = `INSERT INTO Testimonials (Name, Message, Image, CreatedAt) VALUES ('${requestData.name}', '${requestData.message}', '${image.path}', GETDATE())`;
         const data = await executeQuery(query);
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.TESTIMONIAL,
+            action: Actions.TESTIMONIAL.ADD,
+        };
+        await createAuditTrail(data2);
         return data.rows;
-    }
+    };
 
-    deleteTestimonial = async (testimonialId: number) => {
+    deleteTestimonial = async (testimonialId: number, token_payload: any) => {
         const query = `DELETE FROM Testimonials WHERE id = ${testimonialId}`;
         const data = await executeQuery(query);
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.TESTIMONIAL,
+            action: Actions.TESTIMONIAL.DELETE,
+        };
+        await createAuditTrail(data2);
         return data.rows;
-    }
+    };
 
     // Integration images
 
-    addIntegrationImages = async (image: Express.Multer.File) => {
+    addIntegrationImages = async (image: Express.Multer.File, token_payload: any) => {
         const query = `INSERT INTO IntegrationImages (Image, CreatedAt) VALUES ('${image.path}', GETDATE())`;
         const data = await executeQuery(query);
+        const data2 = {
+            id: token_payload.id,
+            username: token_payload.username,
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
+            role: token_payload.role,
+            module: Modules.INTEGRATION,
+            action: Actions.INTEGRATION.ADD,
+        };
+        await createAuditTrail(data2);
         return data.rows;
-    }
+    };
 
     getIntegrationImages = async () => {
         const query = `SELECT * FROM IntegrationImages`;
@@ -1733,15 +1989,24 @@ if (userIds.length > 0) {
             return image;
         });
         return integrationImages;
-    }
+    };
 
     deleteIntegrationImages = async (integrationImageId: number) => {
         const query = `DELETE FROM IntegrationImages WHERE id = ${integrationImageId}`;
         const data = await executeQuery(query);
         return data.rows;
-    }
+    };
 
-    getFeedbackAndSuggestion = async (page: number, limit: number, username?: string, email?: string, subject?: string, type?: string, message?: string, createdAt?: string) => {
+    getFeedbackAndSuggestion = async (
+        page: number,
+        limit: number,
+        username?: string,
+        email?: string,
+        subject?: string,
+        type?: string,
+        message?: string,
+        createdAt?: string
+    ) => {
         const { offset, limit: limitData } = calculatePagination(page, limit);
         let query = `SELECT * FROM FeedbackAndSuggestion`;
 
@@ -1762,10 +2027,7 @@ if (userIds.length > 0) {
             filters.push(`Message LIKE '${message}'`);
         }
         if (createdAt) {
-            filters.push(this.getDateCondition(
-                createdAt,
-                "CreatedAt"
-            ))
+            filters.push(this.getDateCondition(createdAt, "CreatedAt"));
         }
 
         const totalQuery = `SELECT COUNT(*) FROM FeedbackAndSuggestion`;
@@ -1780,26 +2042,27 @@ if (userIds.length > 0) {
         const result = await executeQuery(query);
 
         const changeImagesPath = (imagePath: string) => {
-            if(!imagePath) return null;
+            if (!imagePath) return null;
             const relativePath = formateFrontImagePath(imagePath);
             return `${getEnvVar("LOCAL_URL")}/${imagePath}`;
-        }
+        };
 
         const feedbackAndSuggestion = result.rows.map((item: any) => {
             return {
                 ...item,
-                Image: item.Image !== null ? changeImagesPath(item.Image) : null // TODO
-            }
-        })
+                Image:
+                    item.Image !== null ? changeImagesPath(item.Image) : null, // TODO
+            };
+        });
         const totalResult = await executeQuery(totalQuery);
-        return { feedbackAndSuggestion, totalCount: totalResult.rows[0][''] };
+        return { feedbackAndSuggestion, totalCount: totalResult.rows[0][""] };
     };
 
     getAdminEmailConfigration = async () => {
         const query = `SELECT * FROM AdminEmailConfig`;
         const data = await executeQuery(query);
         return data.rows;
-    }
+    };
 
     updateAdminEmailConfigration = async (requestData: any) => {
         const query = `UPDATE AdminEmailConfig SET 
@@ -1809,5 +2072,5 @@ if (userIds.length > 0) {
         Password = '${requestData.Password}',
         EnableTLS = ${requestData.EnableTLS ? 1 : 0}`;
         await executeQuery(query);
-    }
+    };
 }

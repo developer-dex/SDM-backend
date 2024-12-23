@@ -9,6 +9,7 @@ import { Modules } from "../../helpers/constants";
 import { createAuditTrail } from "../../common/function";
 import { calculatePagination, createCsvFile } from "../../helpers/util";
 import sendCsvToMail from "../../helpers/sendMail";
+import moment from "moment";
 
 export class SupportTicketService {
     constructor() {}
@@ -178,7 +179,7 @@ export class SupportTicketService {
             const data = {
                 id: token_payload.id,
                 username: token_payload.username,
-                loginTime: new Date().toISOString(),
+                loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
                 role: token_payload.role,
                 module: Modules.SUPPORT_TICKET,
                 action: Actions.SUPPORT_TICKET.UPDATE,

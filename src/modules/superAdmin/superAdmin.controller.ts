@@ -355,13 +355,14 @@ export class SuperAdminController {
         res: Response,
         next: NextFunction
     ) => {
+        const token_payload = req.token_payload;
         const requestData: ICreateClientRequest = req.body;
         try {
             const alreadyExistInClientManagement = await this.superAdminService.alreadyExistInClientManagement(requestData.user_id);
             if(alreadyExistInClientManagement) {
                 return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.BAD_REQUEST, "User already exist in client management"));
             }
-            await this.superAdminService.createClient(requestData);
+            await this.superAdminService.createClient(requestData, token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -391,7 +392,7 @@ export class SuperAdminController {
     ) => {
         const { companyId } = req.params;
         try {
-            await this.superAdminService.deleteClient(companyId);
+            await this.superAdminService.deleteClient(companyId, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -459,7 +460,7 @@ export class SuperAdminController {
                     );
             }
 
-            await this.superAdminService.updateClient(requestData);
+            await this.superAdminService.updateClient(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -918,7 +919,7 @@ export class SuperAdminController {
     ) => {
         try {
             const requestData = req.body;
-            await this.superAdminService.addSupportTicketTitle(requestData);
+            await this.superAdminService.addSupportTicketTitle(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -950,7 +951,8 @@ export class SuperAdminController {
         try {
             const { titleId } = req.params;
             await this.superAdminService.deleteSupportTicketTitle(
-                Number(titleId)
+                Number(titleId),
+                req.token_payload.data
             );
             return res
                 .status(200)
@@ -982,7 +984,7 @@ export class SuperAdminController {
     ) => {
         try {
             const requestData = req.body;
-            await this.superAdminService.updateSupportTicketTitle(requestData);
+            await this.superAdminService.updateSupportTicketTitle(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1112,7 +1114,7 @@ export class SuperAdminController {
     ) => {
         const requestData: ICreateNotificationRequest = req.body;
         try {
-            await this.superAdminService.createNotification(requestData);
+            await this.superAdminService.createNotification(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1177,7 +1179,7 @@ export class SuperAdminController {
     ) => {
         const { notificationId } = req.params;
         try {
-            await this.superAdminService.deleteNotification(Number(notificationId));
+            await this.superAdminService.deleteNotification(Number(notificationId), req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1198,7 +1200,7 @@ export class SuperAdminController {
     ) => {
         const requestData = req.body;
         try {
-            await this.superAdminService.sendNotification(requestData);
+            await this.superAdminService.sendNotification(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1321,7 +1323,7 @@ export class SuperAdminController {
     ) => {
         const requestData = req.body;
         try {
-            await this.superAdminService.createFaq(requestData.question, requestData.answer);
+            await this.superAdminService.createFaq(requestData.question, requestData.answer, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1352,7 +1354,7 @@ export class SuperAdminController {
     ) => {
         const requestData = req.body;
         try {
-            await this.superAdminService.updateFaq(requestData);
+            await this.superAdminService.updateFaq(requestData, req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1375,7 +1377,7 @@ export class SuperAdminController {
     ) => {
         const { faqId } = req.params;
         try {
-            await this.superAdminService.deleteFaq(Number(faqId));
+            await this.superAdminService.deleteFaq(Number(faqId), req.token_payload.data);
             return res
                 .status(200)
                 .send(
@@ -1519,7 +1521,7 @@ export class SuperAdminController {
         const requestData = req.body;
         const image = req.file;
         try {
-            await this.superAdminService.addTestimonial(requestData, image);
+            await this.superAdminService.addTestimonial(requestData, image, req.token_payload.data);
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial created successfully"));
         } catch (error) {
             console.log("superAdmin createTestimonial ERROR", error);
@@ -1534,7 +1536,7 @@ export class SuperAdminController {
     ) => {
         const { testimonialId } = req.params;
         try {
-            await this.superAdminService.deleteTestimonial(Number(testimonialId));
+            await this.superAdminService.deleteTestimonial(Number(testimonialId), req.token_payload.data);
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Testimonial deleted successfully"));
         } catch (error) {
             console.log("superAdmin deleteTestimonial ERROR", error);
@@ -1550,7 +1552,7 @@ export class SuperAdminController {
     ) => {
         const image = req.file;
         try {
-            await this.superAdminService.addIntegrationImages(image);
+            await this.superAdminService.addIntegrationImages(image, req.token_payload.data);
             return res.status(200).send(this.responseService.responseWithoutData(true, StatusCodes.OK, "Integration images created successfully"));
         } catch (error) {
             console.log("superAdmin createIntegrationImages ERROR", error);

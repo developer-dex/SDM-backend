@@ -1,3 +1,4 @@
+import moment from "moment";
 import { executeQuery, retrieveData } from "../../config/databaseConfig";
 import { clientAdminPermissions } from "../../helpers/constants";
 import { JwtService } from "../../helpers/jwt.service";
@@ -837,7 +838,7 @@ ORDER BY
             id: userId,
             username: userName,
             userEmail: userEmail,
-            loginTime: new Date().toISOString(),
+            loginTime: moment().format("YYYY-MM-DD HH:mm:ss"),
             databaseName: databaseName,
             login_type: login_type,
         };
@@ -959,6 +960,15 @@ ORDER BY
         // return result.rows;
     };
 
+    sendEmail = async (id: number, userId: number, DBName: string) => {
+        const query = `SELECT * FROM EmailSchedule WHERE Id = ${id} AND UserId = ${userId}`;
+        const result = await executeQuery(query);
+        const emailSchedule = result.rows[0];
+        console.log("emailSchedule", emailSchedule);
+        this.instantEmailSchedule(DBName, userId, emailSchedule);
+        return true;
+    }
+
     updateEmailSchedule = async (DBName: string, userId: number, body: any) => {
         const isEmailInstant = body.Type === "instant";
         // body.EmailTo is coming in comma saprated value I want to remove extra space
@@ -1015,6 +1025,7 @@ ORDER BY
             .map((report: string) => report.trim())
             .join(",")
             .split(",");
+        console.log("reportNames", reportNames);
         for (const reportName of reportNames) {
             let query = `SELECT * FROM ${DBName}.${reportName}`;
             if (reportName === "Clients" || reportName === "BackupJobs") {
@@ -1029,11 +1040,14 @@ ORDER BY
                     query += ` WHERE StartTime >= CAST(GETDATE() AS DATE) AND StartTime < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))`;
                 }
             }
+            console.log("query", query);
             const result = await executeQuery(query);
+            console.log("result", result);
             const csvFilePath = await this.generateCSVFile(
                 reportName,
                 result.rows
             );
+            console.log("csvFilePath", csvFilePath);
             attachmentPaths.push({
                 fileName: csvFilePath.fileName,
                 path: csvFilePath.filePath,
@@ -1065,7 +1079,7 @@ ORDER BY
             headers,
             ...data.map((row) => Object.values(row).join(",")),
         ].join("\n"); // Combine headers with data
-        const fileName = `${reportName}-${new Date().toISOString().split("T")[0]}.csv`;
+        const fileName = `${reportName}-${moment().format("YYYY-MM-DD HH:mm:ss")}.csv`;
         const filePath = `assets/emailCsv/${fileName}`; // Define your path here
         // Ensure the directory exists
         await fs.promises.mkdir("assets/emailCsv", { recursive: true }); // Create directory if it doesn't exist
