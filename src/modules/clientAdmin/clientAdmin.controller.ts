@@ -93,7 +93,7 @@ export class ClientAdminController {
     ) => {
         const tokenPayload = req.token_payload;
         console.log("tokenPayload:::", tokenPayload);
-        const { page, limit, ClientId, Name, IpMachineName, FolderName, UserName, Password, Quota, QuotaUnit, Description, EntryTime, Remarks, searchParameter} = req.query;
+        const { page, limit, ClientId, Name, JobGroup, IpMachineName, FolderName, UserName, Password, Quota, QuotaUnit, Description, EntryTime, Remarks, searchParameter} = req.query;
         try {
             console.log("tokenPayload?.data.databaseName:::", tokenPayload?.data);
             const result = await this.clientAdminService.getClientManagement(
@@ -102,6 +102,7 @@ export class ClientAdminController {
                 Number(limit),
                 Number(ClientId),
                 Name as string,
+                JobGroup as string,
                 IpMachineName as string,
                 FolderName as string,
                 UserName as string,
@@ -1118,6 +1119,16 @@ export class ClientAdminController {
                 );
         }
     };
+
+    getNotificationCount = async (req: Request & { token_payload?: any }, res: Response) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const result = await this.clientAdminService.getNotificationCount(tokenPayload?.data.id);
+            return res.status(200).send(this.responseService.responseWithData(true, StatusCodes.OK, "Notification count fetched successfully", result));
+        } catch (error) {
+            return res.status(400).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"));
+        }
+    }
 }
 
 export const clientAdminController = new ClientAdminController();

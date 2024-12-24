@@ -85,6 +85,7 @@ ELSE
         limit?: number,
         ClientId?: number,
         Name?: string,
+        JobGroup?: string,
         IpMachineName?: string,
         FolderName?: string,
         UserName?: string,
@@ -115,6 +116,7 @@ ELSE
             searchFilters.push(`Description LIKE '%${searchParameter}%'`);
             searchFilters.push(`EntryTime LIKE '%${searchParameter}%'`);
             searchFilters.push(`Remarks LIKE '%${searchParameter}%'`);
+            searchFilters.push(`JobGroup LIKE '%${searchParameter}%'`);
         }
 
         if (ClientId) {
@@ -122,6 +124,9 @@ ELSE
         }
         if (Name) {
             filters.push(`Name LIKE '%${Name}%'`);
+        }
+        if (JobGroup) {
+            filters.push(`JobGroup = '${JobGroup}'`);
         }
         if (IpMachineName) {
             filters.push(`IpMachineName LIKE '%${IpMachineName}%'`);
@@ -475,13 +480,13 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         let query = `SELECT * FROM ${DBName}.JobFireEntries`;
         let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.JobFireEntries`;
         let countCompleteAndFailedJobsQuery = `SELECT 
-        COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) AS CompletedJobs,
-        COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) AS FailedJobs,
-        SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
-        SUM(CAST(DataInMB AS NUMERIC)) AS TotalDataInMB,
-        SUM(CAST(DataInGB AS NUMERIC)) AS TotalDataInGB,
-        SUM(CAST(DataInTB AS NUMERIC)) AS TotalDataInTB
-        FROM ${DBName}.JobFireEntries`;
+    COUNT(CASE WHEN Status = 'COMPLETED' THEN 1 END) AS CompletedJobs,
+    COUNT(CASE WHEN Status = 'FAILED' THEN 1 END) AS FailedJobs,
+    SUM(TRY_CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
+    SUM(TRY_CAST(DataInMB AS NUMERIC)) AS TotalDataInMB,
+    SUM(TRY_CAST(DataInGB AS NUMERIC)) AS TotalDataInGB,
+    SUM(TRY_CAST(DataInTB AS NUMERIC)) AS TotalDataInTB
+FROM  ${DBName}.JobFireEntries`;
 
         const filters = [];
         const searchFilters = [];
@@ -768,15 +773,15 @@ ORDER BY
         // Total data backup
         const totalDataBackupQuery = `
             SELECT 
-                SUM(CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
-                CASE 
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 'N2') + ' TB'
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1073741824.0, 'N2') + ' GB'
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1048576 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1048576.0, 'N2') + ' MB'
-                    WHEN SUM(CAST(DataInKB AS NUMERIC)) >= 1024 THEN FORMAT(SUM(CAST(DataInKB AS NUMERIC)) / 1024.0, 'N2') + ' MB'
-                    ELSE FORMAT(SUM(CAST(DataInKB AS NUMERIC)), 'N2') + ' KB'
-                END AS TotalDataInReadableFormat
-            FROM ${DBName}.JobFireEntries`;
+    SUM(TRY_CAST(DataInKB AS NUMERIC)) AS TotalDataInKB,
+    CASE 
+        WHEN SUM(TRY_CAST(DataInKB AS NUMERIC)) >= 1099511627776 THEN FORMAT(SUM(TRY_CAST(DataInKB AS NUMERIC)) / 1099511627776.0, 'N2') + ' TB'
+        WHEN SUM(TRY_CAST(DataInKB AS NUMERIC)) >= 1073741824 THEN FORMAT(SUM(TRY_CAST(DataInKB AS NUMERIC)) / 1073741824.0, 'N2') + ' GB'
+        WHEN SUM(TRY_CAST(DataInKB AS NUMERIC)) >= 1048576 THEN FORMAT(SUM(TRY_CAST(DataInKB AS NUMERIC)) / 1048576.0, 'N2') + ' MB'
+        WHEN SUM(TRY_CAST(DataInKB AS NUMERIC)) >= 1024 THEN FORMAT(SUM(TRY_CAST(DataInKB AS NUMERIC)) / 1024.0, 'N2') + ' MB'
+        ELSE FORMAT(SUM(TRY_CAST(DataInKB AS NUMERIC)), 'N2') + ' KB'
+    END AS TotalDataInReadableFormat
+FROM  ${DBName}.JobFireEntries`;
         const totalDataBackupResult = await executeQuery(totalDataBackupQuery);
         const totalDataBackup = totalDataBackupResult.rows[0];
 
@@ -878,10 +883,12 @@ ORDER BY
     };
 
     getMyNotifications = async (DBName: string, userId: number) => {
-        const query = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt as notificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by un.id DESC`;
-        console.log("NotificationQuery____", query)
-        const result = await executeQuery(query);
-        return result.rows;
+        const query1 = `SELECT un.id as notificationId, n.Title, n.MessageBody, n.CreatedAt, un.SentAt as notificationCreatedAt, un.IsRead, un.ExpireDate FROM UsersNotifications un LEFT JOIN Notifications n ON un.NotificationId = n.id WHERE UserId = ${userId} order by un.id DESC`;
+        const result1 = await executeQuery(query1);
+
+        const query2 = `SELECT COUNT(*) FROM UsersNotifications WHERE UserId = ${userId} AND IsRead = 0`;
+        const result2 = await executeQuery(query2);
+        return { isAllNotificationRead: result2.rows[0][""] == 0 ? true : false, notifications: result1.rows };
     };
 
     markAllRead = async (userId: number) => {
@@ -1137,6 +1144,13 @@ ORDER BY
         const totalResult = await executeQuery(totalQuery);
         return { feedbackAndSuggestion, totalCount: totalResult.rows[0][""] };
     };
+
+    // Notification count
+    getNotificationCount = async (userId: number) => {
+        const query = `SELECT COUNT(*) FROM UsersNotifications WHERE UserId = ${userId} AND IsRead = 0`;
+        const result = await executeQuery(query);
+        return { isAllNotificationRead: result.rows[0][""] > 0 ? false : true };
+    }
 
     // Function to convert special date strings to SQL date conditions
     private getDateCondition(

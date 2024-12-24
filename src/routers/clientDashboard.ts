@@ -183,6 +183,8 @@ ClientDashboardApi.get(
     clientAdminController.getFeedbackAndSuggestion
 );
 
+// Notification count 
+ClientDashboardApi.get("/notification-count", clientAdminController.getNotificationCount);
 // Dashboard
 // ClientDashboardApi.get("/dashboard", clientAdminController.getDashboard);
 export default ClientDashboardApi;
