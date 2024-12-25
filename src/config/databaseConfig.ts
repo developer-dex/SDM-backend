@@ -909,6 +909,37 @@ let isQueryInProgress = false; // Flag to track query execution state
 
 import { ConnectionPool } from "mssql";
 let pool: ConnectionPool;
+
+export const initializeDatabasePool2 = async () => {
+    // let pool: ConnectionPool;
+    try {
+        pool = new ConnectionPool({
+            server: getEnvVar("SQLBASE_HOST"),
+            authentication: {
+                type: "default",
+                options: {
+                    userName: getEnvVar("SQLBASE_USER"),
+                    password: getEnvVar("SQLBASE_PASSWORD"),
+                },
+            },
+            options: {
+                database: SUPER_ADMIN_DATABASE,
+                encrypt: true,
+                port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
+                trustServerCertificate: true,
+                connectTimeout: 30000, // Increase connection timeout (30 seconds)
+                requestTimeout: 30000, 
+            },
+        });
+
+         await pool.connect();
+        //  return pool;
+        console.log("Database connected successfully.");
+    } catch (err) {
+        console.error("Database connection failed:", err);
+    }
+};
+
 export const executeQuery = async (query: string): Promise<QueryResult> => {
     return new Promise((resolve, reject) => {
         pool.request() // Create a new request from the pool
@@ -967,35 +998,7 @@ export const initializeDatabasePool = async () => {
     }
 };
 
-export const initializeDatabasePool2 = async () => {
-    // let pool: ConnectionPool;
-    try {
-        pool = new ConnectionPool({
-            server: getEnvVar("SQLBASE_HOST"),
-            authentication: {
-                type: "default",
-                options: {
-                    userName: getEnvVar("SQLBASE_USER"),
-                    password: getEnvVar("SQLBASE_PASSWORD"),
-                },
-            },
-            options: {
-                database: SUPER_ADMIN_DATABASE,
-                encrypt: true,
-                port: Number(getEnvVar("SQLBASE_PORT")) || 1433,
-                trustServerCertificate: true,
-                connectTimeout: 30000, // Increase connection timeout (30 seconds)
-                requestTimeout: 30000, 
-            },
-        });
 
-         await pool.connect();
-        //  return pool;
-        console.log("Database connected successfully.");
-    } catch (err) {
-        console.error("Database connection failed:", err);
-    }
-};
 
 
   export const executeQueryClient = (query: string): Promise<QueryResult> => {

@@ -275,6 +275,102 @@ BaseFolderData, Difference, Status, EntryDateTime FROM ${DBName}.BackupSSLogs`;
         return { backupLogs: result.rows, totalCount, otherBackUpSSData };
     };
 
+    getBackupJobs = async (DBName: string, page: number, limit: number, searchParameter?: string, JobName?: string, JobGroup?: string, BackupType?: string, Days?: string, SourceIp?: string, SourceFolder?: string, SourceUsername?: string, SourcePassword?: string, Description?: string, EntryDate?: string, StartTime?: string, EndTime?: string, JobEnabled?: string, JobPriority?: string, ExtnDetails?: string, ExtnType?: string) => {
+        const { offset, limit: limitData } = calculatePagination(page, limit);
+        let query = `SELECT * FROM ${DBName}.BackupJobs`;
+        let countQuery = `SELECT COUNT(*) AS total_count FROM ${DBName}.BackupJobs`;
+
+        const filters = [];
+        const searchFilters = [];
+
+        if(searchParameter) {
+            searchFilters.push(`JobName LIKE '%${searchParameter}%'`);
+            searchFilters.push(`JobGroup LIKE '%${searchParameter}%'`);
+            searchFilters.push(`BackupType LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Days LIKE '%${searchParameter}%'`);
+            searchFilters.push(`SourceIp LIKE '%${searchParameter}%'`);
+            searchFilters.push(`SourceFolder LIKE '%${searchParameter}%'`);
+            searchFilters.push(`SourceUsername LIKE '%${searchParameter}%'`);
+            searchFilters.push(`SourcePassword LIKE '%${searchParameter}%'`);
+            searchFilters.push(`Description LIKE '%${searchParameter}%'`);
+            searchFilters.push(`EntryDate LIKE '%${searchParameter}%'`);
+            searchFilters.push(`StartTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`EndTime LIKE '%${searchParameter}%'`);
+            searchFilters.push(`JobEnabled LIKE '%${searchParameter}%'`);
+            searchFilters.push(`JobPriority LIKE '%${searchParameter}%'`);
+            searchFilters.push(`ExtnDetails LIKE '%${searchParameter}%'`);
+            searchFilters.push(`ExtnType LIKE '%${searchParameter}%'`);
+        }
+
+        if(JobName) {
+            filters.push(`JobName LIKE '%${JobName}%'`);
+        }
+        if(JobGroup) {
+            filters.push(`JobGroup LIKE '%${JobGroup}%'`);
+        }
+        if(BackupType) {
+            filters.push(`BackupType LIKE '%${BackupType}%'`);
+        }
+        if(Days) {
+            filters.push(`Days LIKE '%${Days}%'`);
+        }
+        if(SourceIp) {
+            filters.push(`SourceIp LIKE '%${SourceIp}%'`);
+        }
+        if(SourceFolder) {
+            filters.push(`SourceFolder LIKE '%${SourceFolder}%'`);
+        }
+        if(SourceUsername) {
+            filters.push(`SourceUsername LIKE '%${SourceUsername}%'`);
+        }
+        if(SourcePassword) {
+            filters.push(`SourcePassword LIKE '%${SourcePassword}%'`);
+        }
+        if(Description) {
+            filters.push(`Description LIKE '%${Description}%'`);
+        }
+        if(EntryDate) {
+            filters.push(this.getDateCondition(EntryDate, "EntryDate"));
+        }
+        if(StartTime) {
+            filters.push(this.getDateCondition(StartTime, "StartTime"));
+        }
+        if(EndTime) {
+            filters.push(this.getDateCondition(EndTime, "EndTime"));
+        }
+        if(JobEnabled) {    
+            filters.push(`JobEnabled LIKE '%${JobEnabled}%'`);
+        }
+        if(JobPriority) {
+            filters.push(`JobPriority LIKE '%${JobPriority}%'`);
+        }
+        if(ExtnDetails) {
+            filters.push(`ExtnDetails LIKE '%${ExtnDetails}%'`);
+        }
+        if(ExtnType) {
+            filters.push(`ExtnType LIKE '%${ExtnType}%'`);
+        }
+
+        if(filters.length > 0) {
+            query += ` WHERE ${filters.join(" AND ")}`;
+            countQuery += ` WHERE ${filters.join(" AND ")}`;
+        }
+
+        if(searchFilters.length > 0) {
+            query += ` ${filters.length > 0 ? "AND" : "WHERE"} ${searchFilters.join(" OR ")}`;
+            countQuery += ` ${filters.length > 0 ? "AND" : "WHERE"} ${searchFilters.join(" OR ")}`;
+        }
+
+        if(page && limit) {
+            query += ` ORDER BY JobID DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;
+        }
+
+        const result = await executeQuery(query);
+        const countResult = await executeQuery(countQuery);
+        const totalCount = countResult.rows[0].total_count;
+        return { backupLogs: result.rows, totalCount };
+    }
+
     getBackupSSCounts = async (DBName: string) => {
         const query = `SELECT COUNT(*) AS total_count FROM ${DBName}.BackupSSLogs`;
         const result = await retrieveData(query);
@@ -637,10 +733,8 @@ LEFT JOIN
             searchFilters.push(`u.Role LIKE '%${searchParameter}%'`);
             searchFilters.push(`u.Phone LIKE '%${searchParameter}%'`);
             searchFilters.push(`u.EntryDate LIKE '%${searchParameter}%'`);
-            searchFilters.push(
-                `STRING_AGG(up.ModuleName, ', ') LIKE '%${searchParameter}%'`
-            );
-            searchFilters.push(`u.Password LIKE '%${searchParameter}%'`);
+            searchFilters.push(`up.ModuleName LIKE '%${searchParameter}%'`);
+            // Moved STRING_AGG condition to HAVING clause
         }
 
         if (username) {
@@ -658,11 +752,6 @@ LEFT JOIN
         if (entryDate) {
             filters.push(this.getDateCondition(entryDate, "u.EntryDate"));
         }
-        if (moduleNames) {
-            filters.push(
-                `STRING_AGG(up.ModuleName, ', ') LIKE '%${moduleNames}%'`
-            );
-        }
         if (password) {
             filters.push(`u.Password LIKE '%${password}%'`);
         }
@@ -672,20 +761,41 @@ LEFT JOIN
             countQuery += ` WHERE ${filters.join(" AND ")}`;
         }
 
-        if (searchFilters.length > 0) {
-            query += ` WHERE ${searchFilters.join(" OR ")}`;
-            countQuery += ` WHERE ${searchFilters.join(" OR ")}`;
+        if(searchFilters.length > 0){
+            query += ` WHERE ${searchFilters.join(" OR ")}`
+            countQuery += ` WHERE ${searchFilters.join(" OR ")}`
         }
 
-        query += ` GROUP BY 
-        u.ID,
-        u.UserName,
-        u.[Role],
-        u.Password,
-        u.Phone,
-        u.Email,
-        u.ProfilePicture,
-        u.EntryDate`;
+        
+
+        // Add HAVING clause for searchFilters
+        if (searchFilters.length > 0) {
+            query += ` GROUP BY 
+            u.ID,
+            u.UserName,
+            u.[Role],
+            u.Password,
+            u.Phone,
+            u.Email,
+            u.ProfilePicture,
+            u.EntryDate`
+            
+
+        } else {
+            query += ` GROUP BY 
+            u.ID,
+            u.UserName,
+            u.[Role],
+            u.Password,
+            u.Phone,
+            u.Email,
+            u.ProfilePicture,
+            u.EntryDate`;
+        }
+
+        if(moduleNames){
+            query += ` HAVING STRING_AGG(up.ModuleName, ', ') LIKE '%${moduleNames}%'`
+        }
 
         if (page && limit) {
             query += ` ORDER BY ID DESC OFFSET ${offset} ROWS FETCH NEXT ${limitData} ROWS ONLY`;

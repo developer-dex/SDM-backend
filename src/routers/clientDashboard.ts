@@ -87,6 +87,9 @@ ClientDashboardApi.get(
     clientAdminController.getAuditTrailLog
 );
 
+// Backup jobs
+ClientDashboardApi.get("/backup-jobs", clientAdminController.getBackupJobs);
+
 // User management
 ClientDashboardApi.get(
     "/user",

@@ -12,7 +12,7 @@ export const RESET_PASSWORD_FRONT_URL =
     getEnvVar("FRONTEND_URL") + "/reset-password";
 
 export const clientAdminPermissions =
-    "client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket,client-faq,feedback-suggestion,email-schedule,client-management-list";
+    "client-dashboard,ping-path,client-user-management,backup-storage-statistics,job-fire-statistics,pricing-client,audit-trail,email,traning,setting,client-support-ticket,client-faq,feedback-suggestion,email-schedule,client-management-list,backup-jobs";
 
 export const SUPER_ADMIN_DATABASE = "SuperAdmin";
 

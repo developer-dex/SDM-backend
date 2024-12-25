@@ -369,6 +369,42 @@ export class ClientAdminController {
         }
     };
 
+    getBackupJobs = async (
+        req: Request & { token_payload?: any },
+        res: Response
+    ) => {
+        const tokenPayload = req.token_payload;
+        try {
+            const {
+                page, 
+                limit,
+                searchParameter,
+                JobName,
+                JobGroup,
+                BackupType,
+                Days,
+                SourceIp,
+                SourceFolder,
+                SourceUsername,
+                SourcePassword,
+                Description,
+                EntryDate,
+                StartTime,
+                EndTime,
+                JobEnabled,
+                JobPriority,
+                ExtnDetails,
+                ExtnType
+             } = req.query
+    
+            const backupJobData = await this.clientAdminService.getBackupJobs(tokenPayload?.data.databaseName, Number(page), Number(limit), searchParameter as string, JobName as string, JobGroup as string, BackupType as string, Days as string, SourceIp as string, SourceFolder as string, SourceUsername as string, SourcePassword as string, Description as string, EntryDate as string, StartTime as string, EndTime as string, JobEnabled as string, JobPriority as string, ExtnDetails as string, ExtnType as string)
+            return res.status(StatusCodes.OK).send(this.responseService.responseWithData(true, StatusCodes.OK, "Backup jobs fetched successfully", backupJobData))
+        } catch (error) {
+            return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send(this.responseService.responseWithoutData(false, StatusCodes.INTERNAL_SERVER_ERROR, "Internal server error"))
+        }
+       
+    }
+
     getJobFireStatistics = async (
         req: Request & { token_payload?: any },
         res: Response
